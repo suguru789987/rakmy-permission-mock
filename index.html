@@ -121,6 +121,9 @@
         <span><b style="background:#c33">なし</b></span><span><b style="background:#3b82f6">閲覧</b></span><span><b style="background:#1bbf73">操作/可</b></span>
         <span style="color:#9aa0a6;">本部専用機能はこの権限では付与されないため非表示</span>
       </div>
+      <div class="legend" style="margin-bottom:14px; color:#0a7a55;">
+        DnD編集：会社画面＝本部のみ／店舗画面＝店長まで／従業員は不可。 指標の閲覧範囲は入れ子 <b style="background:#21262b">本部(全指標)</b> ⊇ <b style="background:#1bbf73">店長(本部が許可)</b> ⊇ <b style="background:#3b82f6">従業員(閲覧許可)</b>。
+      </div>
       <div class="modeTog" id="modeTog">
         <button class="on" data-m="summary" onclick="setMode('summary')">概要設定（第一階層）</button>
         <button data-m="detail" onclick="setMode('detail')">詳細設定（第一〜三階層）</button>
@@ -160,9 +163,11 @@ const CATEGORIES = [
       {n:'坪月商'},{n:'繁盛店指数'},{n:'ROI（投資回収）'},{n:'予実進捗'}]},
     {n:'お知らせ',k:'base'},
     {n:'繁盛店指数',k:'view',new:true},
-    {n:'UIカスタマイズ（表示項目）',k:'view',new:true,future:true, itemGroups:[
+    {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'view',new:true,future:true, itemGroups:[
       {name:'ディメンション（例：本番13〜15種）', items:[{n:'店舗'},{n:'業態'},{n:'商品カテゴリ'},{n:'曜日'},{n:'時間帯'}]},
-      {name:'指標／トランザクション（例：本番486〜737種）', items:[{n:'売上'},{n:'客数'},{n:'客単価'},{n:'粗利'},{n:'原価率'},{n:'人件費率'}]}]}]},
+      {name:'指標／トランザクション（例：本番486〜737種）', items:[{n:'売上'},{n:'客数'},{n:'客単価'},{n:'粗利'},{n:'原価率'},{n:'人件費率'}]}]},
+    {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
+    {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true}]},
   {id:'sales', name:'売上分析', features:[
     {n:'ABC分析',k:'view'},{n:'商品別分析',k:'view'},{n:'時間帯別分析',k:'view'},{n:'曜日別分析',k:'view'},{n:'支払い種別分析',k:'view'}]},
   {id:'purchase', name:'仕入分析', features:[
@@ -240,18 +245,19 @@ const PRESET = {
   manager:f => ({base:1,view:1,edit:2,action:2,admin:0}[f.k]),
   full:   f => maxV(f.k),
 };
-function buildPerm(presetFn,scope){
+function buildPerm(presetFn,scope,roleKey){
   const p={};
   CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{
-    const v = f.fixed ? (scope==='company'?2:0) : presetFn(f);
+    let v = f.fixed ? (scope==='company'?2:0) : presetFn(f);
+    if(f.noStaff && roleKey==='staff') v=minV(f.k);   // 従業員はDnD編集不可
     setFeatVal(p,c.id,fi,f,v);
   }));
   return p;
 }
 let ROLES = [
-  {name:'従業員権限',   scope:'shop',    perm:buildPerm(PRESET.staff,'shop')},
-  {name:'店長権限',     scope:'shop',    perm:buildPerm(PRESET.manager,'shop')},
-  {name:'本部（全権）', scope:'company', perm:buildPerm(PRESET.full,'company'), system:true},
+  {name:'従業員権限',   key:'staff',   scope:'shop',    perm:buildPerm(PRESET.staff,'shop','staff')},
+  {name:'店長権限',     key:'manager', scope:'shop',    perm:buildPerm(PRESET.manager,'shop','manager')},
+  {name:'本部（全権）', key:'full',    scope:'company', perm:buildPerm(PRESET.full,'company','full'), system:true},
 ];
 
 let cur = { idx:0, scope:'shop', perm:{}, tab:'dashboard', mode:'summary', expanded:{} };
@@ -324,6 +330,11 @@ function detailHTML(){
   let body=`<div class="bulk"><span style="font-weight:700;">${cat.name}（第二階層）</span><span style="flex:1"></span>このカテゴリ一括：<button onclick="setCatVal('${cur.tab}',2)">操作</button><button onclick="setCatVal('${cur.tab}',1)">閲覧</button><button onclick="setCatVal('${cur.tab}',0)">なし</button></div>`;
   cat.features.forEach((f,fi)=>{
     if(f.fixed) return;
+    if(f.noStaff && ROLES[cur.idx].key==='staff'){      // 従業員：DnD編集は構造的に不可
+      setFeatVal(cur.perm,cur.tab,fi,f,minV(f.k));
+      body+=`<div class="feat"><span class="caret"></span><div class="fn">${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span></div><div class="lockmsg">🔒 従業員はDnD編集不可（許可された指標の閲覧のみ）</div></div>`;
+      return;
+    }
     const kd=KIND[f.k], v=featVal(cur.perm,cur.tab,fi,f), rng=featRange(f);
     const ops=OPS[f.k], hasL3=hasItems(f)||ops.length>1, ek=cur.tab+'_'+fi, exp=cur.expanded[ek];
     const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
