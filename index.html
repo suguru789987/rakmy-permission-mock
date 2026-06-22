@@ -215,19 +215,16 @@ function itemKeys(f){
   return [];
 }
 const hasItems = f => !!(f.items||f.itemGroups);
-function setFeatVal(perm,cid,fi,f,val){    // L2値→L3へ反映
-  if(hasItems(f)){ itemKeys(f).forEach(k=>perm[opKey(cid,fi,k)] = val>=1); return; }
+function setFeatVal(perm,cid,fi,f,val){    // L2値→L3（操作＋指標）へ反映
   OPS[f.k].forEach(o=>{
     perm[opKey(cid,fi,o.id)] = f.k==='base' ? true : val>=2 ? true : val===1 ? (o.id==='view') : false;
   });
+  if(hasItems(f)) itemKeys(f).forEach(k=>perm[opKey(cid,fi,k)] = val>=1);  // 指標は閲覧で全表示が既定
 }
-function featVal(perm,cid,fi,f){           // L3→L2値を導出
-  if(hasItems(f)){
-    const anyOn=itemKeys(f).some(k=>perm[opKey(cid,fi,k)]);
-    return f.k==='base' ? 1 : (anyOn?1:0);
-  }
-  const ops=OPS[f.k], on=ops.filter(o=>perm[opKey(cid,fi,o.id)]);
+function featVal(perm,cid,fi,f){           // L3操作→L2値を導出（指標はL2に影響しない）
   if(f.k==='base') return 1;
+  if(f.k==='view') return perm[opKey(cid,fi,'view')] ? 1 : 0;   // 閲覧専用：閲覧opのみでL2判定
+  const ops=OPS[f.k], on=ops.filter(o=>perm[opKey(cid,fi,o.id)]);
   if(on.length===0) return 0;
   if(on.length===1 && on[0].id==='view') return 1;
   return 2;
@@ -347,15 +344,23 @@ function detailHTML(){
       return;
     }
     const kd=KIND[f.k], v=featVal(cur.perm,cur.tab,fi,f), rng=featRange(f);
-    const ops=OPS[f.k], hasL3=hasItems(f)||ops.length>1, ek=cur.tab+'_'+fi, exp=cur.expanded[ek];
+    // 操作詳細に出す操作：指標を持つ機能は「閲覧」をL2が担うのでviewを除外、それ以外は全操作
+    const opsShow = hasItems(f) ? OPS[f.k].filter(o=>o.id!=='view') : OPS[f.k];
+    const hasL3 = opsShow.length>0 || hasItems(f), ek=cur.tab+'_'+fi, exp=cur.expanded[ek];
     const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
     const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setFeat('${cur.tab}',${fi},${s})">${kd.lab[s]}</button>`).join('');
     const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${hasItems(f)?`<span class="kindtag">表示項目 ${itemKeys(f).length}</span>`:''}`;
     body+=`<div class="feat">${caret}<div class="fn">${f.n}${badges}</div><div class="seg ${kd.lock?'locked':''}">${seg}</div></div>`;
     if(hasL3 && exp){
-      if(hasItems(f)){                      // 第三階層＝表示項目（指標／UIカスタマイズ）
+      let inner='';
+      if(opsShow.length>0){                 // 操作詳細（エクスポート／登録／編集／削除…）
+        const boxes=opsShow.map(o=>{ const on=cur.perm[opKey(cur.tab,fi,o.id)], lv1=o.id==='view';
+          return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} onclick="toggleOp('${cur.tab}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
+        inner+=`<div class="l3bar"><span>操作詳細：許可する操作を選択</span></div>${boxes}`;
+      }
+      if(hasItems(f)){                       // 閲覧詳細（見せる指標／項目）
         const tot=itemKeys(f).length, on=itemKeys(f).filter(k=>cur.perm[opKey(cur.tab,fi,k)]).length;
-        let inner=`<div class="l3bar"><span>閲覧詳細：見せる指標／項目を選択（${on}/${tot}）</span><span style="flex:1"></span>`
+        inner+=`<div class="l3bar" style="margin-top:8px;"><span>閲覧詳細：見せる指標／項目を選択（${on}/${tot}）</span><span style="flex:1"></span>`
           +`<button class="mini" onclick="setItemsAll('${cur.tab}',${fi},true)">全表示</button>`
           +`<button class="mini" onclick="setItemsAll('${cur.tab}',${fi},false)">全非表示</button></div>`;
         if(f.items){
@@ -367,12 +372,8 @@ function detailHTML(){
                 return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cur.tab}',${fi},'${k}')"> ${it.n}</label>`;}).join('')
           ).join('');
         }
-        body+=`<div class="l3">${inner}</div>`;
-      } else {                              // 第三階層＝操作（閲覧/登録/編集/削除…）
-        const boxes=ops.map(o=>{ const on=cur.perm[opKey(cur.tab,fi,o.id)], lv1=o.id==='view';
-          return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} ${f.k==='base'?'disabled':''} onclick="toggleOp('${cur.tab}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
-        body+=`<div class="l3"><div class="l3bar"><span>操作詳細：許可する操作を選択</span></div>${boxes}</div>`;
       }
+      body+=`<div class="l3">${inner}</div>`;
     }
   });
   return `<div class="tabs">${tabs}</div>${body}`;
