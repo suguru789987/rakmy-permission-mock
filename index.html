@@ -125,7 +125,7 @@
         <span style="color:#9aa0a6;">［閲覧専用］はなし/閲覧 ／［実行］［管理］はなし/可 ／［常時］は閲覧固定</span>
       </div>
       <div class="legend" style="margin-bottom:14px; color:#6b7280;">
-        <b style="background:#9aa0a6">本部管理者のみ</b> の機能は構造的に本部固定のため、ここでは設定できません（参照表示）。
+        この画面は<b style="background:#21262b">本部管理者</b>専用。編集対象は <b style="background:#1bbf73">従業員</b>・<b style="background:#1bbf73">店長</b> 権限です（本部は全権固定で編集不可）。
       </div>
 
       <div class="tabs" id="tabs"></div>
@@ -140,6 +140,7 @@
       </div>
 
       <div id="featList"></div>
+      <div id="excludedNote" class="hint" style="margin-top:16px;"></div>
     </div>
   </main>
 </div>
@@ -205,7 +206,7 @@ function buildPerm(presetFn, scope){
 let ROLES = [
   {name:'従業員権限',   scope:'shop',    perm:buildPerm(PRESET.staff,'shop')},
   {name:'店長権限',     scope:'shop',    perm:buildPerm(PRESET.manager,'shop')},
-  {name:'本部（全権）', scope:'company', perm:buildPerm(PRESET.full,'company')},
+  {name:'本部（全権）', scope:'company', perm:buildPerm(PRESET.full,'company'), system:true},
 ];
 
 let cur = { idx:0, scope:'shop', perm:{}, tab:CATEGORIES[0].id };
@@ -226,7 +227,7 @@ function renderList(){
   ROLES.forEach((r,ri)=>{
     h+=`<tr><td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
     CATEGORIES.forEach(c=>h+=`<td>${catSummary(r.perm,c.id)}</td>`);
-    h+=`<td><button class="rowedit" onclick="editRole(${ri})">編集</button></td></tr>`;
+    h+=`<td>${r.system?'<span style="color:#9aa0a6;font-size:12px;font-weight:700;">全権・固定</span>':`<button class="rowedit" onclick="editRole(${ri})">編集</button>`}</td></tr>`;
   });
   t.innerHTML=h;
 }
@@ -240,6 +241,7 @@ function show(v){
   if(v==='list') renderList();
 }
 function editRole(ri){
+  if(ROLES[ri].system){ alert('「本部（全権）」は全機能固定のため編集できません。'); return; }
   const r=ROLES[ri];
   cur={idx:ri, scope:r.scope, perm:JSON.parse(JSON.stringify(r.perm)), tab:CATEGORIES[0].id};
   document.getElementById('editTitle').textContent='権限編集';
@@ -249,32 +251,36 @@ function editRole(ri){
 }
 
 /* ---------- タブ＆機能 ---------- */
+const visibleCats = () => CATEGORIES.filter(c=>c.features.some(f=>!f.fixed));
 function renderTabs(){
-  document.getElementById('tabs').innerHTML = CATEGORIES.map(c=>
-    `<div class="tab ${c.id===cur.tab?'active':''}" onclick="selTab('${c.id}')">${c.name}${c.hasNew?'<span class="dot"></span>':''}</div>`
-  ).join('');
+  const vis=visibleCats();
+  if(!vis.find(c=>c.id===cur.tab)) cur.tab=vis[0].id;
+  document.getElementById('tabs').innerHTML = vis.map(c=>{
+    const newVisible=c.features.some(f=>!f.fixed && f.new);
+    return `<div class="tab ${c.id===cur.tab?'active':''}" onclick="selTab('${c.id}')">${c.name}${newVisible?'<span class="dot"></span>':''}</div>`;
+  }).join('');
 }
 function selTab(id){ cur.tab=id; renderTabs(); renderFeats(); }
 function featRange(f){ if(f.range==='shop-self') return cur.scope==='shop'?'自店舗のみ':'全社'; return ''; }
 function renderFeats(){
   const cat=CATEGORIES.find(c=>c.id===cur.tab);
-  document.getElementById('tabHint').textContent=cat.name+'（'+cat.features.length+'機能）';
-  document.getElementById('featList').innerHTML = cat.features.map((f,i)=>{
-    const key=cat.id+'_'+i, kd=KIND[f.k];
+  const feats=cat.features.filter(f=>!f.fixed);     // 本部専用は非表示
+  document.getElementById('tabHint').textContent=cat.name+'（'+feats.length+'機能）';
+  document.getElementById('featList').innerHTML = feats.map(f=>{
+    const i=cat.features.indexOf(f), key=cat.id+'_'+i, kd=KIND[f.k];
     const rng=featRange(f);
     const nameHtml = `${f.n}${f.new?'<span class="badge-new">★★新規実装</span>':''}`
       + `<span class="kindtag">${kd.tag}</span>` + (rng?`<span class="range">範囲：${rng}</span>`:'');
-    if(f.fixed){
-      // 本部固定：設定不可。値は scope により自動
-      cur.perm[key] = cur.scope==='company' ? maxV(f.k) : minV(f.k);
-      const ok = cur.scope==='company';
-      const msg = ok ? '本部管理者のみ ・ 可' : '本部管理者のみ ・ この権限では不可';
-      return `<div class="feat locked"><div class="fn">${nameHtml}</div><div class="lockmsg ${ok?'ok':''}">🔒 ${msg}</div></div>`;
-    }
     const v=cur.perm[key], segLock=kd.lock?'locked':'';
     const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setVal('${key}',${s})">${kd.lab[s]}</button>`).join('');
     return `<div class="feat"><div class="fn">${nameHtml}</div><div class="seg ${segLock}">${seg}</div></div>`;
   }).join('');
+  renderExcluded();
+}
+function renderExcluded(){
+  const names=[]; CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(f.fixed) names.push(f.n); }));
+  document.getElementById('excludedNote').innerHTML =
+    '※ 本部専用機能（'+names.join(' ／ ')+'）は、この権限には付与されません（本部（全権）のみ利用可）。';
 }
 function setVal(key,s){ cur.perm[key]=s; renderFeats(); }
 function bulk(mode){
