@@ -168,12 +168,24 @@ const CATEGORIES = [
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
     {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true}]},
   {id:'sales', name:'売上分析', features:[
-    {n:'ABC分析',k:'view'},{n:'商品別分析',k:'view'},{n:'時間帯別分析',k:'view'},{n:'曜日別分析',k:'view'},{n:'支払い種別分析',k:'view'}]},
+    {n:'ABC分析',k:'view', items:[{n:'売上構成比'},{n:'累計構成比'},{n:'ABCランク'},{n:'売上額'},{n:'数量'}]},
+    {n:'商品別分析',k:'view', items:[{n:'商品別売上'},{n:'数量'},{n:'粗利'},{n:'粗利率'},{n:'構成比'}]},
+    {n:'時間帯別分析',k:'view', items:[{n:'時間帯別売上'},{n:'客数'},{n:'客単価'}]},
+    {n:'曜日別分析',k:'view', items:[{n:'曜日別売上'},{n:'客数'},{n:'客単価'}]},
+    {n:'支払い種別分析',k:'view', items:[{n:'支払種別別売上'},{n:'構成比'},{n:'件数'}]}]},
   {id:'purchase', name:'仕入分析', features:[
-    {n:'取引先別分析',k:'view'},{n:'商品別分析',k:'view'},{n:'費目別分析',k:'view'},{n:'商品仕入単価',k:'view'},{n:'平均単価推移',k:'view'}]},
-  {id:'detail', name:'詳細分析', features:[{n:'進捗分析',k:'view'}]},
+    {n:'取引先別分析',k:'view', items:[{n:'取引先別仕入額'},{n:'構成比'},{n:'件数'}]},
+    {n:'商品別分析',k:'view', items:[{n:'商品別仕入額'},{n:'数量'},{n:'仕入単価'}]},
+    {n:'費目別分析',k:'view', items:[{n:'費目別仕入額'},{n:'構成比'}]},
+    {n:'商品仕入単価',k:'view', items:[{n:'仕入単価'},{n:'前回比'}]},
+    {n:'平均単価推移',k:'view', items:[{n:'平均単価'},{n:'推移グラフ'}]}]},
+  {id:'detail', name:'詳細分析', features:[
+    {n:'進捗分析',k:'view', items:[{n:'売上進捗'},{n:'予算比'},{n:'着地予測'}]}]},
   {id:'report', name:'集計・レポート', features:[
-    {n:'予実対比',k:'view'},{n:'年間予実対比',k:'view',new:true},{n:'月次レポート',k:'view'},{n:'日次レポート',k:'view'},
+    {n:'予実対比',k:'view', items:[{n:'予算'},{n:'実績'},{n:'差異'},{n:'達成率'}]},
+    {n:'年間予実対比',k:'view',new:true, items:[{n:'年間予算'},{n:'年間実績'},{n:'達成率'}]},
+    {n:'月次レポート',k:'view', items:[{n:'売上'},{n:'原価'},{n:'粗利'},{n:'人件費'},{n:'営業利益'},{n:'各種率'}]},
+    {n:'日次レポート',k:'view', items:[{n:'日次売上'},{n:'客数'},{n:'客単価'}]},
     {n:'日次レポート送信先設定',k:'admin',new:true,fixed:true},{n:'ダウンロード',k:'action'}]},
   {id:'budget', name:'予算管理', features:[
     {n:'予算設定',k:'edit'},{n:'予算開始月設定',k:'admin',new:true,fixed:true},{n:'日次予算設定',k:'edit',new:true}]},
@@ -343,7 +355,7 @@ function detailHTML(){
     if(hasL3 && exp){
       if(hasItems(f)){                      // 第三階層＝表示項目（指標／UIカスタマイズ）
         const tot=itemKeys(f).length, on=itemKeys(f).filter(k=>cur.perm[opKey(cur.tab,fi,k)]).length;
-        let inner=`<div class="l3bar"><span>表示する項目を選択（${on}/${tot}）</span><span style="flex:1"></span>`
+        let inner=`<div class="l3bar"><span>閲覧詳細：見せる指標／項目を選択（${on}/${tot}）</span><span style="flex:1"></span>`
           +`<button class="mini" onclick="setItemsAll('${cur.tab}',${fi},true)">全表示</button>`
           +`<button class="mini" onclick="setItemsAll('${cur.tab}',${fi},false)">全非表示</button></div>`;
         if(f.items){
@@ -359,7 +371,7 @@ function detailHTML(){
       } else {                              // 第三階層＝操作（閲覧/登録/編集/削除…）
         const boxes=ops.map(o=>{ const on=cur.perm[opKey(cur.tab,fi,o.id)], lv1=o.id==='view';
           return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} ${f.k==='base'?'disabled':''} onclick="toggleOp('${cur.tab}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
-        body+=`<div class="l3">${boxes}</div>`;
+        body+=`<div class="l3"><div class="l3bar"><span>操作詳細：許可する操作を選択</span></div>${boxes}</div>`;
       }
     }
   });
