@@ -3,13 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ラクミー 経営管理｜権限設定（モック v3・3ロール固定）</title>
+<title>ラクミー 経営管理｜権限設定（モック v4・概要/詳細・3階層）</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root{
-    --green:#1bbf73; --green-d:#159b5d; --blue:#3b82f6; --gray:#9aa0a6;
-    --ink:#1f2937; --line:#e3e6ea; --bg:#eef0f3; --panel:#fff; --new:#ff7a59;
-  }
+  :root{ --green:#1bbf73; --green-d:#159b5d; --blue:#3b82f6; --gray:#9aa0a6;
+    --ink:#1f2937; --line:#e3e6ea; --bg:#eef0f3; --panel:#fff; --new:#ff7a59; }
   body { font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; color:var(--ink); background:var(--bg); }
   .app { display:grid; grid-template-columns:200px 1fr; grid-template-rows:52px 1fr; height:100vh; }
   header { grid-column:1/3; background:#21262b; color:#fff; display:flex; align-items:center; gap:16px; padding:0 18px; }
@@ -26,19 +24,14 @@
   nav .sec{ margin-top:10px; color:#6b7280; }
   main { overflow:auto; padding:20px 26px; }
   .titlebar{ display:flex; align-items:center; gap:14px; margin-bottom:16px;}
-  .titlebar h1{ font-size:20px; }
-  .titlebar .sp{ flex:1; }
+  .titlebar h1{ font-size:20px; } .titlebar .sp{ flex:1; }
   .btn{ border:none; border-radius:7px; padding:9px 18px; font-size:14px; cursor:pointer; font-weight:700; }
-  .btn.primary{ background:var(--green); color:#fff;}
-  .btn.primary:hover{ background:var(--green-d);}
+  .btn.primary{ background:var(--green); color:#fff;} .btn.primary:hover{ background:var(--green-d);}
   .btn.ghost{ background:#fff; border:1px solid var(--line); color:#444;}
   .panel{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; }
   .hint{ color:#6b7280; font-size:12.5px; margin:6px 0 14px;}
   .badge-new{ background:var(--new); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:7px; vertical-align:middle; }
   .range{ font-size:10.5px; color:#0a7a55; border:1px solid #b8e6d2; background:#f0fbf6; border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:middle;}
-  .feat.locked{ opacity:.85; }
-  .lockmsg{ font-size:12px; color:#6b7280; border:1px solid var(--line); background:#f5f7f9; border-radius:6px; padding:6px 12px; white-space:nowrap;}
-  .lockmsg.ok{ color:#159b5d; border-color:#bde9d2; background:#f0fbf6;}
   table.list{ border-collapse:collapse; width:100%; font-size:13px; }
   table.list th, table.list td{ border:1px solid var(--line); padding:9px 8px; text-align:center; }
   table.list th{ background:#f5f7f9; font-weight:700; }
@@ -50,9 +43,12 @@
   .tab.active{ background:#fff; color:var(--green-d); font-weight:700; border-color:var(--green); border-bottom:2px solid #fff;}
   .tab .dot{ display:inline-block; width:7px;height:7px;border-radius:50%; background:var(--new); margin-left:5px;}
   .feat{ display:flex; align-items:center; padding:11px 6px; border-bottom:1px solid #f0f2f4;}
-  .feat:last-child{ border-bottom:none;}
   .feat .fn{ flex:1; font-size:14px;}
   .feat .kindtag{ font-size:10.5px; color:#9aa0a6; border:1px solid var(--line); border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:middle;}
+  .caret{ cursor:pointer; color:#9aa0a6; margin-right:8px; user-select:none; font-size:12px; width:14px; display:inline-block;}
+  .l3{ display:flex; gap:18px; flex-wrap:wrap; padding:4px 0 12px 30px; background:#fafbfc; border-bottom:1px solid #f0f2f4;}
+  .l3 label{ font-size:12.5px; color:#555; display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .l3 .lv1{ color:#9aa0a6;}
   .seg{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
   .seg button{ border:none; background:#fff; padding:7px 14px; font-size:12.5px; cursor:pointer; color:#667; border-left:1px solid var(--line);}
   .seg button:first-child{ border-left:none;}
@@ -60,13 +56,20 @@
   .seg button.on[data-v="1"]{ background:var(--blue); color:#fff; font-weight:700;}
   .seg button.on[data-v="2"]{ background:var(--green); color:#fff; font-weight:700;}
   .seg.locked button{ background:#eef3f0; color:#7a9b88; cursor:default; font-weight:700;}
-  .bulk{ display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:12.5px; color:#555;}
+  .summ-row{ display:flex; align-items:center; padding:13px 6px; border-bottom:1px solid #f0f2f4;}
+  .summ-row .cn{ flex:1; font-weight:700; font-size:14.5px;}
+  .summ-row .cnt{ color:#9aa0a6; font-weight:400; font-size:11.5px; margin-left:8px;}
+  .bulk{ display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:12.5px; color:#555;}
   .bulk button{ border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 11px; cursor:pointer; font-size:12px;}
   .roleline{ display:flex; align-items:center; gap:16px; margin-bottom:8px;}
   .roleline .rn{ font-weight:700; font-size:17px;}
   .scopechip{ font-size:12.5px; background:#21262b; color:#fff; border-radius:6px; padding:5px 12px;}
   .legend{ display:flex; gap:14px; font-size:12px; color:#555; flex-wrap:wrap;}
   .legend span b{ padding:1px 7px; border-radius:5px; color:#fff;}
+  .modeTog{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin:6px 0 16px;}
+  .modeTog button{ border:none; background:#fff; padding:9px 20px; cursor:pointer; border-left:1px solid var(--line); color:#667; font-size:13.5px; font-weight:700;}
+  .modeTog button:first-child{ border-left:none;}
+  .modeTog button.on{ background:var(--green); color:#fff;}
   .hide{ display:none;}
 </style>
 </head>
@@ -75,20 +78,17 @@
   <header>
     <span class="logo">ラクミー <small>経営管理</small></span>
     <span class="company"><span class="ic"></span>株式会社 麺屋ミライ ▾</span>
-    <span class="sp"></span>
-    <span class="round">?</span><span class="round">◍</span>
+    <span class="sp"></span><span class="round">?</span><span class="round">◍</span>
   </header>
 
   <nav>
     <a onclick="show('list')" id="nav-list">権限一覧</a>
     <a onclick="show('edit')" id="nav-edit">権限編集</a>
-    <a class="sec">ダッシュボード</a>
-    <a>売上分析</a>
-    <a>集計・レポート</a>
+    <a class="sec">ダッシュボード</a><a>売上分析</a><a>集計・レポート</a>
     <a class="sec">設定 ▸</a>
   </nav>
 
-  <!-- ============ 一覧 ============ -->
+  <!-- 一覧 -->
   <main id="view-list">
     <div class="titlebar">
       <h1>権限一覧</h1>
@@ -99,109 +99,128 @@
       </div>
     </div>
     <div class="panel">
-      <p class="hint">権限は <b>従業員 / 店長 / 本部（全権）</b> の3種類で固定。行＝権限、列＝機能カテゴリ。「★」付きは新規実装分を含む。「編集」で設定画面へ。</p>
+      <p class="hint">権限は <b>従業員 / 店長 / 本部（全権）</b> の3種で固定。「編集」で設定（概要／詳細）画面へ。本部は全権固定で編集不可。</p>
       <div style="overflow:auto;"><table class="list" id="listTable"></table></div>
     </div>
   </main>
 
-  <!-- ============ 設定 ============ -->
+  <!-- 編集 -->
   <main id="view-edit" class="hide">
     <div class="titlebar">
-      <h1 id="editTitle">権限編集</h1>
-      <div class="sp"></div>
+      <h1>権限編集</h1><div class="sp"></div>
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
       <button class="btn primary" onclick="saveRole()">保存</button>
     </div>
-
     <div class="panel">
-      <div class="roleline">
-        <span class="rn" id="roleName"></span>
-        <span class="scopechip" id="scopeChip"></span>
+      <div class="roleline"><span class="rn" id="roleName"></span><span class="scopechip" id="scopeChip"></span></div>
+      <div class="legend" style="margin-bottom:6px;">
+        <span><b style="background:#c33">なし</b></span><span><b style="background:#3b82f6">閲覧</b></span><span><b style="background:#1bbf73">操作/可</b></span>
+        <span style="color:#9aa0a6;">本部専用機能はこの権限では付与されないため非表示</span>
       </div>
-      <div class="legend" style="margin-bottom:8px;">
-        <span><b style="background:#c33">なし</b></span>
-        <span><b style="background:#3b82f6">閲覧</b></span>
-        <span><b style="background:#1bbf73">操作/可</b></span>
-        <span style="color:#9aa0a6;">［閲覧専用］はなし/閲覧 ／［実行］［管理］はなし/可 ／［常時］は閲覧固定</span>
+      <div class="modeTog" id="modeTog">
+        <button class="on" data-m="summary" onclick="setMode('summary')">概要設定（第一階層）</button>
+        <button data-m="detail" onclick="setMode('detail')">詳細設定（第一〜三階層）</button>
       </div>
-      <div class="legend" style="margin-bottom:14px; color:#6b7280;">
-        この画面は<b style="background:#21262b">本部管理者</b>専用。編集対象は <b style="background:#1bbf73">従業員</b>・<b style="background:#1bbf73">店長</b> 権限です（本部は全権固定で編集不可）。
-      </div>
-
-      <div class="tabs" id="tabs"></div>
-
-      <div class="bulk">
-        <span id="tabHint" style="font-weight:700;"></span>
-        <span style="flex:1"></span>
-        設定可能な機能を一括：
-        <button onclick="bulk('max')">全て許可</button>
-        <button onclick="bulk('view')">全て閲覧</button>
-        <button onclick="bulk('none')">全てなし</button>
-      </div>
-
-      <div id="featList"></div>
+      <div id="editBody"></div>
       <div id="excludedNote" class="hint" style="margin-top:16px;"></div>
     </div>
   </main>
 </div>
 
 <script>
-/* 機能の性質ごとに選べる状態 */
+/* L2の性質ごとの選択肢（第二階層レベル） */
 const KIND = {
-  base:   {vals:[1],     lab:{1:'閲覧（既定）'},               tag:'常時',     lock:true},
-  view:   {vals:[0,1],   lab:{0:'権限なし',1:'閲覧可能'},        tag:'閲覧専用'},
-  edit:   {vals:[0,1,2], lab:{0:'権限なし',1:'閲覧可能',2:'操作可能'}, tag:'設定'},
-  action: {vals:[0,2],   lab:{0:'権限なし',2:'実行可'},          tag:'実行'},
-  admin:  {vals:[0,2],   lab:{0:'不可',2:'設定可'},             tag:'管理'},
+  base:   {vals:[1],     lab:{1:'閲覧（既定）'}, tag:'常時', lock:true},
+  view:   {vals:[0,1],   lab:{0:'なし',1:'閲覧'}, tag:'閲覧専用'},
+  edit:   {vals:[0,1,2], lab:{0:'なし',1:'閲覧',2:'操作'}, tag:'設定'},
+  action: {vals:[0,2],   lab:{0:'なし',2:'実行可'}, tag:'実行'},
+  admin:  {vals:[0,2],   lab:{0:'なし',2:'設定可'}, tag:'管理'},
+};
+/* 第三階層（操作）。性質から導出 */
+const OPS = {
+  base:   [{id:'view',n:'閲覧'}],
+  view:   [{id:'view',n:'閲覧'},{id:'export',n:'エクスポート'}],
+  edit:   [{id:'view',n:'閲覧'},{id:'create',n:'登録'},{id:'update',n:'編集'},{id:'delete',n:'削除'}],
+  action: [{id:'exec',n:'実行'}],
+  admin:  [{id:'view',n:'閲覧'},{id:'config',n:'設定'}],
 };
 const maxV = k => KIND[k].vals[KIND[k].vals.length-1];
 const minV = k => KIND[k].vals[0];
 
-/* 機能カテゴリ。k=性質, fixed=本部管理者のみ（設定対象外）, range='shop-self'=店舗時は自店舗のみ, new=★★ */
+/* 第一階層(L1) × 第二階層(L2)。fixed=本部専用, range, new=★★ */
 const CATEGORIES = [
   {id:'dashboard', name:'ダッシュボード', features:[
-    {n:'ダッシュボード', k:'base'},{n:'お知らせ', k:'base'},{n:'繁盛店指数', k:'view', new:true}]},
+    {n:'ダッシュボード',k:'base'},{n:'お知らせ',k:'base'},{n:'繁盛店指数',k:'view',new:true}]},
   {id:'sales', name:'売上分析', features:[
     {n:'ABC分析',k:'view'},{n:'商品別分析',k:'view'},{n:'時間帯別分析',k:'view'},{n:'曜日別分析',k:'view'},{n:'支払い種別分析',k:'view'}]},
   {id:'purchase', name:'仕入分析', features:[
     {n:'取引先別分析',k:'view'},{n:'商品別分析',k:'view'},{n:'費目別分析',k:'view'},{n:'商品仕入単価',k:'view'},{n:'平均単価推移',k:'view'}]},
   {id:'detail', name:'詳細分析', features:[{n:'進捗分析',k:'view'}]},
   {id:'report', name:'集計・レポート', features:[
-    {n:'予実対比',k:'view'},{n:'年間予実対比',k:'view', new:true},{n:'月次レポート',k:'view'},{n:'日次レポート',k:'view'},
-    {n:'日次レポート送信先設定',k:'admin', new:true, fixed:true},{n:'ダウンロード',k:'action'}]},
+    {n:'予実対比',k:'view'},{n:'年間予実対比',k:'view',new:true},{n:'月次レポート',k:'view'},{n:'日次レポート',k:'view'},
+    {n:'日次レポート送信先設定',k:'admin',new:true,fixed:true},{n:'ダウンロード',k:'action'}]},
   {id:'budget', name:'予算管理', features:[
-    {n:'予算設定',k:'edit'},{n:'予算開始月設定',k:'admin', new:true, fixed:true},{n:'日次予算設定',k:'edit', new:true}]},
-  {id:'inventory', name:'棚卸', features:[
-    {n:'棚卸（実施）',k:'action'},{n:'棚卸商品管理',k:'edit', new:true}]},
+    {n:'予算設定',k:'edit'},{n:'予算開始月設定',k:'admin',new:true,fixed:true},{n:'日次予算設定',k:'edit',new:true}]},
+  {id:'inventory', name:'棚卸', features:[{n:'棚卸（実施）',k:'action'},{n:'棚卸商品管理',k:'edit',new:true}]},
   {id:'integration', name:'連携設定', hasNew:true, features:[
-    {n:'スマレジ(Smaregi) POS連携',k:'admin', new:true, fixed:true},{n:'インフォマート仕入取込',k:'admin', new:true, fixed:true},
-    {n:'東芝テックPOS取込',k:'admin', new:true, fixed:true},{n:'ASPIT連携（売上/仕入/棚卸/労務）',k:'admin', new:true, fixed:true}]},
+    {n:'スマレジ(Smaregi) POS連携',k:'admin',new:true,fixed:true},{n:'インフォマート仕入取込',k:'admin',new:true,fixed:true},
+    {n:'東芝テックPOS取込',k:'admin',new:true,fixed:true},{n:'ASPIT連携（売上/仕入/棚卸/労務）',k:'admin',new:true,fixed:true}]},
   {id:'label', name:'ラベル', features:[{n:'ラベル（一覧・登録）',k:'edit'}]},
   {id:'org', name:'店舗・組織', features:[
-    {n:'店舗情報',k:'edit', range:'shop-self'},{n:'店舗間商品移動',k:'action'},
-    {n:'会社情報',k:'admin', fixed:true},{n:'初期設定（アカウント登録）',k:'admin', new:true, fixed:true}]},
+    {n:'店舗情報',k:'edit',range:'shop-self'},{n:'店舗間商品移動',k:'action'},
+    {n:'会社情報',k:'admin',fixed:true},{n:'初期設定（アカウント登録）',k:'admin',new:true,fixed:true}]},
   {id:'user', name:'ユーザー・従業員', features:[
-    {n:'ユーザー（ログインアカウント）',k:'admin', fixed:true},
-    {n:'従業員（店舗スタッフ台帳）',k:'edit', range:'shop-self'},
-    {n:'本部従業員管理',k:'admin', new:true, fixed:true}]},
-  {id:'order', name:'発注・支払', features:[
-    {n:'納品書',k:'edit'},{n:'小口現金',k:'edit'},{n:'お支払い',k:'admin', fixed:true}]},
+    {n:'ユーザー（ログインアカウント）',k:'admin',fixed:true},
+    {n:'従業員（店舗スタッフ台帳）',k:'edit',range:'shop-self'},
+    {n:'本部従業員管理',k:'admin',new:true,fixed:true}]},
+  {id:'order', name:'発注・支払', features:[{n:'納品書',k:'edit'},{n:'小口現金',k:'edit'},{n:'お支払い',k:'admin',fixed:true}]},
   {id:'kintai', name:'勤怠連携', hasNew:true, features:[
-    {n:'KingOfTime連携',k:'admin', new:true, fixed:true},{n:'スマレジタイムカード連携',k:'admin', new:true, fixed:true}]},
+    {n:'KingOfTime連携',k:'admin',new:true,fixed:true},{n:'スマレジタイムカード連携',k:'admin',new:true,fixed:true}]},
 ];
 
-const eachFeat = fn => CATEGORIES.forEach(c=>c.features.forEach((f,i)=>fn(c,f,i,c.id+'_'+i)));
+/* ===== 第三階層（op）レベルで権限を保持 ===== */
+const opKey=(cid,fi,op)=>cid+'_'+fi+'_'+op;
+function setFeatVal(perm,cid,fi,f,val){    // L2値→L3opへ反映
+  OPS[f.k].forEach(o=>{
+    perm[opKey(cid,fi,o.id)] = f.k==='base' ? true : val>=2 ? true : val===1 ? (o.id==='view') : false;
+  });
+}
+function featVal(perm,cid,fi,f){           // L3opからL2値を導出
+  const ops=OPS[f.k], on=ops.filter(o=>perm[opKey(cid,fi,o.id)]);
+  if(f.k==='base') return 1;
+  if(on.length===0) return 0;
+  if(on.length===1 && on[0].id==='view') return 1;
+  return 2;
+}
+function catVal(perm,cid){                 // L1集計値（非fixedのみ）
+  const cat=CATEGORIES.find(c=>c.id===cid);
+  const feats=cat.features.map((f,fi)=>({f,fi})).filter(x=>!x.f.fixed);
+  if(!feats.length) return 0;
+  const vals=feats.map(x=>featVal(perm,cid,x.fi,x.f));
+  if(vals.every((v,i)=>v===maxV(feats[i].f.k))) return 2;
+  if(vals.every(v=>v===0)) return 0;
+  if(vals.every(v=>v<=1)) return 1;
+  return 2;
+}
+function setCatVal(cid,val){               // L1一括→各L2→L3
+  const cat=CATEGORIES.find(c=>c.id===cid);
+  cat.features.forEach((f,fi)=>{ if(!f.fixed) setFeatVal(cur.perm,cid,fi,f,val); });
+  renderBody();
+}
 
-/* プリセット（役割ごと）。fixedは scope に応じ自動（本部=可/他=不可） */
+/* ===== プリセット ===== */
 const PRESET = {
   staff:  f => ({base:1,view:1,edit:0,action:0,admin:0}[f.k]),
   manager:f => ({base:1,view:1,edit:2,action:2,admin:0}[f.k]),
   full:   f => maxV(f.k),
 };
-function buildPerm(presetFn, scope){
-  const p={}; eachFeat((c,f,i,key)=>{
-    p[key] = f.fixed ? (scope==='company'?maxV(f.k):minV(f.k)) : presetFn(f);
-  }); return p;
+function buildPerm(presetFn,scope){
+  const p={};
+  CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{
+    const v = f.fixed ? (scope==='company'?2:0) : presetFn(f);
+    setFeatVal(p,c.id,fi,f,v);
+  }));
+  return p;
 }
 let ROLES = [
   {name:'従業員権限',   scope:'shop',    perm:buildPerm(PRESET.staff,'shop')},
@@ -209,30 +228,29 @@ let ROLES = [
   {name:'本部（全権）', scope:'company', perm:buildPerm(PRESET.full,'company'), system:true},
 ];
 
-let cur = { idx:0, scope:'shop', perm:{}, tab:CATEGORIES[0].id };
+let cur = { idx:0, scope:'shop', perm:{}, tab:'dashboard', mode:'summary', expanded:{} };
 
-/* ---------- 一覧 ---------- */
-function catSummary(perm, cid){
+/* ===== 一覧 ===== */
+function listSummary(perm,cid){
   const cat=CATEGORIES.find(c=>c.id===cid);
-  const arr=cat.features.map((f,i)=>({v:perm[cid+'_'+i],k:f.k}));
-  if(arr.every(x=>x.v===maxV(x.k))) return '<span class="mk op">◯</span>';
-  if(arr.every(x=>x.v===minV(x.k))) return '<span class="mk no">✕</span>';
+  const vals=cat.features.map((f,fi)=>({v:featVal(perm,cid,fi,f),k:f.k}));
+  if(vals.every(x=>x.v===maxV(x.k))) return '<span class="mk op">◯</span>';
+  if(vals.every(x=>x.v===minV(x.k))) return '<span class="mk no">✕</span>';
   return '<span class="mk vw">△</span>';
 }
 function renderList(){
-  const t=document.getElementById('listTable');
   let h='<tr><th class="name">権限名</th>';
-  CATEGORIES.forEach(c=>h+=`<th>${c.name}${c.hasNew?'<span class="tab"><span class="dot"></span></span>':''}</th>`);
+  CATEGORIES.forEach(c=>h+=`<th>${c.name}${c.hasNew?' ●':''}</th>`);
   h+='<th></th></tr>';
   ROLES.forEach((r,ri)=>{
     h+=`<tr><td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
-    CATEGORIES.forEach(c=>h+=`<td>${catSummary(r.perm,c.id)}</td>`);
+    CATEGORIES.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
     h+=`<td>${r.system?'<span style="color:#9aa0a6;font-size:12px;font-weight:700;">全権・固定</span>':`<button class="rowedit" onclick="editRole(${ri})">編集</button>`}</td></tr>`;
   });
-  t.innerHTML=h;
+  document.getElementById('listTable').innerHTML=h;
 }
 
-/* ---------- 切替 ---------- */
+/* ===== 切替 ===== */
 function show(v){
   document.getElementById('view-list').classList.toggle('hide', v!=='list');
   document.getElementById('view-edit').classList.toggle('hide', v!=='edit');
@@ -241,61 +259,69 @@ function show(v){
   if(v==='list') renderList();
 }
 function editRole(ri){
-  if(ROLES[ri].system){ alert('「本部（全権）」は全機能固定のため編集できません。'); return; }
+  if(ROLES[ri].system){ alert('「本部（全権）」は全権固定のため編集できません。'); return; }
   const r=ROLES[ri];
-  cur={idx:ri, scope:r.scope, perm:JSON.parse(JSON.stringify(r.perm)), tab:CATEGORIES[0].id};
-  document.getElementById('editTitle').textContent='権限編集';
+  cur={idx:ri,scope:r.scope,perm:JSON.parse(JSON.stringify(r.perm)),tab:visibleCats()[0].id,mode:cur.mode||'summary',expanded:{}};
   document.getElementById('roleName').textContent=r.name;
   document.getElementById('scopeChip').textContent='対象範囲：'+(r.scope==='company'?'会社スコープ（全社）':'店舗スコープ（自店舗のみ）');
-  renderTabs(); renderFeats(); show('edit');
+  document.querySelectorAll('#modeTog button').forEach(b=>b.classList.toggle('on',b.dataset.m===cur.mode));
+  renderBody(); show('edit');
 }
-
-/* ---------- タブ＆機能 ---------- */
+function setMode(m){ cur.mode=m; document.querySelectorAll('#modeTog button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); renderBody(); }
 const visibleCats = () => CATEGORIES.filter(c=>c.features.some(f=>!f.fixed));
-function renderTabs(){
-  const vis=visibleCats();
-  if(!vis.find(c=>c.id===cur.tab)) cur.tab=vis[0].id;
-  document.getElementById('tabs').innerHTML = vis.map(c=>{
-    const newVisible=c.features.some(f=>!f.fixed && f.new);
-    return `<div class="tab ${c.id===cur.tab?'active':''}" onclick="selTab('${c.id}')">${c.name}${newVisible?'<span class="dot"></span>':''}</div>`;
-  }).join('');
-}
-function selTab(id){ cur.tab=id; renderTabs(); renderFeats(); }
 function featRange(f){ if(f.range==='shop-self') return cur.scope==='shop'?'自店舗のみ':'全社'; return ''; }
-function renderFeats(){
-  const cat=CATEGORIES.find(c=>c.id===cur.tab);
-  const feats=cat.features.filter(f=>!f.fixed);     // 本部専用は非表示
-  document.getElementById('tabHint').textContent=cat.name+'（'+feats.length+'機能）';
-  document.getElementById('featList').innerHTML = feats.map(f=>{
-    const i=cat.features.indexOf(f), key=cat.id+'_'+i, kd=KIND[f.k];
-    const rng=featRange(f);
-    const nameHtml = `${f.n}${f.new?'<span class="badge-new">★★新規実装</span>':''}`
-      + `<span class="kindtag">${kd.tag}</span>` + (rng?`<span class="range">範囲：${rng}</span>`:'');
-    const v=cur.perm[key], segLock=kd.lock?'locked':'';
-    const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setVal('${key}',${s})">${kd.lab[s]}</button>`).join('');
-    return `<div class="feat"><div class="fn">${nameHtml}</div><div class="seg ${segLock}">${seg}</div></div>`;
-  }).join('');
+
+/* ===== 本体描画 ===== */
+function renderBody(){
+  document.getElementById('editBody').innerHTML = cur.mode==='summary'? summaryHTML() : detailHTML();
   renderExcluded();
 }
+/* 概要設定：第一階層のみ */
+function summaryHTML(){
+  let h='<p class="hint">第一階層（機能カテゴリ）単位で一括設定します。細かく分けたい場合は「詳細設定」へ。</p>';
+  visibleCats().forEach(c=>{
+    const cnt=c.features.filter(f=>!f.fixed).length, v=catVal(cur.perm,c.id);
+    const seg=[0,1,2].map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${['なし','閲覧','操作'][s]}</button>`).join('');
+    h+=`<div class="summ-row"><div class="cn">${c.name}${c.hasNew?'<span class="badge-new">★★含む</span>':''}<span class="cnt">（${cnt}機能）</span></div><div class="seg">${seg}</div></div>`;
+  });
+  return h;
+}
+/* 詳細設定：第一(タブ)→第二(機能)→第三(操作) */
+function detailHTML(){
+  const vis=visibleCats();
+  if(!vis.find(c=>c.id===cur.tab)) cur.tab=vis[0].id;
+  const cat=CATEGORIES.find(c=>c.id===cur.tab);
+  let tabs=vis.map(c=>{
+    const nv=c.features.some(f=>!f.fixed&&f.new);
+    return `<div class="tab ${c.id===cur.tab?'active':''}" onclick="selTab('${c.id}')">${c.name}${nv?'<span class="dot"></span>':''}</div>`;
+  }).join('');
+  let body=`<div class="bulk"><span style="font-weight:700;">${cat.name}（第二階層）</span><span style="flex:1"></span>このカテゴリ一括：<button onclick="setCatVal('${cur.tab}',2)">操作</button><button onclick="setCatVal('${cur.tab}',1)">閲覧</button><button onclick="setCatVal('${cur.tab}',0)">なし</button></div>`;
+  cat.features.forEach((f,fi)=>{
+    if(f.fixed) return;
+    const kd=KIND[f.k], v=featVal(cur.perm,cur.tab,fi,f), rng=featRange(f);
+    const ops=OPS[f.k], hasL3=ops.length>1, ek=cur.tab+'_'+fi, exp=cur.expanded[ek];
+    const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
+    const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setFeat('${cur.tab}',${fi},${s})">${kd.lab[s]}</button>`).join('');
+    body+=`<div class="feat">${caret}<div class="fn">${f.n}${f.new?'<span class="badge-new">★★新規実装</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}</div><div class="seg ${kd.lock?'locked':''}">${seg}</div></div>`;
+    if(hasL3 && exp){
+      const boxes=ops.map(o=>{
+        const on=cur.perm[opKey(cur.tab,fi,o.id)], lv1=o.id==='view';
+        return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} ${f.k==='base'?'disabled':''} onclick="toggleOp('${cur.tab}',${fi},'${o.id}')"> ${o.n}</label>`;
+      }).join('');
+      body+=`<div class="l3">${boxes}</div>`;
+    }
+  });
+  return `<div class="tabs">${tabs}</div>${body}`;
+}
+function selTab(id){ cur.tab=id; renderBody(); }
+function toggleExp(ek){ cur.expanded[ek]=!cur.expanded[ek]; renderBody(); }
+function setFeat(cid,fi,s){ const f=CATEGORIES.find(c=>c.id===cid).features[fi]; setFeatVal(cur.perm,cid,fi,f,s); renderBody(); }
+function toggleOp(cid,fi,opid){ const k=opKey(cid,fi,opid); cur.perm[k]=!cur.perm[k]; renderBody(); }
 function renderExcluded(){
   const names=[]; CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(f.fixed) names.push(f.n); }));
-  document.getElementById('excludedNote').innerHTML =
-    '※ 本部専用機能（'+names.join(' ／ ')+'）は、この権限には付与されません（本部（全権）のみ利用可）。';
+  document.getElementById('excludedNote').innerHTML='※ 本部専用機能（'+names.join(' ／ ')+'）は、この権限には付与されません（本部（全権）のみ利用可）。';
 }
-function setVal(key,s){ cur.perm[key]=s; renderFeats(); }
-function bulk(mode){
-  CATEGORIES.find(c=>c.id===cur.tab).features.forEach((f,i)=>{
-    if(f.fixed) return;
-    const key=cur.tab+'_'+i, vals=KIND[f.k].vals;
-    cur.perm[key] = mode==='max'?maxV(f.k) : mode==='none'?minV(f.k) : (vals.includes(1)?1:vals[0]);
-  });
-  renderFeats();
-}
-function saveRole(){
-  ROLES[cur.idx]={...ROLES[cur.idx], perm:cur.perm};
-  alert('「'+ROLES[cur.idx].name+'」の権限を保存しました（モック）。');
-  show('list');
-}
+function saveRole(){ ROLES[cur.idx]={...ROLES[cur.idx],perm:cur.perm}; alert('「'+ROLES[cur.idx].name+'」の権限を保存しました（モック）。'); show('list'); }
 
 show('list');
 </script>
