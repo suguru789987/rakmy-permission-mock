@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ラクミー 経営管理｜権限設定（モック v2）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --green:#1bbf73; --green-d:#159b5d; --blue:#3b82f6; --gray:#9aa0a6;
+    --ink:#1f2937; --line:#e3e6ea; --bg:#eef0f3; --panel:#fff;
+    --new:#ff7a59;
+  }
+  body { font-family: "Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; color:var(--ink); background:var(--bg); }
+  .app { display:grid; grid-template-columns:200px 1fr; grid-template-rows:52px 1fr; height:100vh; }
+  header { grid-column:1/3; background:#21262b; color:#fff; display:flex; align-items:center; gap:16px; padding:0 18px; }
+  .logo { background:var(--green); color:#fff; font-weight:700; font-size:13px; padding:3px 8px; border-radius:4px; }
+  .logo small{ font-weight:400; opacity:.85; margin-left:4px;}
+  .company { background:#fff; color:#333; border-radius:5px; padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:8px; min-width:230px; }
+  .company .ic{ width:16px;height:16px;background:var(--green);border-radius:3px;display:inline-block;}
+  header .sp{ flex:1; }
+  header .round{ width:26px;height:26px;border-radius:50%;background:#3a4046;display:grid;place-items:center;font-size:13px;color:#cfd3d7;}
+  nav { background:#fff; border-right:1px solid var(--line); padding:14px 0; }
+  nav a { display:block; padding:11px 20px; color:#374151; text-decoration:none; font-size:14px; cursor:pointer; }
+  nav a.active{ color:var(--green-d); font-weight:700; border-left:3px solid var(--green); background:#f3fbf7;}
+  nav a:hover{ background:#f6f7f9; }
+  nav .sec{ margin-top:10px; color:#6b7280; }
+  main { overflow:auto; padding:20px 26px; }
+  .titlebar{ display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+  .titlebar h1{ font-size:20px; }
+  .titlebar .sp{ flex:1; }
+  .btn{ border:none; border-radius:7px; padding:9px 18px; font-size:14px; cursor:pointer; font-weight:700; }
+  .btn.primary{ background:var(--green); color:#fff;}
+  .btn.primary:hover{ background:var(--green-d);}
+  .btn.ghost{ background:#fff; border:1px solid var(--line); color:#444;}
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; }
+  .hint{ color:#6b7280; font-size:12.5px; margin:6px 0 14px;}
+  .badge-new{ background:var(--new); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:7px; vertical-align:middle; }
+  .range{ font-size:10.5px; color:#0a7a55; border:1px solid #b8e6d2; background:#f0fbf6; border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:middle;}
+  .feat.locked{ opacity:.7; }
+  .lockmsg{ font-size:11.5px; color:#b0468a; border:1px solid #f0d6e6; background:#fdf3f9; border-radius:6px; padding:5px 12px;}
+  table.list{ border-collapse:collapse; width:100%; font-size:13px; }
+  table.list th, table.list td{ border:1px solid var(--line); padding:9px 8px; text-align:center; }
+  table.list th{ background:#f5f7f9; font-weight:700; }
+  table.list td.name{ text-align:left; font-weight:700; white-space:nowrap; }
+  .mk{ font-weight:700; }
+  .mk.op{ color:var(--green-d); }
+  .mk.vw{ color:var(--blue); }
+  .mk.no{ color:#c33; }
+  .rowedit{ background:var(--green); color:#fff; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-weight:700; }
+  .tabs{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 16px; border-bottom:2px solid var(--line); padding-bottom:0; }
+  .tab{ padding:9px 14px; font-size:13px; cursor:pointer; border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; background:#f3f5f7; color:#555; position:relative; top:2px;}
+  .tab.active{ background:#fff; color:var(--green-d); font-weight:700; border-color:var(--green); border-bottom:2px solid #fff;}
+  .tab .dot{ display:inline-block; width:7px;height:7px;border-radius:50%; background:var(--new); margin-left:5px;}
+  .feat{ display:flex; align-items:center; padding:11px 6px; border-bottom:1px solid #f0f2f4;}
+  .feat:last-child{ border-bottom:none;}
+  .feat .fn{ flex:1; font-size:14px;}
+  .feat .kindtag{ font-size:10.5px; color:#9aa0a6; border:1px solid var(--line); border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:middle;}
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+  .seg button{ border:none; background:#fff; padding:7px 14px; font-size:12.5px; cursor:pointer; color:#667; border-left:1px solid var(--line);}
+  .seg button:first-child{ border-left:none;}
+  .seg button.on[data-v="0"]{ background:#f0f1f3; color:#888; font-weight:700;}
+  .seg button.on[data-v="1"]{ background:var(--blue); color:#fff; font-weight:700;}
+  .seg button.on[data-v="2"]{ background:var(--green); color:#fff; font-weight:700;}
+  .seg.locked button{ background:#eef3f0; color:#7a9b88; cursor:default; font-weight:700;}
+  .bulk{ display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:12.5px; color:#555;}
+  .bulk button{ border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 11px; cursor:pointer; font-size:12px;}
+  .nameedit{ display:flex; align-items:center; gap:14px; margin-bottom:18px;}
+  .nameedit label{ font-weight:700; font-size:15px;}
+  .nameedit input{ flex:1; max-width:420px; padding:11px 14px; border:1px solid var(--line); border-radius:8px; font-size:15px; background:#f3f5f7;}
+  .legend{ display:flex; gap:14px; font-size:12px; color:#555; flex-wrap:wrap;}
+  .legend span b{ padding:1px 7px; border-radius:5px; color:#fff;}
+  .hide{ display:none;}
+  .scopeTog,.scopeTog button{ }
+  .scopeTog{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; font-size:12.5px;}
+  .scopeTog button{ border:none; background:#fff; padding:7px 14px; cursor:pointer; border-left:1px solid var(--line); color:#667;}
+  .scopeTog button.on{ background:#21262b; color:#fff; font-weight:700;}
+  .scopeTog button:first-child{ border-left:none;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="logo">ラクミー <small>経営管理</small></span>
+    <span class="company"><span class="ic"></span>株式会社 麺屋ミライ ▾</span>
+    <span class="sp"></span>
+    <span class="round">?</span><span class="round">◍</span>
+  </header>
+
+  <nav>
+    <a onclick="show('list')" id="nav-list">権限一覧</a>
+    <a onclick="show('edit')" id="nav-edit">権限作成・編集</a>
+    <a class="sec">ダッシュボード</a>
+    <a>売上分析</a>
+    <a>集計・レポート</a>
+    <a class="sec">設定 ▸</a>
+  </nav>
+
+  <!-- ============ 一覧 ============ -->
+  <main id="view-list">
+    <div class="titlebar">
+      <h1>権限一覧</h1>
+      <div class="legend">
+        <span><b style="background:#1bbf73">◯</b> 全許可</span>
+        <span><b style="background:#3b82f6">△</b> 一部</span>
+        <span><b style="background:#c33">✕</b> なし</span>
+      </div>
+      <div class="sp"></div>
+      <button class="btn primary" onclick="newRole()">＋ 権限を新規作成</button>
+    </div>
+    <div class="panel">
+      <p class="hint">行＝権限名、列＝機能カテゴリ。セルは各カテゴリ内の機能の許可状況サマリ。「★」付きカテゴリは新規実装分を含みます。「編集」で設定画面へ。</p>
+      <div style="overflow:auto;">
+        <table class="list" id="listTable"></table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ 設定 ============ -->
+  <main id="view-edit" class="hide">
+    <div class="titlebar">
+      <h1 id="editTitle">権限作成</h1>
+      <div class="sp"></div>
+      <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
+      <button class="btn primary" onclick="saveRole()">保存</button>
+    </div>
+
+    <div class="panel">
+      <div class="nameedit">
+        <label>権限名</label>
+        <input id="roleName" placeholder="例：店長向け権限 / 経理担当権限">
+        <span style="font-size:12.5px;color:#667;">対象範囲</span>
+        <span class="scopeTog" id="scopeTog">
+          <button class="on" data-s="company" onclick="setScope('company')">会社スコープ</button>
+          <button data-s="shop" onclick="setScope('shop')">店舗スコープ</button>
+        </span>
+      </div>
+
+      <div class="legend" style="margin-bottom:10px;">
+        機能の性質ごとに選べる状態が変わります：
+        <span><b style="background:#c33">なし</b></span>
+        <span><b style="background:#3b82f6">閲覧</b>＝見るだけ</span>
+        <span><b style="background:#1bbf73">操作/可</b>＝編集・実行・設定</span>
+        <span style="color:#9aa0a6;">［閲覧専用］分析系は なし/閲覧 ／ ［実行］［管理］系は なし/可</span>
+      </div>
+      <div class="legend" style="margin-bottom:14px; color:#0a7a55;">
+        スコープ規則：店舗スコープでは「従業員」は<b style="background:#0a7a55">自店舗のみ</b>。「本部従業員管理」など会社スコープ専用機能は店舗権限では🔒不可。
+      </div>
+
+      <div class="tabs" id="tabs"></div>
+
+      <div class="bulk">
+        <span id="tabHint" style="font-weight:700;"></span>
+        <span style="flex:1"></span>
+        このカテゴリを一括：
+        <button onclick="bulk('max')">全て許可</button>
+        <button onclick="bulk('view')">全て閲覧</button>
+        <button onclick="bulk('none')">全てなし</button>
+      </div>
+
+      <div id="featList"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* 機能の性質ごとに選べる状態を変える（最適化ポイント） */
+const KIND = {
+  base:   {vals:[1],     lab:{1:'閲覧（既定）'},               tag:'常時',     lock:true},
+  view:   {vals:[0,1],   lab:{0:'権限なし',1:'閲覧可能'},        tag:'閲覧専用'},
+  edit:   {vals:[0,1,2], lab:{0:'権限なし',1:'閲覧可能',2:'操作可能'}, tag:'設定'},
+  action: {vals:[0,2],   lab:{0:'権限なし',2:'実行可'},          tag:'実行'},
+  admin:  {vals:[0,2],   lab:{0:'不可',2:'設定可'},             tag:'管理'},
+};
+const maxV = k => KIND[k].vals[KIND[k].vals.length-1];
+const minV = k => KIND[k].vals[0];
+
+/* 機能カテゴリ（第一階層）× 機能（第二階層）。k=性質, new=新規実装分(★★) */
+const CATEGORIES = [
+  {id:'dashboard', name:'ダッシュボード', features:[
+    {n:'ダッシュボード', k:'base'},{n:'お知らせ', k:'base'},{n:'繁盛店指数', k:'view', new:true}]},
+  {id:'sales', name:'売上分析', features:[
+    {n:'ABC分析',k:'view'},{n:'商品別分析',k:'view'},{n:'時間帯別分析',k:'view'},{n:'曜日別分析',k:'view'},{n:'支払い種別分析',k:'view'}]},
+  {id:'purchase', name:'仕入分析', features:[
+    {n:'取引先別分析',k:'view'},{n:'商品別分析',k:'view'},{n:'費目別分析',k:'view'},{n:'商品仕入単価',k:'view'},{n:'平均単価推移',k:'view'}]},
+  {id:'detail', name:'詳細分析', features:[{n:'進捗分析',k:'view'}]},
+  {id:'report', name:'集計・レポート', features:[
+    {n:'予実対比',k:'view'},{n:'年間予実対比',k:'view', new:true},{n:'月次レポート',k:'view'},{n:'日次レポート',k:'view'},
+    {n:'日次レポート送信先設定',k:'admin', new:true, scope:'company'},{n:'ダウンロード',k:'action'}]},
+  {id:'budget', name:'予算管理', features:[
+    {n:'予算設定',k:'edit'},{n:'予算開始月設定',k:'admin', new:true, scope:'company'},{n:'日次予算設定',k:'edit', new:true}]},
+  {id:'inventory', name:'棚卸', features:[
+    {n:'棚卸（実施）',k:'action'},{n:'棚卸商品管理',k:'edit', new:true}]},
+  {id:'integration', name:'連携設定', hasNew:true, features:[
+    {n:'スマレジ(Smaregi) POS連携',k:'admin', new:true},{n:'インフォマート仕入取込',k:'admin', new:true},
+    {n:'東芝テックPOS取込',k:'admin', new:true},{n:'ASPIT連携（売上/仕入/棚卸/労務）',k:'admin', new:true}]},
+  {id:'label', name:'ラベル', features:[{n:'ラベル（一覧・登録）',k:'edit'}]},
+  {id:'org', name:'店舗・組織', features:[
+    {n:'店舗',k:'edit'},{n:'店舗間商品移動',k:'action'},{n:'会社情報',k:'admin', scope:'company'},{n:'初期設定（アカウント登録）',k:'admin', new:true, scope:'company'}]},
+  {id:'user', name:'ユーザー・従業員', features:[
+    {n:'ユーザー',k:'admin'},{n:'従業員',k:'admin', range:'shop-self'},{n:'本部従業員管理',k:'admin', new:true, scope:'company'}]},
+  {id:'order', name:'発注・支払', features:[{n:'納品書',k:'edit'},{n:'小口現金',k:'edit'},{n:'お支払い',k:'admin'}]},
+  {id:'kintai', name:'勤怠連携', hasNew:true, features:[
+    {n:'KingOfTime連携',k:'admin', new:true},{n:'スマレジタイムカード連携',k:'admin', new:true}]},
+];
+
+const eachFeat = fn => CATEGORIES.forEach(c=>c.features.forEach((f,i)=>fn(c,f,i,c.id+'_'+i)));
+function permWith(valFn){ const p={}; eachFeat((c,f,i,key)=>p[key]=valFn(f)); return p; }
+
+/* プリセット（性質ごとに付与） */
+const PRESET = {
+  staff:  f => ({base:1,view:1,edit:0,action:0,admin:0}[f.k]),   // 従業員：常時閲覧＋分析閲覧のみ
+  manager:f => ({base:1,view:1,edit:2,action:2,admin:0}[f.k]),   // 店長：業務操作可、管理は不可
+  full:   f => maxV(f.k),                                        // 本部（全権）
+};
+let ROLES = [
+  {name:'従業員権限',   perm:permWith(PRESET.staff)},
+  {name:'店長権限',     perm:permWith(PRESET.manager)},
+  {name:'本部（全権）', perm:permWith(PRESET.full)},
+];
+
+let cur = { idx:-1, name:'', perm:permWith(f=>minV(f.k)), tab:CATEGORIES[0].id, scope:'company' };
+
+/* ---------- 一覧 ---------- */
+function featKind(cid,i){ return CATEGORIES.find(c=>c.id===cid).features[i].k; }
+function catSummary(perm, cid){
+  const cat=CATEGORIES.find(c=>c.id===cid);
+  const arr=cat.features.map((f,i)=>({v:perm[cid+'_'+i],k:f.k}));
+  const allMax=arr.every(x=>x.v===maxV(x.k));
+  const allMin=arr.every(x=>x.v===minV(x.k));
+  if(allMax) return '<span class="mk op">◯</span>';
+  if(allMin) return '<span class="mk no">✕</span>';
+  return '<span class="mk vw">△</span>';
+}
+function renderList(){
+  const t=document.getElementById('listTable');
+  let h='<tr><th class="name">権限名</th>';
+  CATEGORIES.forEach(c=>h+=`<th>${c.name}${c.hasNew?'<span class="dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff7a59;margin-left:4px;"></span>':''}</th>`);
+  h+='<th></th></tr>';
+  ROLES.forEach((r,ri)=>{
+    h+=`<tr><td class="name">${r.name}</td>`;
+    CATEGORIES.forEach(c=>h+=`<td>${catSummary(r.perm,c.id)}</td>`);
+    h+=`<td><button class="rowedit" onclick="editRole(${ri})">編集</button></td></tr>`;
+  });
+  t.innerHTML=h;
+}
+
+/* ---------- 画面切替 ---------- */
+function show(v){
+  document.getElementById('view-list').classList.toggle('hide', v!=='list');
+  document.getElementById('view-edit').classList.toggle('hide', v!=='edit');
+  document.getElementById('nav-list').classList.toggle('active', v==='list');
+  document.getElementById('nav-edit').classList.toggle('active', v==='edit');
+  if(v==='list') renderList();
+}
+function newRole(){ cur={idx:-1,name:'',perm:permWith(f=>minV(f.k)),tab:CATEGORIES[0].id,scope:'company'}; openEdit('権限作成'); }
+function editRole(ri){ const r=ROLES[ri]; cur={idx:ri,name:r.name,perm:JSON.parse(JSON.stringify(r.perm)),tab:CATEGORIES[0].id,scope:'company'}; openEdit('権限編集'); }
+function openEdit(title){
+  document.getElementById('editTitle').textContent=title;
+  document.getElementById('roleName').value=cur.name;
+  renderTabs(); renderFeats(); show('edit');
+}
+function setScope(s){
+  cur.scope=s;
+  document.querySelectorAll('#scopeTog button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+  // スコープ専用機能は対象外スコープでは強制的に不可へ
+  eachFeat((c,f,i,key)=>{ if(featLock(f).locked) cur.perm[key]=minV(f.k); });
+  renderFeats();
+}
+/* スコープ専用性・データ範囲の判定 */
+function featLock(f){
+  if(f.scope==='company' && cur.scope==='shop') return {locked:true, reason:'会社スコープ専用（店長など店舗権限では閲覧・設定不可）'};
+  if(f.scope==='shop' && cur.scope==='company') return {locked:true, reason:'店舗スコープ専用'};
+  return {locked:false};
+}
+function featRange(f){
+  if(f.range==='shop-self') return cur.scope==='shop' ? '自店舗のみ' : '全社';
+  return '';
+}
+
+/* ---------- タブ＆機能リスト ---------- */
+function renderTabs(){
+  document.getElementById('tabs').innerHTML = CATEGORIES.map(c=>
+    `<div class="tab ${c.id===cur.tab?'active':''}" onclick="selTab('${c.id}')">${c.name}${c.hasNew?'<span class="dot"></span>':''}</div>`
+  ).join('');
+}
+function selTab(id){ cur.tab=id; renderTabs(); renderFeats(); }
+function renderFeats(){
+  const cat=CATEGORIES.find(c=>c.id===cur.tab);
+  document.getElementById('tabHint').textContent=cat.name+'（'+cat.features.length+'機能）';
+  document.getElementById('featList').innerHTML = cat.features.map((f,i)=>{
+    const key=cat.id+'_'+i, kd=KIND[f.k], v=cur.perm[key];
+    const lk=featLock(f), rng=featRange(f);
+    const nameHtml = `${f.n}${f.new?'<span class="badge-new">★★新規実装</span>':''}`
+      + `<span class="kindtag">${kd.tag}</span>`
+      + (rng?`<span class="range">範囲：${rng}</span>`:'');
+    if(lk.locked){
+      return `<div class="feat locked"><div class="fn">${nameHtml}</div><div class="lockmsg">🔒 ${lk.reason}</div></div>`;
+    }
+    const segLock=kd.lock?'locked':'';
+    const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setVal('${key}',${s})">${kd.lab[s]}</button>`).join('');
+    return `<div class="feat"><div class="fn">${nameHtml}</div><div class="seg ${segLock}">${seg}</div></div>`;
+  }).join('');
+}
+function setVal(key,s){ cur.perm[key]=s; renderFeats(); }
+function bulk(mode){
+  CATEGORIES.find(c=>c.id===cur.tab).features.forEach((f,i)=>{
+    if(featLock(f).locked) return;            // スコープ専用でロック中は対象外
+    const key=cur.tab+'_'+i, vals=KIND[f.k].vals;
+    let target;
+    if(mode==='max') target=maxV(f.k);
+    else if(mode==='none') target=minV(f.k);            // base は最低でも閲覧
+    else /*view*/ target = vals.includes(1)?1:(vals.includes(0)?0:vals[0]);
+    cur.perm[key]=target;
+  });
+  renderFeats();
+}
+
+/* ---------- 保存 ---------- */
+function saveRole(){
+  const nm=document.getElementById('roleName').value.trim()||'（無題の権限）';
+  if(cur.idx>=0){ ROLES[cur.idx]={name:nm,perm:cur.perm}; } else { ROLES.push({name:nm,perm:cur.perm}); }
+  alert('「'+nm+'」を保存しました（モック）。一覧に反映します。');
+  show('list');
+}
+
+show('list');
+</script>
+</body>
+</html>
