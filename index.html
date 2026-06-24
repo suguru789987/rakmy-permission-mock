@@ -189,7 +189,7 @@
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
     <div class="panel">
-      <p class="hint">2層の役割：<b>店舗ロール</b>（従業員/店長＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加できます。</p>
+      <p class="hint">2層の役割：<b>店舗ロール</b>（店長/従業員＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加（各群の下段に追加されます）。</p>
       <div style="overflow:auto;"><table class="list" id="listTable"></table></div>
     </div>
   </main>
@@ -545,8 +545,8 @@ function buildPerm(presetFn,scope,roleKey){
   return p;
 }
 let ROLES = [
-  {name:'従業員権限', key:'staff',   tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.staff,'shop','staff')},
-  {name:'店長権限',   key:'manager', tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.manager,'shop','manager')},
+  {name:'店長',   key:'manager', tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.manager,'shop','manager')},
+  {name:'従業員', key:'staff',   tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.staff,'shop','staff')},
   {name:'経理担当',   key:'keiri',   tier:'company', scope:'company', perm:buildPerm(PRESET.company,'company','keiri')},
   {name:'人事担当',   key:'jinji',   tier:'company', scope:'company', perm:buildPerm(PRESET.company,'company','jinji')},
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', perm:buildPerm(PRESET.full,'company','owner'), system:true},
