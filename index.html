@@ -343,6 +343,7 @@ function toggleDimRole(i,rk){ const d=CATALOG.dimensions[i]; d.roles[rk]=!d.role
 let catalogTab='features', catalogRole='all';
 function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
+function openCatalogFor(rk){ catalogRole=rk; if(catalogTab==='features') catalogTab='metrics'; show('catalog'); }
 const roleCols = () => catalogRole==='all'?['manager','staff']:[catalogRole];
 const roleHeaders = () => roleCols().map(rk=>`<th>${ROLE_LABEL[rk]}カタログ</th>`).join('');
 function roleCells(rolesObj, onclickFn){ return roleCols().map(rk=>`<td><label class="switch"><input type="checkbox" ${rolesObj[rk]?'checked':''} onclick="${onclickFn(rk)}"><span class="track"></span></label></td>`).join(''); }
@@ -351,8 +352,9 @@ function renderCatalog(){
   const tabs=[['features','機能カタログ'],['metrics','指標（トランザクション）'],['dims','ディメンション'],['tags','カスタムタグ']];
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
   if(catalogTab!=='features'){
-    h+=`<div class="rolesel"><span class="bl">対象：</span>`
+    h+=`<div class="rolesel"><span class="bl">どの権限のカタログを作るか：</span>`
       +[['all','全体（店長＋従業員）'],['manager','店長カタログ'],['staff','従業員カタログ']].map(([r,nm])=>`<button class="rolebtn ${catalogRole===r?'on':''}" onclick="setCatalogRole('${r}')">${nm}</button>`).join('')+`</div>`;
+    if(catalogRole!=='all') h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${ROLE_LABEL[catalogRole]}権限</span><span class="cb-sub">この権限のカタログに入れる項目を選択 → 役割画面に反映</span></div>`;
   }
   if(catalogTab==='features') h+=featureCatalogHTML();
   else if(catalogTab==='tags') h+=tagCatalogHTML();
@@ -489,7 +491,7 @@ function renderList(){
   ROLES.forEach((r,ri)=>{
     h+=`<tr><td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
     cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
-    h+=`<td>${r.system?`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（権限編集不可）</div><button class="rowedit" onclick="show('catalog')">カタログ管理 ＞</button>`:`<button class="rowedit" onclick="editRole(${ri})">編集</button>`}</td></tr>`;
+    h+=`<td>${r.system?`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（権限編集不可）</div><button class="rowedit" onclick="show('catalog')">カタログ管理 ＞</button>`:`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`}</td></tr>`;
   });
   document.getElementById('listTable').innerHTML=h;
 }
