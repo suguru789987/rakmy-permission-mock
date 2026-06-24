@@ -72,6 +72,12 @@
   .summ-row{ display:flex; align-items:center; padding:13px 6px; border-bottom:1px solid #f0f2f4;}
   .summ-row .cn{ flex:1; font-weight:700; font-size:14.5px;}
   .summ-row .cnt{ color:#9aa0a6; font-weight:400; font-size:11.5px; margin-left:8px;}
+  .catsection{ font-size:12.5px; font-weight:700; color:#fff; border-radius:6px; padding:6px 12px; margin:18px 0 6px; display:inline-block;}
+  .catsection.cs-view{ background:#3b82f6;}
+  .catsection.cs-ops{ background:#1f9d57;}
+  table.list th.grp{ font-size:12px; }
+  table.list th.grpview{ background:#eaf2fb; color:#2c5d9e; }
+  table.list th.grpops{ background:#eef7f0; color:#1f7a4d; }
   .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
   .mixedchip{ font-size:10.5px; background:#f59e0b; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
   .detailbtn{ border:1px solid var(--line); background:#fff; color:var(--green-d); border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px; margin-left:14px; white-space:nowrap;}
@@ -217,6 +223,11 @@ const CATEGORIES = [
     {n:'本部従業員管理',k:'admin',new:true,fixed:true}]},
   {id:'order', name:'発注・支払', features:[{n:'納品書',k:'edit'},{n:'小口現金',k:'edit'},{n:'お支払い',k:'admin',fixed:true}]},
 ];
+/* カテゴリを2群に分類：閲覧権限（分析・レポート）と操作・設定権限 */
+const VIEW_CATS=new Set(['dashboard','sales','purchase','detail','report']);
+CATEGORIES.forEach(c=> c.group = VIEW_CATS.has(c.id) ? 'view' : 'ops');
+const catsByGroup = () => CATEGORIES.filter(c=>c.group==='view').concat(CATEGORIES.filter(c=>c.group==='ops'));
+const GROUP_LABEL={view:'閲覧権限（分析・レポート）', ops:'操作・設定権限'};
 
 /* ===== 第三階層（op）レベルで権限を保持 ===== */
 const opKey=(cid,fi,op)=>cid+'_'+fi+'_'+op;
@@ -295,12 +306,12 @@ function listSummary(perm,cid){
   return '<span class="mk vw">△</span>';
 }
 function renderList(){
-  let h='<tr><th class="name">権限名</th>';
-  CATEGORIES.forEach(c=>h+=`<th>${c.name}${c.hasNew?' ●':''}</th>`);
-  h+='<th></th></tr>';
+  const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops'), cols=vc.concat(oc);
+  let h=`<tr><th class="name" rowspan="2">権限名</th><th colspan="${vc.length}" class="grp grpview">閲覧権限（分析・レポート）</th><th colspan="${oc.length}" class="grp grpops">操作・設定権限</th><th rowspan="2"></th></tr>`;
+  h+='<tr>'+cols.map(c=>`<th>${c.name}${c.hasNew?' ●':''}</th>`).join('')+'</tr>';
   ROLES.forEach((r,ri)=>{
     h+=`<tr><td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
-    CATEGORIES.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
+    cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
     h+=`<td>${r.system?'<span style="color:#9aa0a6;font-size:12px;font-weight:700;">全権・固定</span>':`<button class="rowedit" onclick="editRole(${ri})">編集</button>`}</td></tr>`;
   });
   document.getElementById('listTable').innerHTML=h;
@@ -346,7 +357,9 @@ function renderBody(){
 /* メイン：カテゴリ一覧（全体設定） */
 function renderCatList(){
   let h='<p class="hint">全体設定：カテゴリ単位で一括（なし／閲覧／操作）。機能・操作・指標を細かく設定するには「詳細 ＞」で各カテゴリの設定画面へ。混在は「一部」表示。</p>';
-  visibleCats().forEach(c=>{
+  let lastGroup=null;
+  catsByGroup().filter(c=>c.features.some(f=>!f.fixed)).forEach(c=>{
+    if(c.group!==lastGroup){ h+=`<div class="catsection cs-${c.group}">${GROUP_LABEL[c.group]}</div>`; lastGroup=c.group; }
     const feats=c.features.filter(f=>!f.fixed);
     const sel=catSel(cur.perm,c.id);
     const seg=[0,1,2].map(s=>`<button data-v="${s}" class="${sel===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${['なし','閲覧','操作'][s]}</button>`).join('');
