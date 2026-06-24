@@ -224,12 +224,24 @@ const OPS = {
 const maxV = k => KIND[k].vals[KIND[k].vals.length-1];
 const minV = k => KIND[k].vals[0];
 
-/* 本部が管理する共有カタログ（カスタムタグ）。eligible=閲覧候補ON, isNew=要確認 */
-const CATALOG = { tags:[
-  {n:'重点商品',eligible:true},{n:'高粗利メニュー',eligible:true},{n:'新メニュー',eligible:true},
-  {n:'曜日キャンペーン',eligible:true},{n:'ランチ／ディナー区分',eligible:true}
-]};
+/* 本部が管理する共有カタログ。eligible=閲覧候補ON, isNew=要確認 */
+const CATALOG = {
+  dimensions:[
+    {n:'店舗',eligible:true},{n:'業態',eligible:true},{n:'商品カテゴリ',eligible:true},{n:'曜日',eligible:true},{n:'時間帯',eligible:true}
+  ],
+  transactions:[
+    {cat:'売上系', items:[{n:'売上',eligible:true},{n:'売上前年比',eligible:true},{n:'客数',eligible:true},{n:'客単価',eligible:true},{n:'来店組数',eligible:true}]},
+    {cat:'仕入・原価系', items:[{n:'仕入額',eligible:true},{n:'原価率',eligible:true},{n:'廃棄ロス',eligible:true},{n:'在庫金額',eligible:true},{n:'棚卸差異',eligible:true}]},
+    {cat:'人件費系', items:[{n:'人件費',eligible:true},{n:'人件費率',eligible:true},{n:'総労働時間',eligible:true},{n:'人時売上高',eligible:true}]},
+    {cat:'利益系', items:[{n:'粗利',eligible:true},{n:'粗利率',eligible:true},{n:'FL率',eligible:true},{n:'営業利益',eligible:true},{n:'営業利益率',eligible:true}]}
+  ],
+  tags:[
+    {n:'重点商品',eligible:true},{n:'高粗利メニュー',eligible:true},{n:'新メニュー',eligible:true},
+    {n:'曜日キャンペーン',eligible:true},{n:'ランチ／ディナー区分',eligible:true}
+  ]
+};
 const eligibleTags = () => CATALOG.tags.filter(t=>t.eligible);
+const eligibleDims = () => CATALOG.dimensions.filter(d=>d.eligible);
 
 /* 第一階層(L1) × 第二階層(L2)。fixed=本部専用, range, new=★★ */
 const CATEGORIES = [
@@ -239,12 +251,7 @@ const CATEGORIES = [
       {n:'仕入率（原価率）'},{n:'人件費率'},{n:'FL率'},{n:'固定費率'},{n:'営業利益率'},
       {n:'坪月商'},{n:'繁盛店指数'},{n:'ROI（投資回収）'},{n:'予実進捗'}]},
     {n:'お知らせ',k:'base'},
-    {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'view',new:true,future:true, itemGroups:[
-      {name:'ディメンション（軸・本番13〜15種）', items:[{n:'店舗'},{n:'業態'},{n:'商品カテゴリ'},{n:'曜日'},{n:'時間帯'}]},
-      {name:'トランザクション：売上系', items:[{n:'売上'},{n:'売上前年比'},{n:'客数'},{n:'客単価'},{n:'来店組数'}]},
-      {name:'トランザクション：仕入・原価系', items:[{n:'仕入額'},{n:'原価率'},{n:'廃棄ロス'},{n:'在庫金額'},{n:'棚卸差異'}]},
-      {name:'トランザクション：人件費系', items:[{n:'人件費'},{n:'人件費率'},{n:'総労働時間'},{n:'人時売上高'}]},
-      {name:'トランザクション：利益系', items:[{n:'粗利'},{n:'粗利率'},{n:'FL率'},{n:'営業利益'},{n:'営業利益率'}]}]},
+    {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'view',new:true,future:true, catalog:'display'},
     {n:'UIカスタマイズ：カスタムタグ',k:'view',new:true,future:true, catalog:'tags',
       ops:[{id:'view',n:'閲覧'},{id:'create',n:'作成',adminOnly:true}]},
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
@@ -297,6 +304,8 @@ const opKey=(cid,fi,op)=>cid+'_'+fi+'_'+op;
 /* 第三階層が「表示項目」型の機能のキー一覧（ダッシュボード指標・UIカスタマイズ項目） */
 function itemKeys(f){
   if(f.catalog==='tags') return eligibleTags().map(t=>'tag:'+t.n);   // 候補(eligible)のみ・名前で安定キー
+  if(f.catalog==='display') return eligibleDims().map(d=>'d:'+d.n)
+    .concat(CATALOG.transactions.flatMap(g=>g.items.filter(i=>i.eligible).map(i=>'tx:'+i.n)));
   if(f.items) return f.items.map((_,ii)=>'i'+ii);
   if(f.itemGroups) return f.itemGroups.flatMap((g,gi)=>g.items.map((_,ii)=>'g'+gi+'_'+ii));
   return [];
@@ -334,8 +343,42 @@ function renderCatalog(){
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
   if(catalogTab==='features') h+=featureCatalogHTML();
   else if(catalogTab==='tags') h+=tagCatalogHTML();
-  else h+=`<p class="hint" style="padding:24px;">${catalogTab==='metrics'?'指標（トランザクション・本番486〜737種）':'ディメンション（本番13〜15種）'}の整頓・候補化は、カスタムタグと同じ仕組みで提供予定。系統別カテゴリ＋検索＋件数集計で<b>全件をもれなく把握</b>できる構造にします（本デモではタグで実演）。</p>`;
+  else if(catalogTab==='metrics') h+=metricsCatalogHTML();
+  else h+=dimsCatalogHTML();
   document.getElementById('catalogBody').innerHTML=h;
+}
+function metricsCatalogHTML(){
+  const all=CATALOG.transactions.flatMap(g=>g.items), total=all.length, on=all.filter(i=>i.eligible).length;
+  let h=`<div class="statbar"><span class="stat"><b>${total}</b> 指標（トランザクション）</span><span class="stat"><b style="color:#159b5d">${on}</b> 閲覧候補ON</span>`
+    +`<span class="stat" style="color:#9aa0a6;">本番486〜737種を系統で整頓</span><span style="flex:1"></span>`
+    +`<input class="itemsearch" id="fcSearchM" oninput="filterCatalogT('mcTable',this.value)" placeholder="🔍 指標・系統を検索"></div>`;
+  h+=`<table class="list" id="mcTable"><tr><th class="name">系統／指標</th><th>状態</th><th>閲覧候補（役割画面に出す）</th></tr>`;
+  CATALOG.transactions.forEach((g,gi)=>{
+    h+=`<tr class="grouprow view"><td colspan="3">トランザクション：${g.cat}（候補 ${g.items.filter(i=>i.eligible).length}/${g.items.length}）</td></tr>`;
+    g.items.forEach((it,ii)=>{
+      h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n}</td>`
+        +`<td>${it.eligible?'<span class="mk op">候補ON</span>':'<span class="mk no">候補OFF</span>'}</td>`
+        +`<td><label class="switch"><input type="checkbox" ${it.eligible?'checked':''} onclick="toggleTx(${gi},${ii})"><span class="track"></span></label></td></tr>`;
+    });
+  });
+  h+=`</table><p class="hint">※ 候補ONの指標だけが役割画面のallowlistに出ます。系統別＋検索＋件数集計で、数百指標でも全件もれなく整頓・候補化できます。</p>`;
+  return h;
+}
+function dimsCatalogHTML(){
+  const total=CATALOG.dimensions.length, on=CATALOG.dimensions.filter(d=>d.eligible).length;
+  let h=`<div class="statbar"><span class="stat"><b>${total}</b> ディメンション</span><span class="stat"><b style="color:#159b5d">${on}</b> 閲覧候補ON</span><span class="stat" style="color:#9aa0a6;">本番13〜15種</span></div>`;
+  h+=`<table class="list"><tr><th class="name">ディメンション（軸）</th><th>状態</th><th>閲覧候補</th></tr>`;
+  CATALOG.dimensions.forEach((d,i)=>{ h+=`<tr><td class="name">${d.n}</td><td>${d.eligible?'<span class="mk op">候補ON</span>':'<span class="mk no">候補OFF</span>'}</td><td><label class="switch"><input type="checkbox" ${d.eligible?'checked':''} onclick="toggleDim(${i})"><span class="track"></span></label></td></tr>`; });
+  h+=`</table><p class="hint">※ 候補ONのディメンションだけが役割画面のallowlistに出ます。</p>`;
+  return h;
+}
+function toggleTx(gi,ii){ CATALOG.transactions[gi].items[ii].eligible=!CATALOG.transactions[gi].items[ii].eligible; renderCatalog(); }
+function toggleDim(i){ CATALOG.dimensions[i].eligible=!CATALOG.dimensions[i].eligible; renderCatalog(); }
+function filterCatalogT(tableId,q){
+  const t=document.getElementById(tableId); if(!t) return;
+  const qq=(q||'').trim().toLowerCase();
+  t.querySelectorAll('tr[data-name]').forEach(r=>{ r.style.display=(!qq||r.getAttribute('data-name').includes(qq))?'':'none'; });
+  t.querySelectorAll('tr.grouprow').forEach(g=>{ let n=g.nextElementSibling,any=false; while(n&&!n.classList.contains('grouprow')){ if(n.style.display!=='none') any=true; n=n.nextElementSibling;} g.style.display=any?'':'none'; });
 }
 function featureCatalogHTML(){
   const rows=[]; catsByGroup().forEach(c=>c.features.forEach(f=>rows.push({c,f})));
@@ -546,6 +589,13 @@ function featRowHTML(cid,f,fi,group){
         inner+= ts.length? `<div class="l3grid">`+ts.map(t=>{ const k='tag:'+t.n, c=cur.perm[opKey(cid,fi,k)];
           return `<label data-name="${t.n}"><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'${k}')"> ${t.n}${t.isNew?'<span class="badge-review">新規・要確認</span>':''}</label>`;}).join('')+`</div>`
           : `<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">閲覧候補のタグがありません（本部のカタログ管理で候補にしてください）。</div>`;
+      } else if(f.catalog==='display'){
+        const dims=eligibleDims();
+        if(dims.length) inner+=`<div class="l3grp">ディメンション</div><div class="l3grid">`+dims.map(d=>{ const k='d:'+d.n, c=cur.perm[opKey(cid,fi,k)];
+          return `<label data-name="${d.n}"><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'${k}')"> ${d.n}</label>`;}).join('')+`</div>`;
+        CATALOG.transactions.forEach(g=>{ const its=g.items.filter(i=>i.eligible); if(!its.length) return;
+          inner+=`<div class="l3grp">トランザクション：${g.cat}</div><div class="l3grid">`+its.map(it=>{ const k='tx:'+it.n, c=cur.perm[opKey(cid,fi,k)];
+            return `<label data-name="${it.n}"><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'${k}')"> ${it.n}</label>`;}).join('')+`</div>`;});
       } else if(f.items){
         inner+=`<div class="l3grid">`+f.items.map((it,ii)=>{ const c=cur.perm[opKey(cid,fi,'i'+ii)];
           return `<label data-name="${it.n}"><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'i${ii}')"> ${it.n}${it.isNew?'<span class="badge-review">新規・要確認</span>':''}</label>`;}).join('')+`</div>`;
