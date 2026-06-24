@@ -295,7 +295,7 @@ const CATALOG = {
   tags:[{n:'重点商品'},{n:'高粗利メニュー'},{n:'新メニュー'},{n:'曜日キャンペーン'},{n:'ランチ／ディナー区分'}]
 };
 const _allCat=()=>[...CATALOG.dimensions,...CATALOG.transactions.flatMap(g=>g.items),...CATALOG.tags];
-_allCat().forEach(it=>it.roles={manager:true,staff:true});   // 既定は両ロールのカタログに入れる（本部が後で外す）
+_allCat().forEach(it=>it.roles={manager:true,staff:true,keiri:true,jinji:true});   // 既定は各ロールのカタログに入れる（本部が後で外す）
 const tagsFor = rk => CATALOG.tags.filter(t=>t.roles[rk]);
 const dimsFor = rk => CATALOG.dimensions.filter(d=>d.roles[rk]);
 
@@ -414,24 +414,26 @@ function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
 function openCatalogAll(){ catalogRole='all'; show('catalog'); }   // 既定＝全体マトリクス
 function openCatalogFor(rk){ catalogRole=rk; if(catalogTab==='features') catalogTab='metrics'; show('catalog'); }
-const shopRoleKeys = () => ROLES.filter(r=>r.tier==='shop').map(r=>r.key);   // カタログ候補対象＝店舗ロール
+const shopRoleKeys = () => ROLES.filter(r=>!r.system).map(r=>r.key);   // カタログ対象＝オーナー以外の全ロール（店舗＋会社）
 const roleLabel = k => (ROLES.find(r=>r.key===k)?.name||ROLE_LABEL[k]||k).replace('権限','');
 const roleCols = () => catalogRole==='all'?shopRoleKeys():[catalogRole];
 const roleHeaders = () => roleCols().map(rk=>`<th>${roleLabel(rk)}カタログ</th>`).join('');
 function roleCells(rolesObj, onclickFn){ return roleCols().map(rk=>`<td><label class="switch"><input type="checkbox" ${rolesObj[rk]?'checked':''} onclick="${onclickFn(rk)}"><span class="track"></span></label></td>`).join(''); }
+const roleStats = items => roleCols().map(rk=>`<span class="stat">${roleLabel(rk)} <b style="color:#159b5d">${items.filter(i=>i.roles[rk]).length}</b></span>`).join('');
+const roleCount = items => roleCols().map(rk=>roleLabel(rk)+' '+items.filter(i=>i.roles[rk]).length).join('／');
 const roleSpan = () => roleCols().length+1;
 function renderCatalog(){
   const tabs=[['features','機能カタログ'],['metrics','指標（トランザクション）'],['dims','ディメンション'],['tags','カスタムタグ']];
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
   if(catalogTab!=='features'){
-    const opts=[['all','全体（店舗ロールを比較）']].concat(shopRoleKeys().map(k=>[k,roleLabel(k)+'のカタログ']));
+    const opts=[['all','全体（全ロールを比較）']].concat(shopRoleKeys().map(k=>[k,roleLabel(k)+'のカタログ']));
     const single=catalogRole!=='all';
     h+=`<div class="rolesel"><span class="bl">対象ロール：</span>`
       +`<select class="roleselect" onchange="setCatalogRole(this.value)">${opts.map(([v,nm])=>`<option value="${v}" ${catalogRole===v?'selected':''}>${nm}</option>`).join('')}</select>`
       +(single?` <span style="margin-left:10px;font-size:12px;color:#555;">他ロールからコピー：</span><select class="roleselect" id="copySrc">${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}">${roleLabel(k)}</option>`).join('')}</select><button class="mini" onclick="copyFromRole()">コピー</button><button class="mini" onclick="setAllRole(true)">このタブ全ON</button><button class="mini" onclick="setAllRole(false)">全OFF</button>`:'')
       +`<span style="flex:1"></span><span style="font-size:11.5px;color:#0a7a55;">🔒 入れ子：店長 ⊇ 従業員</span></div>`;
     if(single) h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${roleLabel(catalogRole)}</span><span class="cb-sub">このロールに入れる項目を選択 → 役割画面に反映。コピー／系統一括で素早く土台を作成</span></div>`;
-    h+=`<p class="hint" style="margin:-6px 0 12px;">※ 対象は店舗ロール。会社ロール（経理/人事/オーナー）は本部レベルで全カタログを閲覧。多ロールはプルダウンで1ロールずつ編集＋コピーが効率的。</p>`;
+    h+=`<p class="hint" style="margin:-6px 0 12px;">※ 対象はオーナー以外の全ロール（店舗ロール＋会社ロール）。新規作成したロールも自動でプルダウンに追加。多ロールはプルダウンで1ロールずつ編集＋コピー／系統一括が効率的。オーナーは常に全件。</p>`;
   }
   if(catalogTab==='features') h+=featureCatalogHTML();
   else if(catalogTab==='tags') h+=tagCatalogHTML();
@@ -441,13 +443,12 @@ function renderCatalog(){
 }
 function metricsCatalogHTML(){
   const all=CATALOG.transactions.flatMap(g=>g.items), total=all.length;
-  const mOn=all.filter(i=>i.roles.manager).length, sOn=all.filter(i=>i.roles.staff).length;
-  let h=`<div class="statbar"><span class="stat"><b>${total}</b> 指標（トランザクション）</span><span class="stat">店長カタログ <b style="color:#159b5d">${mOn}</b></span><span class="stat">従業員カタログ <b style="color:#3b82f6">${sOn}</b></span>`
+  let h=`<div class="statbar"><span class="stat"><b>${total}</b> 指標（トランザクション）</span>${roleStats(all)}`
     +`<span class="stat" style="color:#9aa0a6;">本番486〜737種を系統で整頓</span><span style="flex:1"></span>`
     +`<input class="itemsearch" oninput="filterCatalogT('mcTable',this.value)" placeholder="🔍 指標・系統を検索"></div>`;
   h+=`<table class="list" id="mcTable"><tr><th class="name">系統／指標</th>${roleHeaders()}</tr>`;
   CATALOG.transactions.forEach((g,gi)=>{
-    h+=`<tr class="grouprow view"><td colspan="${roleSpan()}">トランザクション：${g.cat}（店長 ${g.items.filter(i=>i.roles.manager).length}／従業員 ${g.items.filter(i=>i.roles.staff).length}／全${g.items.length}） <button class="mini" onclick="setGroupRole(${gi},true)">系統 全ON</button><button class="mini" onclick="setGroupRole(${gi},false)">全OFF</button></td></tr>`;
+    h+=`<tr class="grouprow view"><td colspan="${roleSpan()}">トランザクション：${g.cat}（${roleCount(g.items)}／全${g.items.length}） <button class="mini" onclick="setGroupRole(${gi},true)">系統 全ON</button><button class="mini" onclick="setGroupRole(${gi},false)">全OFF</button></td></tr>`;
     g.items.forEach((it,ii)=>{
       h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n}</td>`
         +roleCells(it.roles, rk=>`toggleTxRole(${gi},${ii},'${rk}')`)+`</tr>`;
@@ -457,8 +458,8 @@ function metricsCatalogHTML(){
   return h;
 }
 function dimsCatalogHTML(){
-  const total=CATALOG.dimensions.length, mOn=CATALOG.dimensions.filter(d=>d.roles.manager).length, sOn=CATALOG.dimensions.filter(d=>d.roles.staff).length;
-  let h=`<div class="statbar"><span class="stat"><b>${total}</b> ディメンション</span><span class="stat">店長 <b style="color:#159b5d">${mOn}</b></span><span class="stat">従業員 <b style="color:#3b82f6">${sOn}</b></span><span class="stat" style="color:#9aa0a6;">本番13〜15種</span></div>`;
+  const total=CATALOG.dimensions.length;
+  let h=`<div class="statbar"><span class="stat"><b>${total}</b> ディメンション</span>${roleStats(CATALOG.dimensions)}<span class="stat" style="color:#9aa0a6;">本番13〜15種</span></div>`;
   h+=`<table class="list"><tr><th class="name">ディメンション（軸）</th>${roleHeaders()}</tr>`;
   CATALOG.dimensions.forEach((d,i)=>{ h+=`<tr><td class="name">${d.n}</td>`+roleCells(d.roles, rk=>`toggleDimRole(${i},'${rk}')`)+`</tr>`; });
   h+=`</table><p class="hint">※ 店長／従業員のカタログに入れたディメンションだけが、その権限の役割画面に出ます。</p>`;
@@ -498,8 +499,7 @@ function filterCatalog(q){
   t.querySelectorAll('tr.grouprow').forEach(g=>{ let n=g.nextElementSibling,any=false; while(n&&!n.classList.contains('grouprow')){ if(n.style.display!=='none') any=true; n=n.nextElementSibling;} g.style.display=any?'':'none'; });
 }
 function tagCatalogHTML(){
-  const mOn=tagsFor('manager').length, sOn=tagsFor('staff').length;
-  let h=`<div class="bulkrow"><span class="bl">カスタムタグ カタログ</span><span style="color:#9aa0a6;font-size:12px;">全${CATALOG.tags.length}件／店長 ${mOn}／従業員 ${sOn}</span><span style="flex:1"></span><button class="btn primary" onclick="createTag()">＋ タグを作成</button></div>`;
+  let h=`<div class="bulkrow"><span class="bl">カスタムタグ カタログ</span><span style="color:#9aa0a6;font-size:12px;">全${CATALOG.tags.length}件／${roleCount(CATALOG.tags)}</span><span style="flex:1"></span><button class="btn primary" onclick="createTag()">＋ タグを作成</button></div>`;
   h+=`<table class="list"><tr><th class="name">カスタムタグ</th>${roleHeaders()}</tr>`;
   CATALOG.tags.forEach((t,i)=>{
     h+=`<tr><td class="name">${t.n}${t.isNew?'<span class="badge-review">新規・要確認</span>':''}</td>`
@@ -594,7 +594,7 @@ function submitRoleModal(){
   const nm=document.getElementById('rmName').value.trim();
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
   const company=rmTier==='company'; _roleSeq++; const key='role'+_roleSeq, tier=rmTier, scope=tier;
-  if(!company) _allCat().forEach(it=>it.roles[key]=false);
+  _allCat().forEach(it=>it.roles[key]=company);   // 会社ロール=全件で開始／店舗ロール=空から作る（カタログ管理で調整）
   ROLES.push({name:nm, key, tier, scope, perm:buildPerm(company?PRESET.company:PRESET.staff, scope, key)});
   closeRoleModal(); editRole(ROLES.length-1);
 }
@@ -711,7 +711,7 @@ function featRowHTML(cid,f,fi,group){
   const hasL3 = opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
   let itemTag='';
-  if(f.catalog){ const co=cur.tier==='company', rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?(co?CATALOG.tags.length:tagsFor(rk).length):((co?CATALOG.dimensions.length:dimsFor(rk).length)+CATALOG.transactions.reduce((s,g)=>s+(co?g.items.length:g.items.filter(i=>i.roles[rk]).length),0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
+  if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(dimsFor(rk).length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>i.roles[rk]).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
   else if(hasItems(f)){ const ks=itemKeys(f), on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length; itemTag=`<span class="kindtag">指標 ${on}/${ks.length} 表示</span>`; }
   const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
   // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
@@ -728,19 +728,19 @@ function featRowHTML(cid,f,fi,group){
       inner+=`<div class="l3bar opsbar"><span>⚙ 操作詳細：許可する操作を選択</span></div><div class="l3grid">${boxes}</div>`;
     }
     if(f.catalog){   // カタログ系：この権限のカタログ（本部がカタログ管理で設定）を読み取り表示
-      const co=cur.tier==='company', rk=ROLES[cur.idx].key;
+      const rk=ROLES[cur.idx].key;
       let body='', cnt=0;
-      if(f.catalog==='tags'){ const ts=co?CATALOG.tags:tagsFor(rk); cnt=ts.length;
+      if(f.catalog==='tags'){ const ts=tagsFor(rk); cnt=ts.length;
         body = ts.length? `<div class="l3grid">`+ts.map(t=>`<label class="ro" data-name="${t.n}"><input type="checkbox" checked disabled> ${t.n}</label>`).join('')+`</div>`
           : `<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログにタグがありません（本部のカタログ管理で追加）。</div>`;
       } else {  // display：ディメンション＋トランザクション
-        const dims=co?CATALOG.dimensions:dimsFor(rk); cnt+=dims.length;
+        const dims=dimsFor(rk); cnt+=dims.length;
         if(dims.length) body+=`<div class="l3grp">ディメンション</div><div class="l3grid">`+dims.map(d=>`<label class="ro" data-name="${d.n}"><input type="checkbox" checked disabled> ${d.n}</label>`).join('')+`</div>`;
-        CATALOG.transactions.forEach(g=>{ const its=co?g.items:g.items.filter(i=>i.roles[rk]); if(!its.length) return; cnt+=its.length;
+        CATALOG.transactions.forEach(g=>{ const its=g.items.filter(i=>i.roles[rk]); if(!its.length) return; cnt+=its.length;
           body+=`<div class="l3grp">トランザクション：${g.cat}</div><div class="l3grid">`+its.map(it=>`<label class="ro" data-name="${it.n}"><input type="checkbox" checked disabled> ${it.n}</label>`).join('')+`</div>`;});
         if(!cnt) body=`<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログに項目がありません。</div>`;
       }
-      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できるカタログ（${cnt}件${co?'・本部レベル＝全件':'・'+ROLES[cur.idx].name+'用'}）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">${co?'本部ロールは全カタログ':'本部のカタログ管理で設定（読み取り専用）'}</span></div>`;
+      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できるカタログ（${cnt}件・${ROLES[cur.idx].name}用）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部のカタログ管理で設定（読み取り専用）</span></div>`;
       inner+=`<div class="viewdetail" id="vd_${ek}">${body}</div>`;
     } else if(hasItems(f)){   // 固定の表示項目（ダッシュボード指標など・編集可）
       const ks=itemKeys(f), tot=ks.length, on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length;
