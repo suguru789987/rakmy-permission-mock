@@ -77,7 +77,7 @@
   .l3bar.opsbar{ color:#1f7a4d; background:#f1faf4; border-left:3px solid #1f9d57; padding-left:14px; margin:2px 0; font-weight:700;}
   .l3bar.viewbar{ color:#2c5d9e; background:#eff5fc; border-left:3px solid #3b82f6; padding-left:14px; margin:6px 0 2px; font-weight:700;}
   .itemsearch{ border:1px solid var(--line); border-radius:6px; padding:5px 10px; font-size:12px; width:170px;}
-  .l3 .l3grp{ font-weight:700; font-size:12px; color:#374151; margin:8px 0 2px; padding-left:30px;}
+  .l3 .l3grp{ font-weight:700; font-size:12px; color:#2c5d9e; margin:10px 12px 2px 30px; padding:4px 10px; background:#e7eefb; border-radius:5px; border-left:3px solid #3b82f6; display:inline-block;}
   .mini{ border:1px solid var(--line); background:#fff; border-radius:5px; padding:3px 9px; cursor:pointer; font-size:11px;}
   .badge-future{ background:#6b7280; color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:7px; vertical-align:middle;}
   .seg{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
@@ -201,7 +201,10 @@ const CATEGORIES = [
     {n:'お知らせ',k:'base'},
     {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'view',new:true,future:true, itemGroups:[
       {name:'ディメンション（例：本番13〜15種）', items:[{n:'店舗'},{n:'業態'},{n:'商品カテゴリ'},{n:'曜日'},{n:'時間帯'}]},
-      {name:'指標／トランザクション（例：本番486〜737種）', items:[{n:'売上'},{n:'客数'},{n:'客単価'},{n:'粗利'},{n:'原価率'},{n:'人件費率'}]}]},
+      {name:'指標カテゴリ：売上系', items:[{n:'売上'},{n:'売上前年比'},{n:'客数'},{n:'客単価'},{n:'来店組数'}]},
+      {name:'指標カテゴリ：仕入・原価系', items:[{n:'仕入額'},{n:'原価率'},{n:'廃棄ロス'},{n:'在庫金額'},{n:'棚卸差異'}]},
+      {name:'指標カテゴリ：人件費系', items:[{n:'人件費'},{n:'人件費率'},{n:'総労働時間'},{n:'人時売上高'}]},
+      {name:'指標カテゴリ：利益系', items:[{n:'粗利'},{n:'粗利率'},{n:'FL率'},{n:'営業利益'},{n:'営業利益率'}]}]},
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
     {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true}]},
   {id:'sales', name:'売上分析', features:[
@@ -425,7 +428,7 @@ function featRowHTML(cid,f,fi,group){
     if(hasItems(f)){
       const ks=itemKeys(f), tot=ks.length, on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length;
       const q=(cur.itemFilter&&cur.itemFilter[ek])||'';
-      const search = tot>=20 ? `<input class="itemsearch" value="${q}" oninput="filterItems('${ek}',this.value)" placeholder="🔍 指標を検索">` : '';  // 多数(20件以上)のときのみ表示＝UIカスタマイズの数百指標向け
+      const search = tot>=20 ? `<input class="itemsearch" value="${q}" oninput="filterItems('${ek}',this.value)" placeholder="🔍 指標・カテゴリを検索">` : '';  // 多数(20件以上)のときのみ表示＝UIカスタマイズの数百指標向け
       inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 閲覧詳細：見せる指標／項目を選択（${on}/${tot} 表示中）</span>${search}<span style="flex:1"></span>`
         +`<button class="mini" onclick="setItemsAll('${cid}',${fi},true)">全表示</button>`
         +`<button class="mini" onclick="setItemsAll('${cid}',${fi},false)">全非表示</button></div>`;
@@ -458,13 +461,15 @@ function filterItems(ek,q){
   const box=document.getElementById('vd_'+ek); if(!box) return;
   const qq=(q||'').trim().toLowerCase();
   box.querySelectorAll('.l3grid').forEach(grid=>{
+    const prev=grid.previousElementSibling;
+    const isGrp=prev&&prev.classList.contains('l3grp');
+    const grpMatch=qq && isGrp && prev.textContent.toLowerCase().includes(qq);  // カテゴリ名にマッチ＝群ごと表示
     let any=false;
     grid.querySelectorAll('label').forEach(l=>{
       const name=(l.getAttribute('data-name')||l.textContent).toLowerCase();
-      const show=!qq||name.includes(qq); l.style.display=show?'':'none'; if(show) any=true;
+      const show=!qq||grpMatch||name.includes(qq); l.style.display=show?'':'none'; if(show) any=true;
     });
-    const prev=grid.previousElementSibling;
-    if(prev&&prev.classList.contains('l3grp')) prev.style.display=any?'':'none';
+    if(isGrp) prev.style.display=(any||grpMatch)?'':'none';
   });
 }
 function applyFilters(){ Object.keys(cur.itemFilter||{}).forEach(ek=>{ if(cur.itemFilter[ek]) filterItems(ek,cur.itemFilter[ek]); }); }
