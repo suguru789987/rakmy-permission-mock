@@ -69,6 +69,7 @@
   .l3 label.oplocked{ color:#9aa0a6; cursor:default;}
   .l3 label.oplocked input{ cursor:not-allowed;}
   .opnote{ font-size:10.5px; color:#b0468a; margin-left:6px;}
+  .badge-review{ font-size:9.5px; font-weight:700; color:#fff; background:#f59e0b; border-radius:8px; padding:1px 6px; margin-left:6px;}
   .bulkrow{ display:flex; align-items:center; gap:8px; margin:0 0 14px; padding:10px 12px; background:#f5f7f9; border-radius:8px;}
   .bulkrow .bl{ font-weight:700; font-size:13px; color:#444;}
   .bulkbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 16px; cursor:pointer; font-size:12.5px; font-weight:700; color:#555;}
@@ -283,6 +284,13 @@ function featVal(perm,cid,fi,f){           // L3操作→L2値を導出（指標
 }
 function setItemsAll(cid,fi,on){ const f=CATEGORIES.find(c=>c.id===cid).features[fi]; itemKeys(f).forEach(k=>cur.perm[opKey(cid,fi,k)]=on); renderBody(); }
 function toggleItem(cid,fi,k){ const kk=opKey(cid,fi,k); cur.perm[kk]=!cur.perm[kk]; renderBody(); }
+let _tagSeq=0;
+function addTag(cid,fi){   // 本部がタグ作成→カタログ(items)に自動追加・既定は非表示(要確認)
+  _tagSeq++;
+  const f=CATEGORIES.find(c=>c.id===cid).features[fi];
+  f.items.push({n:'新タグ'+_tagSeq, isNew:true});   // permキー未設定＝falsy＝非表示が既定
+  renderBody();
+}
 function catVal(perm,cid){                 // L1集計値（非fixedのみ）
   const cat=CATEGORIES.find(c=>c.id===cid);
   const feats=cat.features.map((f,fi)=>({f,fi})).filter(x=>!x.f.fixed);
@@ -439,13 +447,14 @@ function featRowHTML(cid,f,fi,group){
       const ks=itemKeys(f), tot=ks.length, on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length;
       const q=(cur.itemFilter&&cur.itemFilter[ek])||'';
       const search = tot>=20 ? `<input class="itemsearch" value="${q}" oninput="filterItems('${ek}',this.value)" placeholder="🔍 指標・カテゴリを検索">` : '';  // 多数(20件以上)のときのみ表示＝UIカスタマイズの数百指標向け
-      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 閲覧詳細：見せる指標／項目を選択（${on}/${tot} 表示中）</span>${search}<span style="flex:1"></span>`
+      const tagDemo = opsOf(f).some(o=>o.id==='create') ? `<button class="mini" onclick="addTag('${cid}',${fi})">＋ タグ作成（本部・デモ）</button>` : '';
+      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 閲覧詳細：見せる指標／項目を選択（${on}/${tot} 表示中）</span>${search}<span style="flex:1"></span>${tagDemo}`
         +`<button class="mini" onclick="setItemsAll('${cid}',${fi},true)">全表示</button>`
         +`<button class="mini" onclick="setItemsAll('${cid}',${fi},false)">全非表示</button></div>`;
       inner+=`<div class="viewdetail" id="vd_${ek}">`;
       if(f.items){
         inner+=`<div class="l3grid">`+f.items.map((it,ii)=>{ const c=cur.perm[opKey(cid,fi,'i'+ii)];
-          return `<label data-name="${it.n}"><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'i${ii}')"> ${it.n}</label>`;}).join('')+`</div>`;
+          return `<label data-name="${it.n}"><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'i${ii}')"> ${it.n}${it.isNew?'<span class="badge-review">新規・要確認</span>':''}</label>`;}).join('')+`</div>`;
       } else {
         inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div><div class="l3grid">`
           + g.items.map((it,ii)=>{ const k='g'+gi+'_'+ii, c=cur.perm[opKey(cid,fi,k)];
