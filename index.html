@@ -44,13 +44,22 @@
   .tab .dot{ display:inline-block; width:7px;height:7px;border-radius:50%; background:var(--new); margin-left:5px;}
   .feat{ display:flex; align-items:center; padding:11px 6px; border-bottom:1px solid #f0f2f4;}
   .feat .fn{ flex:1; font-size:14px;}
+  .feat .fn small{ display:block; color:#9aa0a6; font-size:11.5px; margin-top:3px;}
   .feat .kindtag{ font-size:10.5px; color:#9aa0a6; border:1px solid var(--line); border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:middle;}
+  .ctrl{ width:236px; flex-shrink:0; display:flex; justify-content:flex-end; align-items:center;}
+  .fixedpill{ background:#eef0f3; color:#8a9099; border:1px solid var(--line); border-radius:8px; padding:7px 18px; font-size:12.5px; font-weight:700;}
+  .nopill{ background:#fdf3f9; color:#b0468a; border:1px solid #f0d6e6; border-radius:8px; padding:7px 16px; font-size:12.5px; font-weight:700; white-space:nowrap;}
+  .l3grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:8px 16px; padding:4px 0 12px 30px;}
+  .l3grid label{ font-size:12.5px; color:#555; display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .bulkrow{ display:flex; align-items:center; gap:8px; margin:0 0 14px; padding:10px 12px; background:#f5f7f9; border-radius:8px;}
+  .bulkrow .bl{ font-weight:700; font-size:13px; color:#444;}
+  .bulkbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 16px; cursor:pointer; font-size:12.5px; font-weight:700; color:#555;}
+  .bulkbtn:hover{ background:#eef0f3;}
   .caret{ cursor:pointer; color:#9aa0a6; margin-right:8px; user-select:none; font-size:12px; width:14px; display:inline-block;}
-  .l3{ display:flex; gap:18px; flex-wrap:wrap; padding:4px 0 12px 30px; background:#fafbfc; border-bottom:1px solid #f0f2f4;}
-  .l3 label{ font-size:12.5px; color:#555; display:flex; align-items:center; gap:6px; cursor:pointer;}
-  .l3 .lv1{ color:#9aa0a6;}
-  .l3bar{ width:100%; display:flex; align-items:center; gap:8px; font-size:11.5px; color:#9aa0a6; padding-right:6px;}
-  .l3 .l3grp{ width:100%; font-weight:700; font-size:12px; color:#374151; margin:8px 0 2px;}
+  .l3{ display:block; padding:6px 0 8px; background:#fafbfc; border-bottom:1px solid #f0f2f4;}
+  .l3 .lv1 label, .l3grid label.lv1{ color:#9aa0a6;}
+  .l3bar{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:#9aa0a6; padding:2px 8px 4px 30px;}
+  .l3 .l3grp{ font-weight:700; font-size:12px; color:#374151; margin:8px 0 2px; padding-left:30px;}
   .mini{ border:1px solid var(--line); background:#fff; border-radius:5px; padding:3px 9px; cursor:pointer; font-size:11px;}
   .badge-future{ background:#6b7280; color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:7px; vertical-align:middle;}
   .seg{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
@@ -350,42 +359,47 @@ function renderCatList(){
 /* 詳細：1カテゴリの設定画面（遷移先） */
 function renderCatDetail(cid){
   const c=CATEGORIES.find(x=>x.id===cid);
-  let h=`<div class="detailhead"><button class="backbtn" onclick="closeCat()">◀ カテゴリ一覧へ</button><span class="dh-title">${c.name}</span><span class="cnt">（詳細設定・第二〜三階層）</span><span style="flex:1"></span>`
-    +`このカテゴリ一括：<button class="mini" onclick="setCatVal('${cid}',2)">操作</button><button class="mini" onclick="setCatVal('${cid}',1)">閲覧</button><button class="mini" onclick="setCatVal('${cid}',0)">なし</button></div>`;
+  let h=`<div class="detailhead"><button class="backbtn" onclick="closeCat()">◀ カテゴリ一覧へ</button><span class="dh-title">${c.name}</span><span class="cnt">（詳細設定・第二〜三階層）</span></div>`
+    +`<div class="bulkrow"><span class="bl">全機能を一括：</span><button class="bulkbtn" onclick="setCatVal('${cid}',0)">なし</button><button class="bulkbtn" onclick="setCatVal('${cid}',1)">閲覧</button><button class="bulkbtn" onclick="setCatVal('${cid}',2)">操作</button></div>`;
   c.features.forEach((f,fi)=>{ if(!f.fixed) h+=featRowHTML(cid,f,fi); });
   document.getElementById('editBody').innerHTML=h;
 }
 function featRowHTML(cid,f,fi){
   if(f.noStaff && ROLES[cur.idx].key==='staff'){      // 従業員：DnD編集は構造的に不可
     setFeatVal(cur.perm,cid,fi,f,minV(f.k));
-    return `<div class="feat"><span class="caret"></span><div class="fn">${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span></div><div class="lockmsg">🔒 従業員はDnD編集不可（許可された指標の閲覧のみ）</div></div>`;
+    return `<div class="feat"><span class="caret"></span><div class="fn">${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span><small>従業員はDnD編集不可（許可された指標の閲覧のみ）</small></div><div class="ctrl"><span class="nopill">🔒 不可</span></div></div>`;
   }
   const kd=KIND[f.k], v=featVal(cur.perm,cid,fi,f), rng=featRange(f);
   const opsShow = hasItems(f) ? OPS[f.k].filter(o=>o.id!=='view') : OPS[f.k];
   const hasL3 = opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
-  const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('');
-  const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${hasItems(f)?`<span class="kindtag">表示項目 ${itemKeys(f).length}</span>`:''}`;
-  let html=`<div class="feat">${caret}<div class="fn">${f.n}${badges}</div><div class="seg ${kd.lock?'locked':''}">${seg}</div></div>`;
+  let itemTag='';
+  if(hasItems(f)){ const ks=itemKeys(f), on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length; itemTag=`<span class="kindtag">指標 ${on}/${ks.length} 表示</span>`; }
+  const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
+  // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
+  const ctrl = kd.lock
+    ? `<span class="fixedpill">閲覧・固定</span>`
+    : `<div class="seg">${kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('')}</div>`;
+  let html=`<div class="feat">${caret}<div class="fn">${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
   if(hasL3 && exp){
     let inner='';
     if(opsShow.length>0){
       const boxes=opsShow.map(o=>{ const on=cur.perm[opKey(cid,fi,o.id)], lv1=o.id==='view';
         return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} onclick="toggleOp('${cid}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
-      inner+=`<div class="l3bar"><span>操作詳細：許可する操作を選択</span></div>${boxes}`;
+      inner+=`<div class="l3bar"><span>操作詳細：許可する操作を選択</span></div><div class="l3grid">${boxes}</div>`;
     }
     if(hasItems(f)){
       const tot=itemKeys(f).length, on=itemKeys(f).filter(k=>cur.perm[opKey(cid,fi,k)]).length;
-      inner+=`<div class="l3bar" style="margin-top:8px;"><span>閲覧詳細：見せる指標／項目を選択（${on}/${tot}）</span><span style="flex:1"></span>`
+      inner+=`<div class="l3bar" style="margin-top:8px;"><span>閲覧詳細：見せる指標／項目を選択（${on}/${tot} 表示中）</span><span style="flex:1"></span>`
         +`<button class="mini" onclick="setItemsAll('${cid}',${fi},true)">全表示</button>`
         +`<button class="mini" onclick="setItemsAll('${cid}',${fi},false)">全非表示</button></div>`;
       if(f.items){
-        inner+=f.items.map((it,ii)=>{ const c=cur.perm[opKey(cid,fi,'i'+ii)];
-          return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'i${ii}')"> ${it.n}</label>`;}).join('');
+        inner+=`<div class="l3grid">`+f.items.map((it,ii)=>{ const c=cur.perm[opKey(cid,fi,'i'+ii)];
+          return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'i${ii}')"> ${it.n}</label>`;}).join('')+`</div>`;
       } else {
-        inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div>`
+        inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div><div class="l3grid">`
           + g.items.map((it,ii)=>{ const k='g'+gi+'_'+ii, c=cur.perm[opKey(cid,fi,k)];
-              return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'${k}')"> ${it.n}</label>`;}).join('')
+              return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'${k}')"> ${it.n}</label>`;}).join('')+`</div>`
         ).join('');
       }
     }
