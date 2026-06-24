@@ -104,6 +104,9 @@
   #rmTier{ display:flex; gap:8px;} #rmTier .rolebtn{ flex:1;}
   .modal-note{ font-size:12px; color:#6b7280; margin-top:12px; min-height:34px; line-height:1.5;}
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px;}
+  .toast{ position:fixed; left:50%; bottom:32px; transform:translateX(-50%) translateY(20px); background:#21262b; color:#fff; padding:13px 22px; border-radius:10px; font-size:14px; font-weight:700; box-shadow:0 8px 28px rgba(0,0,0,.3); opacity:0; pointer-events:none; transition:.25s; z-index:200; display:flex; align-items:center; gap:10px;}
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast .tk{ display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--green); color:#fff; font-size:13px;}
   .bulkrow{ display:flex; align-items:center; gap:8px; margin:0 0 14px; padding:10px 12px; background:#f5f7f9; border-radius:8px;}
   .bulkrow .bl{ font-weight:700; font-size:13px; color:#444;}
   .bulkbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 16px; cursor:pointer; font-size:12.5px; font-weight:700; color:#555;}
@@ -243,6 +246,9 @@
     </div>
   </div>
 </div>
+
+<!-- トースト通知 -->
+<div id="toast" class="toast"></div>
 
 <!-- 全権の付与先指定モーダル（オーナー） -->
 <div id="delegateModal" class="modal-overlay hide">
@@ -621,7 +627,7 @@ function show(v){
   if(v==='catalog') renderCatalog();
 }
 function editRole(ri){
-  if(ROLES[ri].system){ alert('「オーナー（全権）」は全権固定のため編集できません。'); return; }
+  if(ROLES[ri].system){ toast('「オーナー（全権）」は全権固定のため編集できません'); return; }
   const r=ROLES[ri];
   cur={idx:ri,scope:r.scope,tier:r.tier,perm:JSON.parse(JSON.stringify(r.perm)),expanded:{},view:'cats',detailCat:null,itemFilter:{}};
   document.getElementById('roleName').textContent=r.name;
@@ -774,7 +780,8 @@ function renderExcluded(){
   const names=[]; CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(f.fixed) names.push(f.n); }));
   el.innerHTML='※ 本部専用機能（'+names.join(' ／ ')+'）は、店舗ロール（店長/従業員）には付与されません（本部ロールのみ）。';
 }
-function saveRole(){ ROLES[cur.idx]={...ROLES[cur.idx],perm:cur.perm}; alert('「'+ROLES[cur.idx].name+'」の権限を保存しました（モック）。'); show('list'); }
+function saveRole(){ ROLES[cur.idx]={...ROLES[cur.idx],perm:cur.perm}; const nm=ROLES[cur.idx].name; show('list'); toast('「'+nm+'」の権限を保存しました'); }
+function toast(msg){ const t=document.getElementById('toast'); t.innerHTML='<span class="tk">✓</span>'+msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
 
 show('list');
 </script>
