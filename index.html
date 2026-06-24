@@ -66,6 +66,9 @@
   .nopill{ background:#fdf3f9; color:#b0468a; border:1px solid #f0d6e6; border-radius:8px; padding:7px 16px; font-size:12.5px; font-weight:700; white-space:nowrap;}
   .l3grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:8px 16px; padding:4px 0 12px 30px;}
   .l3grid label{ font-size:12.5px; color:#555; display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .l3 label.oplocked{ color:#9aa0a6; cursor:default;}
+  .l3 label.oplocked input{ cursor:not-allowed;}
+  .opnote{ font-size:10.5px; color:#b0468a; margin-left:6px;}
   .bulkrow{ display:flex; align-items:center; gap:8px; margin:0 0 14px; padding:10px 12px; background:#f5f7f9; border-radius:8px;}
   .bulkrow .bl{ font-weight:700; font-size:13px; color:#444;}
   .bulkbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 16px; cursor:pointer; font-size:12.5px; font-weight:700; color:#555;}
@@ -204,11 +207,12 @@ const CATEGORIES = [
       {name:'トランザクション：売上系', items:[{n:'売上'},{n:'売上前年比'},{n:'客数'},{n:'客単価'},{n:'来店組数'}]},
       {name:'トランザクション：仕入・原価系', items:[{n:'仕入額'},{n:'原価率'},{n:'廃棄ロス'},{n:'在庫金額'},{n:'棚卸差異'}]},
       {name:'トランザクション：人件費系', items:[{n:'人件費'},{n:'人件費率'},{n:'総労働時間'},{n:'人時売上高'}]},
-      {name:'トランザクション：利益系', items:[{n:'粗利'},{n:'粗利率'},{n:'FL率'},{n:'営業利益'},{n:'営業利益率'}]},
-      {name:'カスタムタグ（本部作成・閲覧許可）', items:[{n:'重点商品'},{n:'高粗利メニュー'},{n:'新メニュー'},{n:'曜日キャンペーン'},{n:'ランチ／ディナー区分'}]}]},
+      {name:'トランザクション：利益系', items:[{n:'粗利'},{n:'粗利率'},{n:'FL率'},{n:'営業利益'},{n:'営業利益率'}]}]},
+    {n:'UIカスタマイズ：カスタムタグ',k:'view',new:true,future:true,
+      ops:[{id:'view',n:'閲覧'},{id:'create',n:'作成',adminOnly:true}],
+      items:[{n:'重点商品'},{n:'高粗利メニュー'},{n:'新メニュー'},{n:'曜日キャンペーン'},{n:'ランチ／ディナー区分'}]},
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
-    {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true},
-    {n:'UIカスタマイズ：カスタムタグ作成',k:'admin',new:true,future:true, fixed:true}]},
+    {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true}]},
   {id:'sales', name:'売上分析', features:[
     {n:'ABC分析',k:'view', items:[{n:'売上構成比'},{n:'累計構成比'},{n:'ABCランク'},{n:'売上額'},{n:'数量'}]},
     {n:'商品別分析',k:'view', items:[{n:'商品別売上'},{n:'数量'},{n:'粗利'},{n:'粗利率'},{n:'構成比'}]},
@@ -261,8 +265,10 @@ function itemKeys(f){
   return [];
 }
 const hasItems = f => !!(f.items||f.itemGroups);
+const opsOf = f => f.ops || OPS[f.k];   // 機能固有の操作リスト（無ければ性質から導出）
 function setFeatVal(perm,cid,fi,f,val){    // L2値→L3（操作＋指標）へ反映
-  OPS[f.k].forEach(o=>{
+  opsOf(f).forEach(o=>{
+    if(o.adminOnly) return;   // 本部のみの操作（作成等）はL2一括の対象外（本部のみtrueはbuildPermで付与）
     perm[opKey(cid,fi,o.id)] = f.k==='base' ? true : val>=2 ? true : val===1 ? (o.id==='view') : false;
   });
   if(hasItems(f)) itemKeys(f).forEach(k=>perm[opKey(cid,fi,k)] = val>=1);  // 指標は閲覧で全表示が既定
@@ -270,7 +276,7 @@ function setFeatVal(perm,cid,fi,f,val){    // L2値→L3（操作＋指標）へ
 function featVal(perm,cid,fi,f){           // L3操作→L2値を導出（指標はL2に影響しない）
   if(f.k==='base') return 1;
   if(f.k==='view') return perm[opKey(cid,fi,'view')] ? 1 : 0;   // 閲覧専用：閲覧opのみでL2判定
-  const ops=OPS[f.k], on=ops.filter(o=>perm[opKey(cid,fi,o.id)]);
+  const ops=opsOf(f), on=ops.filter(o=>perm[opKey(cid,fi,o.id)]);
   if(on.length===0) return 0;
   if(on.length===1 && on[0].id==='view') return 1;
   return 2;
@@ -309,6 +315,7 @@ function buildPerm(presetFn,scope,roleKey){
     let v = f.fixed ? (scope==='company'?2:0) : presetFn(f);
     if(f.noStaff && roleKey==='staff') v=minV(f.k);   // 従業員はDnD編集不可
     setFeatVal(p,c.id,fi,f,v);
+    (f.ops||[]).forEach(o=>{ if(o.adminOnly) p[opKey(c.id,fi,o.id)] = (roleKey==='full'); });  // 本部のみの操作(作成等)
   }));
   return p;
 }
@@ -409,7 +416,7 @@ function featRowHTML(cid,f,fi,group){
     return `<div class="featcard locked acc-${group}"><div class="feat"><span class="caret"></span><div class="fn"><span class="featchip">機能</span>${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span><small>従業員はDnD編集不可（許可された指標の閲覧のみ）</small></div><div class="ctrl"><span class="nopill">🔒 不可</span></div></div></div>`;
   }
   const kd=KIND[f.k], v=featVal(cur.perm,cid,fi,f), rng=featRange(f);
-  const opsShow = hasItems(f) ? OPS[f.k].filter(o=>o.id!=='view') : OPS[f.k];
+  const opsShow = hasItems(f) ? opsOf(f).filter(o=>o.id!=='view') : opsOf(f);
   const hasL3 = opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
   let itemTag='';
@@ -424,6 +431,7 @@ function featRowHTML(cid,f,fi,group){
     let inner='';
     if(opsShow.length>0){
       const boxes=opsShow.map(o=>{ const on=cur.perm[opKey(cid,fi,o.id)], lv1=o.id==='view';
+        if(o.adminOnly) return `<label class="oplocked"><input type="checkbox" ${on?'checked':''} disabled> ${o.n}<span class="opnote">🔒 本部のみ</span></label>`;
         return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} onclick="toggleOp('${cid}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
       inner+=`<div class="l3bar opsbar"><span>⚙ 操作詳細：許可する操作を選択</span></div><div class="l3grid">${boxes}</div>`;
     }
