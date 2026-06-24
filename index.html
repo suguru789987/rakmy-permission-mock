@@ -203,9 +203,10 @@ const CATEGORIES = [
   {id:'budget', name:'予算管理', features:[
     {n:'予算設定',k:'edit'},{n:'予算開始月設定',k:'admin',new:true,fixed:true},{n:'日次予算設定',k:'edit',new:true}]},
   {id:'inventory', name:'棚卸', features:[{n:'棚卸（実施）',k:'action'},{n:'棚卸商品管理',k:'edit',new:true}]},
-  {id:'integration', name:'連携設定', hasNew:true, features:[
-    {n:'スマレジ(Smaregi) POS連携',k:'admin',new:true,fixed:true},{n:'インフォマート仕入取込',k:'admin',new:true,fixed:true},
-    {n:'東芝テックPOS取込',k:'admin',new:true,fixed:true},{n:'ASPIT連携（売上/仕入/棚卸/労務）',k:'admin',new:true,fixed:true}]},
+  {id:'integration', name:'連携設定', features:[
+    {n:'連携設定（POS／仕入／勤怠の連携先）',k:'admin',fixed:true, items:[
+      {n:'スマレジ(Smaregi) POS連携'},{n:'インフォマート仕入取込'},{n:'東芝テックPOS取込'},
+      {n:'ASPIT連携（売上/仕入/棚卸/労務）'},{n:'KingOfTime連携'},{n:'スマレジタイムカード連携'}]}]},
   {id:'label', name:'ラベル', features:[{n:'ラベル（一覧・登録）',k:'edit'}]},
   {id:'org', name:'店舗・組織', features:[
     {n:'店舗情報',k:'edit',range:'shop-self'},{n:'店舗間商品移動',k:'action'},
@@ -215,8 +216,6 @@ const CATEGORIES = [
     {n:'従業員（店舗スタッフ台帳）',k:'edit',range:'shop-self'},
     {n:'本部従業員管理',k:'admin',new:true,fixed:true}]},
   {id:'order', name:'発注・支払', features:[{n:'納品書',k:'edit'},{n:'小口現金',k:'edit'},{n:'お支払い',k:'admin',fixed:true}]},
-  {id:'kintai', name:'勤怠連携', hasNew:true, features:[
-    {n:'KingOfTime連携',k:'admin',new:true,fixed:true},{n:'スマレジタイムカード連携',k:'admin',new:true,fixed:true}]},
 ];
 
 /* ===== 第三階層（op）レベルで権限を保持 ===== */
