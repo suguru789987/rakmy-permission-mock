@@ -69,6 +69,11 @@
   .l3 label.oplocked{ color:#9aa0a6; cursor:default;}
   .l3 label.oplocked input{ cursor:not-allowed;}
   .opnote{ font-size:10.5px; color:#b0468a; margin-left:6px;}
+  .subwrap{ padding:4px 0 10px 30px;}
+  .subrow{ display:grid; grid-template-columns:1fr 110px 110px; align-items:center; padding:7px 8px; border-bottom:1px solid #f0f2f4;}
+  .subrow .sn{ font-size:12.5px; color:#444;} .subrow .sx{ text-align:center;}
+  .subrow.subhead{ font-size:11px; font-weight:700; color:#6b7280; background:#f5f7f9; border-radius:6px;}
+  .switch.sm{ width:38px; height:20px;} .switch.sm .track:before{ width:14px; height:14px;} .switch.sm input:checked + .track:before{ transform:translateX(18px);}
   .badge-review{ font-size:9.5px; font-weight:700; color:#fff; background:#f59e0b; border-radius:8px; padding:1px 6px; margin-left:6px;}
   .switch{ position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;}
   .switch input{ opacity:0; width:0; height:0;}
@@ -333,15 +338,15 @@ const CATEGORIES = [
     {n:'日次レポート',k:'view', items:[{n:'日次売上'},{n:'客数'},{n:'客単価'}]},
     {n:'日次レポート送信先設定',k:'admin',new:true,fixed:true},{n:'ダウンロード',k:'action'}]},
   {id:'budget', name:'予算管理', features:[
-    {n:'予算設定',k:'edit'},{n:'予算開始月設定',k:'admin',new:true,fixed:true},{n:'日次予算設定',k:'edit',new:true}]},
-  {id:'inventory', name:'棚卸', features:[{n:'棚卸（実施）',k:'action'},{n:'棚卸商品管理',k:'edit',new:true}]},
+    {n:'予算設定',k:'edit', subitems:[{n:'月次予算'},{n:'費目別予算'},{n:'予算ロック'}]},{n:'予算開始月設定',k:'admin',new:true,fixed:true},{n:'日次予算設定',k:'edit',new:true}]},
+  {id:'inventory', name:'棚卸', features:[{n:'棚卸（実施）',k:'action'},{n:'棚卸商品管理',k:'edit',new:true, subitems:[{n:'商品マスタ'},{n:'棚卸ステータス'},{n:'単位・税区分'},{n:'履歴'}]}]},
   {id:'integration', name:'連携設定', features:[
     {n:'連携設定（POS／仕入／勤怠の連携先）',k:'admin',fixed:true, items:[
       {n:'スマレジ(Smaregi) POS連携'},{n:'インフォマート仕入取込'},{n:'東芝テックPOS取込'},
       {n:'ASPIT連携（売上/仕入/棚卸/労務）'},{n:'KingOfTime連携'},{n:'スマレジタイムカード連携'}]}]},
   {id:'label', name:'ラベル', features:[{n:'ラベル（一覧・登録）',k:'edit'}]},
   {id:'org', name:'店舗・組織', features:[
-    {n:'店舗情報',k:'edit',range:'shop-self'},{n:'店舗間商品移動',k:'action'},
+    {n:'店舗情報',k:'edit',range:'shop-self', subitems:[{n:'基本情報'},{n:'営業時間・休業日'},{n:'席数・坪数'},{n:'通知・連絡先'}]},{n:'店舗間商品移動',k:'action'},
     {n:'会社情報',k:'admin',fixed:true},{n:'初期設定（アカウント登録）',k:'admin',new:true,fixed:true}]},
   {id:'user', name:'ユーザー・従業員', features:[
     {n:'ユーザー（ログインアカウント）',k:'admin',fixed:true},
@@ -370,14 +375,17 @@ function itemKeys(f){
 }
 const hasItems = f => !!(f.items||f.itemGroups||f.catalog);
 const opsOf = f => f.ops || OPS[f.k];   // 機能固有の操作リスト（無ければ性質から導出）
-function setFeatVal(perm,cid,fi,f,val){    // L2値→L3（操作＋指標）へ反映
+const siKey=(fi,ii,ax)=>'si'+ii+ax;     // 画面項目キー：v=閲覧可否 / o=操作可否
+function setFeatVal(perm,cid,fi,f,val){    // L2値→L3（操作／指標／画面項目）へ反映
+  if(f.subitems){ f.subitems.forEach((s,ii)=>{ perm[opKey(cid,fi,siKey(fi,ii,'v'))]=val>=1; perm[opKey(cid,fi,siKey(fi,ii,'o'))]=val>=2; }); return; }
   opsOf(f).forEach(o=>{
     if(o.adminOnly) return;   // 本部のみの操作（作成等）はL2一括の対象外（本部のみtrueはbuildPermで付与）
     perm[opKey(cid,fi,o.id)] = f.k==='base' ? true : val>=2 ? true : val===1 ? (o.id==='view') : false;
   });
   if(hasItems(f)) itemKeys(f).forEach(k=>perm[opKey(cid,fi,k)] = val>=1);  // 指標は閲覧で全表示が既定
 }
-function featVal(perm,cid,fi,f){           // L3操作→L2値を導出（指標はL2に影響しない）
+function featVal(perm,cid,fi,f){           // L3→L2値を導出
+  if(f.subitems){ let o=false,v=false; f.subitems.forEach((s,ii)=>{ if(perm[opKey(cid,fi,siKey(fi,ii,'o'))])o=true; if(perm[opKey(cid,fi,siKey(fi,ii,'v'))])v=true; }); return o?2:v?1:0; }
   if(f.k==='base') return 1;
   if(f.k==='view') return perm[opKey(cid,fi,'view')] ? 1 : 0;   // 閲覧専用：閲覧opのみでL2判定
   const ops=opsOf(f), on=ops.filter(o=>perm[opKey(cid,fi,o.id)]);
@@ -385,6 +393,10 @@ function featVal(perm,cid,fi,f){           // L3操作→L2値を導出（指標
   if(on.length===1 && on[0].id==='view') return 1;
   return 2;
 }
+function toggleSub(cid,fi,ii,ax){ const k=opKey(cid,fi,siKey(fi,ii,ax)); cur.perm[k]=!cur.perm[k];
+  if(ax==='o'&&cur.perm[k]) cur.perm[opKey(cid,fi,siKey(fi,ii,'v'))]=true;   // 操作可→閲覧可も自動
+  if(ax==='v'&&!cur.perm[k]) cur.perm[opKey(cid,fi,siKey(fi,ii,'o'))]=false; // 閲覧不可→操作も不可
+  renderBody(); }
 function setItemsAll(cid,fi,on){ const f=CATEGORIES.find(c=>c.id===cid).features[fi]; itemKeys(f).forEach(k=>cur.perm[opKey(cid,fi,k)]=on); renderBody(); }
 function toggleItem(cid,fi,k){ const kk=opKey(cid,fi,k); cur.perm[kk]=!cur.perm[kk]; renderBody(); }
 let _tagSeq=0;
@@ -707,8 +719,8 @@ function featRowHTML(cid,f,fi,group){
     return `<div class="featcard locked acc-${group}"><div class="feat"><span class="caret"></span><div class="fn"><span class="featchip">機能</span>${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span><small>従業員はDnD編集不可（許可された指標の閲覧のみ）</small></div><div class="ctrl"><span class="nopill">🔒 不可</span></div></div></div>`;
   }
   const kd=KIND[f.k], v=featVal(cur.perm,cid,fi,f), rng=featRange(f);
-  const opsShow = hasItems(f) ? opsOf(f).filter(o=>o.id!=='view') : opsOf(f);
-  const hasL3 = opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
+  const opsShow = f.subitems ? [] : (hasItems(f) ? opsOf(f).filter(o=>o.id!=='view') : opsOf(f));
+  const hasL3 = !!f.subitems || opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
   let itemTag='';
   if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(dimsFor(rk).length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>i.roles[rk]).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
@@ -721,6 +733,15 @@ function featRowHTML(cid,f,fi,group){
   let html=`<div class="featcard acc-${group}"><div class="feat">${caret}<div class="fn"><span class="featchip">機能</span>${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
   if(hasL3 && exp){
     let inner='';
+    if(f.subitems){   // 画面項目ごとの 閲覧可否＋操作可否（2軸）
+      inner+=`<div class="l3bar opsbar"><span>📋 画面項目ごとの閲覧・操作を設定</span></div>`;
+      inner+=`<div class="subwrap"><div class="subrow subhead"><span class="sn">画面項目</span><span class="sx">閲覧可否</span><span class="sx">操作可否</span></div>`;
+      f.subitems.forEach((si,ii)=>{ const sv=cur.perm[opKey(cid,fi,siKey(fi,ii,'v'))], so=cur.perm[opKey(cid,fi,siKey(fi,ii,'o'))];
+        inner+=`<div class="subrow"><span class="sn">${si.n}</span>`
+          +`<span class="sx"><label class="switch sm"><input type="checkbox" ${sv?'checked':''} onclick="toggleSub('${cid}',${fi},${ii},'v')"><span class="track"></span></label></span>`
+          +`<span class="sx"><label class="switch sm"><input type="checkbox" ${so?'checked':''} onclick="toggleSub('${cid}',${fi},${ii},'o')"><span class="track"></span></label></span></div>`;});
+      inner+=`</div>`;
+    }
     if(opsShow.length>0){
       const boxes=opsShow.map(o=>{ const on=cur.perm[opKey(cid,fi,o.id)], lv1=o.id==='view';
         if(o.adminOnly) return `<label class="oplocked"><input type="checkbox" ${on?'checked':''} disabled> ${o.n}<span class="opnote">🔒 本部のみ</span></label>`;
