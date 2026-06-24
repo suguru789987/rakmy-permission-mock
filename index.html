@@ -168,9 +168,11 @@
         <span><b style="background:#3b82f6">△</b> 一部</span>
         <span><b style="background:#c33">✕</b> なし</span>
       </div>
+      <div class="sp"></div>
+      <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
     <div class="panel">
-      <p class="hint">権限は <b>従業員 / 店長 / 本部（全権）</b> の3種で固定。「編集」で設定（概要／詳細）画面へ。本部は全権固定で編集不可。</p>
+      <p class="hint">2層の役割：<b>店舗ロール</b>（従業員/店長＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加できます。</p>
       <div style="overflow:auto;"><table class="list" id="listTable"></table></div>
     </div>
   </main>
@@ -302,6 +304,10 @@ const VIEW_CATS=new Set(['dashboard','sales','purchase','detail','report']);
 CATEGORIES.forEach(c=> c.group = VIEW_CATS.has(c.id) ? 'view' : 'ops');
 const catsByGroup = () => CATEGORIES.filter(c=>c.group==='view').concat(CATEGORIES.filter(c=>c.group==='ops'));
 const GROUP_LABEL={view:'閲覧権限（分析・レポート）', ops:'操作・設定権限'};
+/* 本部専用機能の所管（会社ロールでの職務分掌）：fin=経理, hr=人事, both=共通, sys=オーナーのみ */
+const DEPT_MAP={'日次レポート送信先設定':'fin','予算開始月設定':'fin','お支払い':'fin','会社情報':'both',
+  '初期設定（アカウント登録）':'hr','ユーザー（ログインアカウント）':'hr','本部従業員管理':'hr'};
+CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(f.fixed) f.dept = DEPT_MAP[f.n] || (f.n.includes('DnD編集（会社画面）')?'sys':'both'); }));
 
 /* ===== 第三階層（op）レベルで権限を保持 ===== */
 const opKey=(cid,fi,op)=>cid+'_'+fi+'_'+op;
@@ -350,18 +356,22 @@ function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
 function openCatalogAll(){ catalogRole='all'; show('catalog'); }   // 既定＝全体マトリクス
 function openCatalogFor(rk){ catalogRole=rk; if(catalogTab==='features') catalogTab='metrics'; show('catalog'); }
-const roleCols = () => catalogRole==='all'?['manager','staff']:[catalogRole];
-const roleHeaders = () => roleCols().map(rk=>`<th>${ROLE_LABEL[rk]}カタログ</th>`).join('');
+const shopRoleKeys = () => ROLES.filter(r=>r.tier==='shop').map(r=>r.key);   // カタログ候補対象＝店舗ロール
+const roleLabel = k => (ROLES.find(r=>r.key===k)?.name||ROLE_LABEL[k]||k).replace('権限','');
+const roleCols = () => catalogRole==='all'?shopRoleKeys():[catalogRole];
+const roleHeaders = () => roleCols().map(rk=>`<th>${roleLabel(rk)}カタログ</th>`).join('');
 function roleCells(rolesObj, onclickFn){ return roleCols().map(rk=>`<td><label class="switch"><input type="checkbox" ${rolesObj[rk]?'checked':''} onclick="${onclickFn(rk)}"><span class="track"></span></label></td>`).join(''); }
 const roleSpan = () => roleCols().length+1;
 function renderCatalog(){
   const tabs=[['features','機能カタログ'],['metrics','指標（トランザクション）'],['dims','ディメンション'],['tags','カスタムタグ']];
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
   if(catalogTab!=='features'){
+    const opts=[['all','全体（店舗ロール）']].concat(shopRoleKeys().map(k=>[k,roleLabel(k)+'カタログ']));
     h+=`<div class="rolesel"><span class="bl">どの権限のカタログを作るか：</span>`
-      +[['all','全体（店長＋従業員）'],['manager','店長カタログ'],['staff','従業員カタログ']].map(([r,nm])=>`<button class="rolebtn ${catalogRole===r?'on':''}" onclick="setCatalogRole('${r}')">${nm}</button>`).join('')
-      +`<span style="flex:1"></span><span style="font-size:11.5px;color:#0a7a55;">🔒 入れ子チェック：店長 ⊇ 従業員（従業員ON→店長も自動ON／店長OFF→従業員も自動OFF）</span></div>`;
-    if(catalogRole!=='all') h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${ROLE_LABEL[catalogRole]}権限</span><span class="cb-sub">この権限のカタログに入れる項目を選択 → 役割画面に反映</span></div>`;
+      +opts.map(([r,nm])=>`<button class="rolebtn ${catalogRole===r?'on':''}" onclick="setCatalogRole('${r}')">${nm}</button>`).join('')
+      +`<span style="flex:1"></span><span style="font-size:11.5px;color:#0a7a55;">🔒 入れ子チェック：店長 ⊇ 従業員</span></div>`;
+    if(catalogRole!=='all') h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${roleLabel(catalogRole)}</span><span class="cb-sub">この権限のカタログに入れる項目を選択 → 役割画面に反映</span></div>`;
+    h+=`<p class="hint" style="margin:-6px 0 12px;">※ カタログ候補の対象は店舗ロール（店長/従業員）。会社ロール（経理/人事/オーナー）は本部レベルで全カタログを閲覧。</p>`;
   }
   if(catalogTab==='features') h+=featureCatalogHTML();
   else if(catalogTab==='tags') h+=tagCatalogHTML();
@@ -452,7 +462,7 @@ function catVal(perm,cid){                 // L1集計値（非fixedのみ）
 function setCatVal(cid,val){               // L1一括→各L2→L3
   const cat=CATEGORIES.find(c=>c.id===cid);
   cat.features.forEach((f,fi)=>{
-    if(f.fixed) return;
+    if(!featShown(f)) return;
     if(f.noStaff && ROLES[cur.idx].key==='staff') return;   // 従業員のDnD編集は一括対象外
     setFeatVal(cur.perm,cid,fi,f,val);
   });
@@ -461,27 +471,50 @@ function setCatVal(cid,val){               // L1一括→各L2→L3
 
 /* ===== プリセット ===== */
 const PRESET = {
-  staff:  f => ({base:1,view:1,edit:0,action:0,admin:0}[f.k]),
-  manager:f => ({base:1,view:1,edit:2,action:2,admin:0}[f.k]),
-  full:   f => maxV(f.k),
+  staff:  f => ({base:1,view:1,edit:0,action:0,admin:0}[f.k]),   // 従業員
+  manager:f => ({base:1,view:1,edit:2,action:2,admin:0}[f.k]),   // 店長
+  company:f => ({base:1,view:1,edit:2,action:2,admin:2}[f.k]),   // 経理/人事の非fixed（全社・操作可）
+  full:   f => maxV(f.k),                                         // オーナー
 };
 function buildPerm(presetFn,scope,roleKey){
+  const owner = roleKey==='owner'||roleKey==='full';
   const p={};
   CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{
-    let v = f.fixed ? (scope==='company'?2:0) : presetFn(f);
-    if(f.noStaff && roleKey==='staff') v=minV(f.k);   // 従業員はDnD編集不可
+    let v;
+    if(f.fixed){   // 本部専用：会社ロールでは所管(dept)で職務分掌
+      if(owner) v=maxV(f.k);
+      else if(roleKey==='keiri') v=(f.dept==='fin'||f.dept==='both')?maxV(f.k):0;
+      else if(roleKey==='jinji') v=(f.dept==='hr'||f.dept==='both')?maxV(f.k):0;
+      else v=0;   // 店舗ロール／カスタムロールは既定で本部専用なし（後から付与）
+    } else {
+      v=presetFn(f);
+      if(f.noStaff && roleKey==='staff') v=minV(f.k);
+    }
     setFeatVal(p,c.id,fi,f,v);
-    (f.ops||[]).forEach(o=>{ if(o.adminOnly) p[opKey(c.id,fi,o.id)] = (roleKey==='full'); });  // 本部のみの操作(作成等)
+    (f.ops||[]).forEach(o=>{ if(o.adminOnly) p[opKey(c.id,fi,o.id)] = owner; });   // タグ作成等はオーナーのみ
   }));
   return p;
 }
 let ROLES = [
-  {name:'従業員権限',   key:'staff',   scope:'shop',    perm:buildPerm(PRESET.staff,'shop','staff')},
-  {name:'店長権限',     key:'manager', scope:'shop',    perm:buildPerm(PRESET.manager,'shop','manager')},
-  {name:'本部（全権）', key:'full',    scope:'company', perm:buildPerm(PRESET.full,'company','full'), system:true},
+  {name:'従業員権限', key:'staff',   tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.staff,'shop','staff')},
+  {name:'店長権限',   key:'manager', tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.manager,'shop','manager')},
+  {name:'経理担当',   key:'keiri',   tier:'company', scope:'company', perm:buildPerm(PRESET.company,'company','keiri')},
+  {name:'人事担当',   key:'jinji',   tier:'company', scope:'company', perm:buildPerm(PRESET.company,'company','jinji')},
+  {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', perm:buildPerm(PRESET.full,'company','owner'), system:true},
 ];
+const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
+let _roleSeq=0;
+function createRole(){
+  const nm=(window.prompt('新しい権限の名前を入力してください','新しい権限')||'').trim();
+  if(!nm) return;
+  const company=window.confirm('会社ロール（全社・本部）にしますか？\n\nOK＝会社ロール（経理/人事のような本部内権限。本部専用機能も可否設定可）\nキャンセル＝店舗ロール（自店舗・カタログを作成）');
+  _roleSeq++; const key='role'+_roleSeq, tier=company?'company':'shop', scope=tier;
+  if(!company) _allCat().forEach(it=>it.roles[key]=false);   // 店舗ロール＝空カタログから作成
+  ROLES.push({name:nm, key, tier, scope, perm:buildPerm(company?PRESET.company:PRESET.staff, scope, key)});
+  editRole(ROLES.length-1);
+}
 
-let cur = { idx:0, scope:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
+let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
 
 /* ===== 一覧 ===== */
 function listSummary(perm,cid){
@@ -495,10 +528,16 @@ function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops'), cols=vc.concat(oc);
   let h=`<tr><th class="name" rowspan="2">権限名</th><th colspan="${vc.length}" class="grp grpview">閲覧権限（分析・レポート）</th><th colspan="${oc.length}" class="grp grpops">操作・設定権限</th><th rowspan="2"></th></tr>`;
   h+='<tr>'+cols.map(c=>`<th>${c.name}${c.hasNew?' ●':''}</th>`).join('')+'</tr>';
+  let lastTier=null;
   ROLES.forEach((r,ri)=>{
+    if(r.tier!==lastTier){ h+=`<tr class="grouprow ${r.tier==='shop'?'view':'ops'}"><td colspan="${cols.length+2}">${r.tier==='shop'?'店舗ロール（自店舗）':'会社ロール（全社・本部）'}</td></tr>`; lastTier=r.tier; }
     h+=`<tr><td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
     cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
-    h+=`<td>${r.system?`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（権限編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button>`:`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`}</td></tr>`;
+    let act;
+    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button>`;
+    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
+    else act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><div style="color:#9aa0a6;font-size:10.5px;margin-top:4px;">カタログ＝全件（本部レベル）</div>`;
+    h+=`<td>${act}</td></tr>`;
   });
   document.getElementById('listTable').innerHTML=h;
 }
@@ -515,20 +554,20 @@ function show(v){
   if(v==='catalog') renderCatalog();
 }
 function editRole(ri){
-  if(ROLES[ri].system){ alert('「本部（全権）」は全権固定のため編集できません。'); return; }
+  if(ROLES[ri].system){ alert('「オーナー（全権）」は全権固定のため編集できません。'); return; }
   const r=ROLES[ri];
-  cur={idx:ri,scope:r.scope,perm:JSON.parse(JSON.stringify(r.perm)),expanded:{},view:'cats',detailCat:null,itemFilter:{}};
+  cur={idx:ri,scope:r.scope,tier:r.tier,perm:JSON.parse(JSON.stringify(r.perm)),expanded:{},view:'cats',detailCat:null,itemFilter:{}};
   document.getElementById('roleName').textContent=r.name;
-  document.getElementById('scopeChip').textContent='対象範囲：'+(r.scope==='company'?'会社スコープ（全社）':'店舗スコープ（自店舗のみ）');
+  document.getElementById('scopeChip').textContent='対象範囲：'+(r.scope==='company'?'会社スコープ（全社）':'店舗スコープ（自店舗のみ）')+(r.tier==='company'?' ・本部ロール':'');
   renderBody(); show('edit');
 }
-const visibleCats = () => CATEGORIES.filter(c=>c.features.some(f=>!f.fixed));
+const visibleCats = () => CATEGORIES.filter(c=>c.features.some(f=>featShown(f)));
 function featRange(f){ if(f.range==='shop-self') return cur.scope==='shop'?'自店舗のみ':'全社'; return ''; }
 
 /* ===== 本体描画（1画面アコーディオン：カテゴリ→機能→操作/指標） ===== */
 function catSel(perm,cid){   // カテゴリ一括値（0/1/2）か'mixed'を返す（各機能をその値で一括したら現状と一致するか）
   const cat=CATEGORIES.find(c=>c.id===cid);
-  const feats=cat.features.map((f,fi)=>({f,fi})).filter(x=>!x.f.fixed
+  const feats=cat.features.map((f,fi)=>({f,fi})).filter(x=>featShown(x.f)
     && !(x.f.noStaff && ROLES[cur.idx].key==='staff'));
   if(!feats.length) return 0;
   for(const t of [2,1,0]){
@@ -547,9 +586,9 @@ function renderBody(){
 function renderCatList(){
   let h='<p class="hint">全体設定：カテゴリ単位で一括（なし／閲覧／操作）。機能・操作・指標を細かく設定するには「詳細 ＞」で各カテゴリの設定画面へ。混在は「一部」表示。</p>';
   let lastGroup=null;
-  catsByGroup().filter(c=>c.features.some(f=>!f.fixed)).forEach(c=>{
+  catsByGroup().filter(c=>c.features.some(f=>featShown(f))).forEach(c=>{
     if(c.group!==lastGroup){ h+=`<div class="catsection cs-${c.group}">${GROUP_LABEL[c.group]}</div>`; lastGroup=c.group; }
-    const feats=c.features.filter(f=>!f.fixed);
+    const feats=c.features.filter(f=>featShown(f));
     const sel=catSel(cur.perm,c.id);
     const seg=[0,1,2].map(s=>`<button data-v="${s}" class="${sel===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${['なし','閲覧','操作'][s]}</button>`).join('');
     const mixed = sel==='mixed' ? '<span class="mixedchip">一部</span>' : '';
@@ -560,12 +599,12 @@ function renderCatList(){
 /* 詳細：1カテゴリの設定画面（遷移先） */
 function renderCatDetail(cid){
   const c=CATEGORIES.find(x=>x.id===cid);
-  const featCount=c.features.filter(f=>!f.fixed).length;
+  const featCount=c.features.filter(f=>featShown(f)).length;
   let h=`<div class="detailhead"><button class="backbtn" onclick="closeCat()">◀ カテゴリ一覧へ</button></div>`
     +`<div class="catbanner cb-${c.group}"><span class="cb-tag">カテゴリ</span><span class="cb-name">${c.name}</span><span class="cb-sub">${GROUP_LABEL[c.group]}・${featCount}機能</span></div>`
     +`<div class="bulkrow"><span class="bl">全機能を一括：</span><button class="bulkbtn" onclick="setCatVal('${cid}',0)">なし</button><button class="bulkbtn" onclick="setCatVal('${cid}',1)">閲覧</button><button class="bulkbtn" onclick="setCatVal('${cid}',2)">操作</button></div>`
     +`<div class="featlbl">▾ この中の機能（${featCount}）</div>`;
-  c.features.forEach((f,fi)=>{ if(!f.fixed) h+=featRowHTML(cid,f,fi,c.group); });
+  c.features.forEach((f,fi)=>{ if(featShown(f)) h+=featRowHTML(cid,f,fi,c.group); });
   document.getElementById('editBody').innerHTML=h;
   applyFilters();
 }
@@ -579,7 +618,7 @@ function featRowHTML(cid,f,fi,group){
   const hasL3 = opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
   let itemTag='';
-  if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(dimsFor(rk).length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>i.roles[rk]).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
+  if(f.catalog){ const co=cur.tier==='company', rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?(co?CATALOG.tags.length:tagsFor(rk).length):((co?CATALOG.dimensions.length:dimsFor(rk).length)+CATALOG.transactions.reduce((s,g)=>s+(co?g.items.length:g.items.filter(i=>i.roles[rk]).length),0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
   else if(hasItems(f)){ const ks=itemKeys(f), on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length; itemTag=`<span class="kindtag">指標 ${on}/${ks.length} 表示</span>`; }
   const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
   // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
@@ -596,19 +635,19 @@ function featRowHTML(cid,f,fi,group){
       inner+=`<div class="l3bar opsbar"><span>⚙ 操作詳細：許可する操作を選択</span></div><div class="l3grid">${boxes}</div>`;
     }
     if(f.catalog){   // カタログ系：この権限のカタログ（本部がカタログ管理で設定）を読み取り表示
-      const rk=ROLES[cur.idx].key;
+      const co=cur.tier==='company', rk=ROLES[cur.idx].key;
       let body='', cnt=0;
-      if(f.catalog==='tags'){ const ts=tagsFor(rk); cnt=ts.length;
+      if(f.catalog==='tags'){ const ts=co?CATALOG.tags:tagsFor(rk); cnt=ts.length;
         body = ts.length? `<div class="l3grid">`+ts.map(t=>`<label class="ro" data-name="${t.n}"><input type="checkbox" checked disabled> ${t.n}</label>`).join('')+`</div>`
           : `<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログにタグがありません（本部のカタログ管理で追加）。</div>`;
       } else {  // display：ディメンション＋トランザクション
-        const dims=dimsFor(rk); cnt+=dims.length;
+        const dims=co?CATALOG.dimensions:dimsFor(rk); cnt+=dims.length;
         if(dims.length) body+=`<div class="l3grp">ディメンション</div><div class="l3grid">`+dims.map(d=>`<label class="ro" data-name="${d.n}"><input type="checkbox" checked disabled> ${d.n}</label>`).join('')+`</div>`;
-        CATALOG.transactions.forEach(g=>{ const its=g.items.filter(i=>i.roles[rk]); if(!its.length) return; cnt+=its.length;
+        CATALOG.transactions.forEach(g=>{ const its=co?g.items:g.items.filter(i=>i.roles[rk]); if(!its.length) return; cnt+=its.length;
           body+=`<div class="l3grp">トランザクション：${g.cat}</div><div class="l3grid">`+its.map(it=>`<label class="ro" data-name="${it.n}"><input type="checkbox" checked disabled> ${it.n}</label>`).join('')+`</div>`;});
-        if(!cnt) body=`<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログに項目がありません（本部のカタログ管理で追加）。</div>`;
+        if(!cnt) body=`<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログに項目がありません。</div>`;
       }
-      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できるカタログ（${cnt}件・${ROLE_LABEL[rk]}用）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部のカタログ管理で設定（読み取り専用）</span></div>`;
+      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できるカタログ（${cnt}件${co?'・本部レベル＝全件':'・'+ROLES[cur.idx].name+'用'}）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">${co?'本部ロールは全カタログ':'本部のカタログ管理で設定（読み取り専用）'}</span></div>`;
       inner+=`<div class="viewdetail" id="vd_${ek}">${body}</div>`;
     } else if(hasItems(f)){   // 固定の表示項目（ダッシュボード指標など・編集可）
       const ks=itemKeys(f), tot=ks.length, on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length;
@@ -638,7 +677,7 @@ function openCat(cid){
   cur.view='detail'; cur.detailCat=cid; cur.expanded={}; cur.itemFilter={};
   // 詳細画面では既定で全機能の詳細（操作・指標）を開く＝トグル不要で見える
   const c=CATEGORIES.find(x=>x.id===cid);
-  c.features.forEach((f,fi)=>{ if(!f.fixed) cur.expanded[cid+'_'+fi]=true; });
+  c.features.forEach((f,fi)=>{ if(featShown(f)) cur.expanded[cid+'_'+fi]=true; });
   renderBody(); window.scrollTo(0,0);
 }
 function filterItems(ek,q){
@@ -663,8 +702,10 @@ function toggleExp(ek){ cur.expanded[ek]=!cur.expanded[ek]; renderBody(); }
 function setFeat(cid,fi,s){ const f=CATEGORIES.find(c=>c.id===cid).features[fi]; setFeatVal(cur.perm,cid,fi,f,s); renderBody(); }
 function toggleOp(cid,fi,opid){ const k=opKey(cid,fi,opid); cur.perm[k]=!cur.perm[k]; renderBody(); }
 function renderExcluded(){
+  const el=document.getElementById('excludedNote');
+  if(cur.tier==='company'){ el.innerHTML='※ 本部ロール（経理／人事）は本部専用機能も含め職務分掌で可否を設定します（既定：経理＝財務系／人事＝人事系）。オーナーは全権。'; return; }
   const names=[]; CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(f.fixed) names.push(f.n); }));
-  document.getElementById('excludedNote').innerHTML='※ 本部専用機能（'+names.join(' ／ ')+'）は、この権限には付与されません（本部（全権）のみ利用可）。';
+  el.innerHTML='※ 本部専用機能（'+names.join(' ／ ')+'）は、店舗ロール（店長/従業員）には付与されません（本部ロールのみ）。';
 }
 function saveRole(){ ROLES[cur.idx]={...ROLES[cur.idx],perm:cur.perm}; alert('「'+ROLES[cur.idx].name+'」の権限を保存しました（モック）。'); show('list'); }
 
