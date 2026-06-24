@@ -42,10 +42,20 @@
   .tab{ padding:9px 14px; font-size:13px; cursor:pointer; border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; background:#f3f5f7; color:#555; position:relative; top:2px;}
   .tab.active{ background:#fff; color:var(--green-d); font-weight:700; border-color:var(--green); border-bottom:2px solid #fff;}
   .tab .dot{ display:inline-block; width:7px;height:7px;border-radius:50%; background:var(--new); margin-left:5px;}
-  .featcard{ border:1px solid var(--line); border-radius:10px; margin-bottom:14px; overflow:hidden; background:#fff;}
+  .catbanner{ display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:10px; margin:4px 0 14px; color:#fff;}
+  .catbanner.cb-view{ background:linear-gradient(90deg,#3b82f6,#5b9bf7);}
+  .catbanner.cb-ops{ background:linear-gradient(90deg,#1f9d57,#27b366);}
+  .catbanner .cb-tag{ font-size:11px; font-weight:700; background:rgba(255,255,255,.25); padding:3px 10px; border-radius:20px;}
+  .catbanner .cb-name{ font-size:21px; font-weight:700;}
+  .catbanner .cb-sub{ font-size:12px; opacity:.9; margin-left:auto;}
+  .featlbl{ font-size:12px; font-weight:700; color:#6b7280; margin:4px 2px 8px;}
+  .featcard{ border:1px solid var(--line); border-left:4px solid var(--line); border-radius:10px; margin:0 0 16px 14px; overflow:hidden; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .featcard.acc-view{ border-left-color:#3b82f6;}
+  .featcard.acc-ops{ border-left-color:#1f9d57;}
   .featcard.locked{ opacity:.85;}
   .featcard > .feat{ background:#f7f9fb; border-bottom:1px solid var(--line); padding:13px 14px; margin:0;}
-  .featcard > .feat .fn{ font-weight:700;}
+  .featcard > .feat .fn{ font-weight:700; font-size:14.5px;}
+  .featchip{ font-size:10px; font-weight:700; color:#6b7280; background:#eef0f3; border-radius:5px; padding:2px 7px; margin-right:9px; vertical-align:middle;}
   .featcard > .l3{ border-bottom:none;}
   .feat{ display:flex; align-items:center; padding:11px 6px; border-bottom:1px solid #f0f2f4;}
   .feat .fn{ flex:1; font-size:14px;}
@@ -90,7 +100,7 @@
   .mixedchip{ font-size:10.5px; background:#f59e0b; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
   .detailbtn{ border:1px solid var(--line); background:#fff; color:var(--green-d); border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px; margin-left:14px; white-space:nowrap;}
   .detailbtn:hover{ background:#f3fbf7;}
-  .detailhead{ display:flex; align-items:center; gap:12px; padding:6px 0 14px; margin-bottom:6px; border-bottom:2px solid var(--line); font-size:12.5px; color:#555; flex-wrap:wrap;}
+  .detailhead{ display:flex; align-items:center; gap:12px; padding:6px 0 2px; font-size:12.5px; color:#555;}
   .detailhead .dh-title{ font-size:17px; font-weight:700; color:var(--ink);}
   .backbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px;}
   .backbtn:hover{ background:#f6f7f9;}
@@ -379,16 +389,19 @@ function renderCatList(){
 /* 詳細：1カテゴリの設定画面（遷移先） */
 function renderCatDetail(cid){
   const c=CATEGORIES.find(x=>x.id===cid);
-  let h=`<div class="detailhead"><button class="backbtn" onclick="closeCat()">◀ カテゴリ一覧へ</button><span class="dh-title">${c.name}</span><span class="cnt">（詳細設定・第二〜三階層）</span></div>`
-    +`<div class="bulkrow"><span class="bl">全機能を一括：</span><button class="bulkbtn" onclick="setCatVal('${cid}',0)">なし</button><button class="bulkbtn" onclick="setCatVal('${cid}',1)">閲覧</button><button class="bulkbtn" onclick="setCatVal('${cid}',2)">操作</button></div>`;
-  c.features.forEach((f,fi)=>{ if(!f.fixed) h+=featRowHTML(cid,f,fi); });
+  const featCount=c.features.filter(f=>!f.fixed).length;
+  let h=`<div class="detailhead"><button class="backbtn" onclick="closeCat()">◀ カテゴリ一覧へ</button></div>`
+    +`<div class="catbanner cb-${c.group}"><span class="cb-tag">カテゴリ</span><span class="cb-name">${c.name}</span><span class="cb-sub">${GROUP_LABEL[c.group]}・${featCount}機能</span></div>`
+    +`<div class="bulkrow"><span class="bl">全機能を一括：</span><button class="bulkbtn" onclick="setCatVal('${cid}',0)">なし</button><button class="bulkbtn" onclick="setCatVal('${cid}',1)">閲覧</button><button class="bulkbtn" onclick="setCatVal('${cid}',2)">操作</button></div>`
+    +`<div class="featlbl">▾ この中の機能（${featCount}）</div>`;
+  c.features.forEach((f,fi)=>{ if(!f.fixed) h+=featRowHTML(cid,f,fi,c.group); });
   document.getElementById('editBody').innerHTML=h;
   applyFilters();
 }
-function featRowHTML(cid,f,fi){
+function featRowHTML(cid,f,fi,group){
   if(f.noStaff && ROLES[cur.idx].key==='staff'){      // 従業員：DnD編集は構造的に不可
     setFeatVal(cur.perm,cid,fi,f,minV(f.k));
-    return `<div class="featcard locked"><div class="feat"><span class="caret"></span><div class="fn">${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span><small>従業員はDnD編集不可（許可された指標の閲覧のみ）</small></div><div class="ctrl"><span class="nopill">🔒 不可</span></div></div></div>`;
+    return `<div class="featcard locked acc-${group}"><div class="feat"><span class="caret"></span><div class="fn"><span class="featchip">機能</span>${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span><small>従業員はDnD編集不可（許可された指標の閲覧のみ）</small></div><div class="ctrl"><span class="nopill">🔒 不可</span></div></div></div>`;
   }
   const kd=KIND[f.k], v=featVal(cur.perm,cid,fi,f), rng=featRange(f);
   const opsShow = hasItems(f) ? OPS[f.k].filter(o=>o.id!=='view') : OPS[f.k];
@@ -401,7 +414,7 @@ function featRowHTML(cid,f,fi){
   const ctrl = kd.lock
     ? `<span class="fixedpill">閲覧・固定</span>`
     : `<div class="seg">${kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('')}</div>`;
-  let html=`<div class="featcard"><div class="feat">${caret}<div class="fn">${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
+  let html=`<div class="featcard acc-${group}"><div class="feat">${caret}<div class="fn"><span class="featchip">機能</span>${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
   if(hasL3 && exp){
     let inner='';
     if(opsShow.length>0){
