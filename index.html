@@ -240,6 +240,16 @@
   </div>
 </div>
 
+<!-- 全権の付与先指定モーダル（オーナー） -->
+<div id="delegateModal" class="modal-overlay hide">
+  <div class="modal" style="width:540px;">
+    <h3>全権の付与先を指定（オーナー）</h3>
+    <p class="modal-note" style="min-height:auto;">全権を持たせる会社ロールを選びます。オーナー自身は全権を維持します。複数指定可。解除すると元の職務分掌に戻ります。</p>
+    <div id="delegateList" style="margin-top:8px;"></div>
+    <div class="modal-actions"><button class="btn primary" onclick="closeDelegate()">閉じる</button></div>
+  </div>
+</div>
+
 <script>
 /* L2の性質ごとの選択肢（第二階層レベル） */
 const KIND = {
@@ -533,8 +543,24 @@ let ROLES = [
 const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
 /* 全権の付与（オーナーが会社ロールへ移譲）：全機能max＋adminOnly操作も付与 */
 function grantFullPerm(){ const p={}; CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ setFeatVal(p,c.id,fi,f,maxV(f.k)); (f.ops||[]).forEach(o=>{ if(o.adminOnly) p[opKey(c.id,fi,o.id)]=true; }); })); return p; }
-function delegateFull(ri){ const r=ROLES[ri]; r.perm=grantFullPerm(); r.delegated=true; renderList(); }
-function revokeFull(ri){ const r=ROLES[ri]; r.perm=buildPerm(PRESET.company,r.scope,r.key); r.delegated=false; renderList(); }
+function delegateFull(ri){ const r=ROLES[ri]; r.perm=grantFullPerm(); r.delegated=true; }
+function revokeFull(ri){ const r=ROLES[ri]; r.perm=buildPerm(PRESET.company,r.scope,r.key); r.delegated=false; }
+/* オーナーが「全権を持たせる会社ロール」を指名（C案） */
+function openDelegate(){ renderDelegateList(); document.getElementById('delegateModal').classList.remove('hide'); }
+function closeDelegate(){ document.getElementById('delegateModal').classList.add('hide'); renderList(); }
+function toggleDelegate(ri){ ROLES[ri].delegated?revokeFull(ri):delegateFull(ri); renderDelegateList(); }
+function renderDelegateList(){
+  const comp=ROLES.filter(r=>r.tier==='company'&&!r.system);
+  let h='';
+  if(!comp.length){ h='<p style="color:#9aa0a6;font-size:13px;padding:10px 4px;">会社ロールがありません。経理/人事や会社ロールを作成してください。</p>'; document.getElementById('delegateList').innerHTML=h; return; }
+  h=`<table class="list"><tr><th class="name">会社ロール</th><th>状態</th><th>全権を持たせる</th></tr>`;
+  ROLES.forEach((r,ri)=>{ if(r.tier!=='company'||r.system) return;
+    h+=`<tr><td class="name">${r.name}</td><td>${r.delegated?'<span class="mk op">全権</span>':'<span style="color:#9aa0a6;font-size:11px;">職務分掌</span>'}</td>`
+      +`<td><label class="switch"><input type="checkbox" ${r.delegated?'checked':''} onclick="toggleDelegate(${ri})"><span class="track"></span></label></td></tr>`;
+  });
+  h+=`</table>`;
+  document.getElementById('delegateList').innerHTML=h;
+}
 let _roleSeq=0, rmTier='shop';
 function createRole(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
@@ -571,10 +597,9 @@ function renderList(){
     h+=`<tr><td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
     cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
     let act;
-    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button>`;
+    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
-    else if(r.delegated) act=`<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが移譲）</div><button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#9aa0a6;margin-top:5px;" onclick="revokeFull(${ri})">全権を解除</button>`;
-    else act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="delegateFull(${ri})">全権を付与 ＞</button>`;
+    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRole(${ri})">権限編集</button>`;
     h+=`<td>${act}</td></tr>`;
   });
   document.getElementById('listTable').innerHTML=h;
