@@ -179,7 +179,8 @@
     <a onclick="show('edit')" id="nav-edit">権限編集</a>
     <a class="sec">ダッシュボード</a><a>売上分析</a><a>集計・レポート</a>
     <a class="sec">設定 ▾</a>
-    <a onclick="openCatalogAll()" id="nav-catalog">カタログ管理（本部）</a>
+    <a onclick="show('summary')" id="nav-summary">役割サマリ</a>
+    <a onclick="openCatalogAll()" id="nav-catalog">UIカスタマイズ 指標カタログ</a>
   </nav>
 
   <!-- 一覧 -->
@@ -224,13 +225,22 @@
   <!-- カタログ管理（本部のみ） -->
   <main id="view-catalog" class="hide">
     <div class="titlebar">
-      <h1>カタログ管理</h1>
-      <span class="scopechip" style="background:#21262b;">本部（全権）のみ</span>
+      <h1>UIカスタマイズ 指標カタログ</h1>
+      <span class="scopechip" style="background:#21262b;">本部／オーナー</span>
       <div class="sp"></div>
     </div>
     <div class="panel">
-      <p class="hint">UIカスタマイズの共有カタログを本部が管理する画面。生成された全カスタムタグがここに自動で集まり、<b>「閲覧候補」をONにしたものだけ</b>が店長/従業員の権限画面（allowlist）に現れます。新規は既定で候補OFF（要確認）。<br>＝入れ子：全カタログ ⊇ 閲覧候補（本部・この画面） ⊇ 役割別閲覧（権限編集画面）。指標（トランザクション）／ディメンションも同じ仕組みで候補化できます。</p>
+      <p class="hint"><b>UIカスタマイズ（DnD／自由集計ダッシュボード）専用</b>の画面。大量・動的な<b>指標／タグ／ディメンション</b>の母集合を、本部が<b>役割別</b>に絞ります。新規タグはここで作成。<br>※ 画面・機能・項目の操作/閲覧可否は <b>各権限の「権限編集」</b>で設定します（この画面は機能アクセスではなく、UIカスタマイズに出す指標の母集合のみ）。</p>
       <div id="catalogBody"></div>
+    </div>
+  </main>
+
+  <!-- 役割サマリ（読み取り） -->
+  <main id="view-summary" class="hide">
+    <div class="titlebar"><h1>役割サマリ</h1><div class="sp"></div></div>
+    <div class="panel">
+      <p class="hint">役割ごとに「使える全数」を俯瞰（読み取り）。<b>画面アクセス</b>は権限編集、<b>UIカスタマイズの指標/タグ</b>はカタログで設定。ここはその集約ビューです。</p>
+      <div style="overflow:auto;"><table class="list" id="summaryTable"></table></div>
     </div>
   </main>
 </div>
@@ -421,7 +431,7 @@ function copyFromRole(){ if(catalogRole==='all') return; const src=document.getE
 function setAllRole(on){ if(catalogRole==='all') return; curTabItems().forEach(it=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); }); renderCatalog(); }
 /* 系統（トランザクション群）単位の一括（対象ロール列ぶん） */
 function setGroupRole(gi,on){ CATALOG.transactions[gi].items.forEach(it=>roleCols().forEach(rk=>{ it.roles[rk]=on; enforceNesting(it.roles,rk); })); renderCatalog(); }
-let catalogTab='features', catalogRole='all';
+let catalogTab='metrics', catalogRole='all';
 function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
 function openCatalogAll(){ catalogRole='all'; show('catalog'); }   // 既定＝全体マトリクス
@@ -435,9 +445,9 @@ const roleStats = items => roleCols().map(rk=>`<span class="stat">${roleLabel(rk
 const roleCount = items => roleCols().map(rk=>roleLabel(rk)+' '+items.filter(i=>i.roles[rk]).length).join('／');
 const roleSpan = () => roleCols().length+1;
 function renderCatalog(){
-  const tabs=[['features','機能カタログ'],['metrics','指標（トランザクション）'],['dims','ディメンション'],['tags','カスタムタグ']];
+  const tabs=[['metrics','指標（トランザクション）'],['dims','ディメンション'],['tags','カスタムタグ']];
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
-  if(catalogTab!=='features'){
+  {
     const opts=[['all','全体（全ロールを比較）']].concat(shopRoleKeys().map(k=>[k,roleLabel(k)+'のカタログ']));
     const single=catalogRole!=='all';
     h+=`<div class="rolesel"><span class="bl">対象ロール：</span>`
@@ -447,10 +457,9 @@ function renderCatalog(){
     if(single) h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${roleLabel(catalogRole)}</span><span class="cb-sub">このロールに入れる項目を選択 → 役割画面に反映。コピー／系統一括で素早く土台を作成</span></div>`;
     h+=`<p class="hint" style="margin:-6px 0 12px;">※ 対象はオーナー以外の全ロール（店舗ロール＋会社ロール）。新規作成したロールも自動でプルダウンに追加。多ロールはプルダウンで1ロールずつ編集＋コピー／系統一括が効率的。オーナーは常に全件。</p>`;
   }
-  if(catalogTab==='features') h+=featureCatalogHTML();
-  else if(catalogTab==='tags') h+=tagCatalogHTML();
-  else if(catalogTab==='metrics') h+=metricsCatalogHTML();
-  else h+=dimsCatalogHTML();
+  if(catalogTab==='tags') h+=tagCatalogHTML();
+  else if(catalogTab==='dims') h+=dimsCatalogHTML();
+  else h+=metricsCatalogHTML();
   document.getElementById('catalogBody').innerHTML=h;
 }
 function metricsCatalogHTML(){
@@ -649,14 +658,28 @@ function renderList(){
 
 /* ===== 切替 ===== */
 function show(v){
-  document.getElementById('view-list').classList.toggle('hide', v!=='list');
-  document.getElementById('view-edit').classList.toggle('hide', v!=='edit');
-  document.getElementById('view-catalog').classList.toggle('hide', v!=='catalog');
-  document.getElementById('nav-list').classList.toggle('active', v==='list');
-  document.getElementById('nav-edit').classList.toggle('active', v==='edit');
-  document.getElementById('nav-catalog').classList.toggle('active', v==='catalog');
+  ['list','edit','catalog','summary'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
+  ['list','edit','catalog','summary'].forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='list') renderList();
   if(v==='catalog') renderCatalog();
+  if(v==='summary') renderSummary();
+}
+function renderSummary(){
+  const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
+  const allN={tx:CATALOG.transactions.flatMap(g=>g.items).length, dim:CATALOG.dimensions.length, tag:CATALOG.tags.length};
+  let h=`<tr><th class="name">権限</th><th>画面 操作可</th><th>閲覧可</th><th>なし</th><th>指標</th><th>ディメンション</th><th>タグ</th><th></th></tr>`;
+  ROLES.forEach((r,ri)=>{
+    let op=0,vw=0,no=0;
+    CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ const shown=f.fixed?r.tier==='company':true; if(!shown) return;
+      const val=featVal(r.perm,c.id,fi,f), mx=maxV(f.k);
+      if(val>=2&&mx>=2) op++; else if(val>=1) vw++; else no++; }));
+    const n=r.system?allN:catN(r.key);
+    const act=r.system?`<span style="color:#9aa0a6;font-size:11px;">全権・固定</span>`:`<button class="rowedit" onclick="editRole(${ri})">権限編集</button>`;
+    h+=`<tr><td class="name">${r.system?'👑 ':''}${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}</span></td>`
+      +`<td><b style="color:#159b5d">${op}</b></td><td><b style="color:#3b82f6">${vw}</b></td><td><b style="color:#c33">${no}</b></td>`
+      +`<td>${n.tx}${r.system?'（全件）':''}</td><td>${n.dim}</td><td>${n.tag}</td><td>${act}</td></tr>`;
+  });
+  document.getElementById('summaryTable').innerHTML=h;
 }
 function editRole(ri){
   if(ROLES[ri].system){ toast('「オーナー（全権）」は全権固定のため編集できません'); return; }
