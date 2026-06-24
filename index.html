@@ -91,6 +91,15 @@
   .rolebtn.on{ background:#21262b; color:#fff; border-color:#21262b;}
   .l3grid label.ro{ color:#6b7280;}
   .l3grid label.ro input{ cursor:default;}
+  .modal-overlay{ position:fixed; inset:0; background:rgba(20,24,28,.5); display:flex; align-items:center; justify-content:center; z-index:100;}
+  .modal{ background:#fff; border-radius:14px; padding:24px 26px; width:460px; max-width:92vw; box-shadow:0 16px 48px rgba(0,0,0,.3);}
+  .modal h3{ font-size:18px; margin-bottom:6px;}
+  .modal .ml{ display:block; font-weight:700; font-size:13px; margin:14px 0 6px; color:#444;}
+  .modal-input{ width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:8px; font-size:15px;}
+  .modal-input:focus{ outline:none; border-color:var(--green);}
+  #rmTier{ display:flex; gap:8px;} #rmTier .rolebtn{ flex:1;}
+  .modal-note{ font-size:12px; color:#6b7280; margin-top:12px; min-height:34px; line-height:1.5;}
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px;}
   .bulkrow{ display:flex; align-items:center; gap:8px; margin:0 0 14px; padding:10px 12px; background:#f5f7f9; border-radius:8px;}
   .bulkrow .bl{ font-weight:700; font-size:13px; color:#444;}
   .bulkbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 16px; cursor:pointer; font-size:12.5px; font-weight:700; color:#555;}
@@ -210,6 +219,25 @@
       <div id="catalogBody"></div>
     </div>
   </main>
+</div>
+
+<!-- 権限作成モーダル -->
+<div id="roleModal" class="modal-overlay hide">
+  <div class="modal">
+    <h3>権限を新規作成</h3>
+    <label class="ml">権限名</label>
+    <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
+    <label class="ml">区分</label>
+    <div class="rolesel" id="rmTier" style="margin:0;">
+      <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール（自店舗）</button>
+      <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（全社・本部）</button>
+    </div>
+    <div class="modal-note" id="rmNote"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeRoleModal()">キャンセル</button>
+      <button class="btn primary" onclick="submitRoleModal()">作成</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -503,15 +531,20 @@ let ROLES = [
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', perm:buildPerm(PRESET.full,'company','owner'), system:true},
 ];
 const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
-let _roleSeq=0;
-function createRole(){
-  const nm=(window.prompt('新しい権限の名前を入力してください','新しい権限')||'').trim();
-  if(!nm) return;
-  const company=window.confirm('会社ロール（全社・本部）にしますか？\n\nOK＝会社ロール（経理/人事のような本部内権限。本部専用機能も可否設定可）\nキャンセル＝店舗ロール（自店舗・カタログを作成）');
-  _roleSeq++; const key='role'+_roleSeq, tier=company?'company':'shop', scope=tier;
-  if(!company) _allCat().forEach(it=>it.roles[key]=false);   // 店舗ロール＝空カタログから作成
+let _roleSeq=0, rmTier='shop';
+function createRole(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
+function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.getElementById('rmNote').textContent = t==='shop'
+    ? '店舗ロール：自店舗が対象。最小権限から開始し、「カタログ作成」で見せる指標/タグを選びます。'
+    : '会社ロール：全社・本部レベル。本部専用機能も可否設定でき、カタログは全件を閲覧できます。'; }
+function closeRoleModal(){ document.getElementById('roleModal').classList.add('hide'); }
+function submitRoleModal(){
+  const nm=document.getElementById('rmName').value.trim();
+  if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
+  const company=rmTier==='company'; _roleSeq++; const key='role'+_roleSeq, tier=rmTier, scope=tier;
+  if(!company) _allCat().forEach(it=>it.roles[key]=false);
   ROLES.push({name:nm, key, tier, scope, perm:buildPerm(company?PRESET.company:PRESET.staff, scope, key)});
-  editRole(ROLES.length-1);
+  closeRoleModal(); editRole(ROLES.length-1);
 }
 
 let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
