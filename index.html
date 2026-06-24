@@ -97,6 +97,9 @@
   .crown{ margin-right:6px;}
   .ownerbadge{ display:inline-block; font-size:10px; font-weight:700; color:#fff; background:#caa12a; border-radius:10px; padding:1px 8px; margin-left:8px; vertical-align:middle;}
   .rolechip{ display:inline-block; font-size:11.5px; font-weight:700; color:#2c5d9e; background:#eaf2fb; border:1px solid #cfe0f5; border-radius:12px; padding:2px 10px; margin:2px 4px 2px 0;}
+  .screennav{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px;}
+  .snbtn{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; color:#333; cursor:pointer;}
+  .snbtn:hover{ border-color:#159b5d; color:#159b5d;}
   .ccat{ font-size:11px; color:#9aa0a6; margin-right:6px;}
   .rolesel{ display:flex; align-items:center; gap:8px; margin-bottom:14px;}
   .rolesel .bl{ font-weight:700; font-size:13px; color:#444;}
@@ -178,13 +181,8 @@
   </header>
 
   <nav>
-    <a onclick="show('list')" id="nav-list">権限一覧</a>
-    <a onclick="show('edit')" id="nav-edit">権限編集</a>
     <a class="sec">ダッシュボード</a><a>売上分析</a><a>集計・レポート</a>
-    <a class="sec">設定 ▾</a>
-    <a onclick="show('summary')" id="nav-summary">役割サマリ</a>
-    <a onclick="show('users')" id="nav-users">ユーザー割当</a>
-    <a onclick="openCatalogAll()" id="nav-catalog">UIカスタマイズ 指標カタログ</a>
+    <a class="sec">設定 ▾</a><a class="active" onclick="show('list')" id="nav-list">権限設定</a>
   </nav>
 
   <!-- 一覧 -->
@@ -198,6 +196,12 @@
       </div>
       <div class="sp"></div>
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
+    </div>
+    <div class="screennav">
+      <button class="snbtn" onclick="editRole(cur.idx)">権限編集</button>
+      <button class="snbtn" onclick="show('summary')">役割サマリ</button>
+      <button class="snbtn" onclick="show('users')">ユーザー割当</button>
+      <button class="snbtn" onclick="openCatalogAll()">指標カタログ</button>
     </div>
     <div class="panel">
       <p class="hint">2層の役割：<b>店舗ロール</b>（店長/従業員＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加（各群の下段に追加されます）。</p>
@@ -229,9 +233,10 @@
   <!-- カタログ管理（本部のみ） -->
   <main id="view-catalog" class="hide">
     <div class="titlebar">
-      <h1>UIカスタマイズ 指標カタログ</h1>
+      <h1>指標カタログ</h1>
       <span class="scopechip" style="background:#21262b;">本部／オーナー</span>
       <div class="sp"></div>
+      <button class="btn ghost" onclick="show('list')">← 権限設定へ</button>
     </div>
     <div class="panel">
       <p class="hint"><b>UIカスタマイズ（DnD／自由集計ダッシュボード）専用</b>の画面。大量・動的な<b>指標／タグ／ディメンション</b>の母集合を、本部が<b>役割別</b>に絞ります。新規タグはここで作成。<br>※ 画面・機能・項目の操作/閲覧可否は <b>各権限の「権限編集」</b>で設定します（この画面は機能アクセスではなく、UIカスタマイズに出す指標の母集合のみ）。</p>
@@ -241,7 +246,7 @@
 
   <!-- 役割サマリ（読み取り） -->
   <main id="view-summary" class="hide">
-    <div class="titlebar"><h1>役割サマリ</h1><div class="sp"></div></div>
+    <div class="titlebar"><h1>役割サマリ</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
     <div class="panel">
       <p class="hint">役割ごとに「使える全数」を俯瞰（読み取り）。<b>画面アクセス</b>は権限編集、<b>UIカスタマイズの指標/タグ</b>はカタログで設定。ここはその集約ビューです。</p>
       <div style="overflow:auto;"><table class="list" id="summaryTable"></table></div>
@@ -250,7 +255,7 @@
 
   <!-- ユーザー割当 -->
   <main id="view-users" class="hide">
-    <div class="titlebar"><h1>ユーザー割当</h1><div class="sp"></div></div>
+    <div class="titlebar"><h1>ユーザー割当</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
     <div class="panel">
       <p class="hint"><b>ユーザーにロールを割り当てる</b>画面。<b>1人に複数ロール可（兼務）</b>＝有効権限は<b>許可の合算（union・広い方が勝つ）</b>。<b>未割当はdeny-all</b>（何も見えない）＝安全側の既定。スコープ（自店舗／指定店舗群／全社）はロール側の設定が効きます。</p>
       <table class="list" id="usersTable"></table>
