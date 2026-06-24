@@ -45,7 +45,11 @@
   #listTable th.name{ background:#f5f7f9; z-index:3; }
   #listTable th.actcol, #listTable td.actcol{ min-width:184px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
   #listTable th.actcol{ background:#f5f7f9; z-index:3; }
-  #listTable tr.grouprow td{ position:sticky; left:0; z-index:1; }   /* 群見出しを左固定＝スクロールで切れない */
+  /* 群見出し・余白行：固定セル(名前/操作)の背景を群色に合わせる（白で浮かない） */
+  #listTable tr.grouprow.view td.name, #listTable tr.grouprow.view td.actcol{ background:#eaf2fb; }
+  #listTable tr.grouprow.ops td.name, #listTable tr.grouprow.ops td.actcol{ background:#eef7f0; }
+  #listTable tr.grouprow.owner td.name, #listTable tr.grouprow.owner td.actcol{ background:#eef0f3; }
+  #listTable tr.spacerrow td{ background:#eef0f3; }
   .rowedit + br + .rowedit, .rowedit ~ .rowedit{ margin-top:6px; }
   .tabs{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 16px; border-bottom:2px solid var(--line);}
   .tab{ padding:9px 14px; font-size:13px; cursor:pointer; border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; background:#f3f5f7; color:#555; position:relative; top:2px;}
@@ -693,8 +697,8 @@ function renderList(){
   rows.forEach(({r,ri})=>{
     const g=grp(r);
     if(g!==lastG){
-      if(lastG!==null) h+=`<tr class="spacerrow"><td colspan="${cols.length+2}"></td></tr>`;   // 群の間に余白＝独立分離
-      h+=`<tr class="grouprow ${GCLS[g]}"><td colspan="${cols.length+2}">${GLAB[g]}</td></tr>`; lastG=g;
+      if(lastG!==null) h+=`<tr class="spacerrow"><td class="name"></td><td colspan="${cols.length}"></td><td class="actcol"></td></tr>`;   // 群の間に余白＝独立分離
+      h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${cols.length}"></td><td class="actcol"></td></tr>`; lastG=g;
     }
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
     cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
