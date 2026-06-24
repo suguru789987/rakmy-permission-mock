@@ -84,8 +84,9 @@
   table.list tr.grouprow td{ background:#eef0f3; font-weight:700; font-size:12px; text-align:left;}
   table.list tr.grouprow.view td{ background:#eaf2fb; color:#2c5d9e;}
   table.list tr.grouprow.ops td{ background:#eef7f0; color:#1f7a4d;}
-  table.list tr.grouprow.owner td{ background:#faf0cf; color:#8a6d1a;}
+  table.list tr.grouprow.owner td{ background:#faf0cf; color:#8a6d1a; border-top:2px solid #e6c34d;}
   table.list tr.ownerrow td{ background:#fdf7e3; border-bottom:2px solid #e6c34d;}
+  table.list tr.spacerrow td{ background:#eef0f3; height:14px; padding:0; border-left:none; border-right:none;}
   table.list tr.ownerrow td.name{ font-weight:800; color:#8a6d1a;}
   .crown{ margin-right:6px;}
   .ownerbadge{ display:inline-block; font-size:10px; font-weight:700; color:#fff; background:#caa12a; border-radius:10px; padding:1px 8px; margin-left:8px; vertical-align:middle;}
@@ -609,7 +610,10 @@ function renderList(){
   let lastG=null;
   rows.forEach(({r,ri})=>{
     const g=grp(r);
-    if(g!==lastG){ h+=`<tr class="grouprow ${GCLS[g]}"><td colspan="${cols.length+2}">${GLAB[g]}</td></tr>`; lastG=g; }
+    if(g!==lastG){
+      if(lastG!==null) h+=`<tr class="spacerrow"><td colspan="${cols.length+2}"></td></tr>`;   // 群の間に余白＝独立分離
+      h+=`<tr class="grouprow ${GCLS[g]}"><td colspan="${cols.length+2}">${GLAB[g]}</td></tr>`; lastG=g;
+    }
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
     cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
     let act;
