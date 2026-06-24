@@ -665,7 +665,7 @@ function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').for
     ? '店舗ロール：店舗現場向け。最小権限から開始し、「カタログ作成」で見せる指標/タグを選びます。'
     : '会社ロール：本部レベル。本部専用機能も可否設定でき、カタログは全件を閲覧できます。'; }
 function rmSetScope(s){ rmScope=s; document.querySelectorAll('#rmScope button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
-  const box=document.getElementById('rmShops'); box.classList.toggle('hide',s!=='shops');
+  const box=document.getElementById('rmShops'); box.style.display = s==='shops'?'flex':'none';   // インラインdisplayを直接切替（.hideだとインラインに負ける）
   if(s==='shops'&&!box.dataset.built){ box.innerHTML=SHOPS.map((sh,i)=>`<label class="ro"><input type="checkbox" class="rmShopCb" value="${sh}" ${i<3?'checked':''}> ${sh}</label>`).join(''); box.dataset.built='1'; } }
 function closeRoleModal(){ document.getElementById('roleModal').classList.add('hide'); }
 function submitRoleModal(){
