@@ -603,7 +603,7 @@ function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops'), cols=vc.concat(oc);
   let h=`<tr><th class="name" rowspan="2">権限名</th><th colspan="${vc.length}" class="grp grpview">閲覧権限（分析・レポート）</th><th colspan="${oc.length}" class="grp grpops">操作・設定権限</th><th rowspan="2"></th></tr>`;
   h+='<tr>'+cols.map(c=>`<th>${c.name}${c.hasNew?' ●':''}</th>`).join('')+'</tr>';
-  const grp=r=>r.system?'owner':r.tier, GORDER={shop:0,owner:1,company:2};
+  const grp=r=>r.system?'owner':r.tier, GORDER={owner:0,company:1,shop:2};
   const GLAB={shop:'店舗ロール（自店舗）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
   const GCLS={shop:'view',owner:'owner',company:'ops'};
   const rows=ROLES.map((r,ri)=>({r,ri})).sort((a,b)=>GORDER[grp(a.r)]-GORDER[grp(b.r)]||a.ri-b.ri);
