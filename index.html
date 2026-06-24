@@ -94,6 +94,7 @@
   .rolesel .bl{ font-weight:700; font-size:13px; color:#444;}
   .rolebtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:7px 16px; cursor:pointer; font-size:12.5px; font-weight:700; color:#555;}
   .rolebtn.on{ background:#21262b; color:#fff; border-color:#21262b;}
+  .roleselect{ border:1px solid var(--line); border-radius:7px; padding:7px 12px; font-size:13px; font-weight:700; color:#333; background:#fff; cursor:pointer;}
   .l3grid label.ro{ color:#6b7280;}
   .l3grid label.ro input{ cursor:default;}
   .modal-overlay{ position:fixed; inset:0; background:rgba(20,24,28,.5); display:flex; align-items:center; justify-content:center; z-index:100;}
@@ -400,6 +401,14 @@ function enforceNesting(roles,rk){
 function toggleTagRole(i,rk){ const t=CATALOG.tags[i]; t.roles[rk]=!t.roles[rk]; enforceNesting(t.roles,rk); if(t.roles.manager||t.roles.staff) t.isNew=false; renderCatalog(); }
 function toggleTxRole(gi,ii,rk){ const it=CATALOG.transactions[gi].items[ii]; it.roles[rk]=!it.roles[rk]; enforceNesting(it.roles,rk); renderCatalog(); }
 function toggleDimRole(i,rk){ const d=CATALOG.dimensions[i]; d.roles[rk]=!d.roles[rk]; enforceNesting(d.roles,rk); renderCatalog(); }
+/* 現在のタブの項目集合（カタログ） */
+function curTabItems(){ if(catalogTab==='tags') return CATALOG.tags; if(catalogTab==='dims') return CATALOG.dimensions; if(catalogTab==='metrics') return CATALOG.transactions.flatMap(g=>g.items); return []; }
+/* 他ロールから現在ロールへ丸ごとコピー（全カタログ） */
+function copyFromRole(){ if(catalogRole==='all') return; const src=document.getElementById('copySrc').value; _allCat().forEach(it=>{ it.roles[catalogRole]=it.roles[src]; enforceNesting(it.roles,catalogRole); }); renderCatalog(); toast(roleLabel(src)+'のカタログをコピーしました'); }
+/* このタブを現在ロールで一括 */
+function setAllRole(on){ if(catalogRole==='all') return; curTabItems().forEach(it=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); }); renderCatalog(); }
+/* 系統（トランザクション群）単位の一括（対象ロール列ぶん） */
+function setGroupRole(gi,on){ CATALOG.transactions[gi].items.forEach(it=>roleCols().forEach(rk=>{ it.roles[rk]=on; enforceNesting(it.roles,rk); })); renderCatalog(); }
 let catalogTab='features', catalogRole='all';
 function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
@@ -415,12 +424,14 @@ function renderCatalog(){
   const tabs=[['features','機能カタログ'],['metrics','指標（トランザクション）'],['dims','ディメンション'],['tags','カスタムタグ']];
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
   if(catalogTab!=='features'){
-    const opts=[['all','全体（店舗ロール）']].concat(shopRoleKeys().map(k=>[k,roleLabel(k)+'カタログ']));
-    h+=`<div class="rolesel"><span class="bl">どの権限のカタログを作るか：</span>`
-      +opts.map(([r,nm])=>`<button class="rolebtn ${catalogRole===r?'on':''}" onclick="setCatalogRole('${r}')">${nm}</button>`).join('')
-      +`<span style="flex:1"></span><span style="font-size:11.5px;color:#0a7a55;">🔒 入れ子チェック：店長 ⊇ 従業員</span></div>`;
-    if(catalogRole!=='all') h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${roleLabel(catalogRole)}</span><span class="cb-sub">この権限のカタログに入れる項目を選択 → 役割画面に反映</span></div>`;
-    h+=`<p class="hint" style="margin:-6px 0 12px;">※ カタログ候補の対象は店舗ロール（店長/従業員）。会社ロール（経理/人事/オーナー）は本部レベルで全カタログを閲覧。</p>`;
+    const opts=[['all','全体（店舗ロールを比較）']].concat(shopRoleKeys().map(k=>[k,roleLabel(k)+'のカタログ']));
+    const single=catalogRole!=='all';
+    h+=`<div class="rolesel"><span class="bl">対象ロール：</span>`
+      +`<select class="roleselect" onchange="setCatalogRole(this.value)">${opts.map(([v,nm])=>`<option value="${v}" ${catalogRole===v?'selected':''}>${nm}</option>`).join('')}</select>`
+      +(single?` <span style="margin-left:10px;font-size:12px;color:#555;">他ロールからコピー：</span><select class="roleselect" id="copySrc">${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}">${roleLabel(k)}</option>`).join('')}</select><button class="mini" onclick="copyFromRole()">コピー</button><button class="mini" onclick="setAllRole(true)">このタブ全ON</button><button class="mini" onclick="setAllRole(false)">全OFF</button>`:'')
+      +`<span style="flex:1"></span><span style="font-size:11.5px;color:#0a7a55;">🔒 入れ子：店長 ⊇ 従業員</span></div>`;
+    if(single) h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${roleLabel(catalogRole)}</span><span class="cb-sub">このロールに入れる項目を選択 → 役割画面に反映。コピー／系統一括で素早く土台を作成</span></div>`;
+    h+=`<p class="hint" style="margin:-6px 0 12px;">※ 対象は店舗ロール。会社ロール（経理/人事/オーナー）は本部レベルで全カタログを閲覧。多ロールはプルダウンで1ロールずつ編集＋コピーが効率的。</p>`;
   }
   if(catalogTab==='features') h+=featureCatalogHTML();
   else if(catalogTab==='tags') h+=tagCatalogHTML();
@@ -436,7 +447,7 @@ function metricsCatalogHTML(){
     +`<input class="itemsearch" oninput="filterCatalogT('mcTable',this.value)" placeholder="🔍 指標・系統を検索"></div>`;
   h+=`<table class="list" id="mcTable"><tr><th class="name">系統／指標</th>${roleHeaders()}</tr>`;
   CATALOG.transactions.forEach((g,gi)=>{
-    h+=`<tr class="grouprow view"><td colspan="${roleSpan()}">トランザクション：${g.cat}（店長 ${g.items.filter(i=>i.roles.manager).length}／従業員 ${g.items.filter(i=>i.roles.staff).length}／全${g.items.length}）</td></tr>`;
+    h+=`<tr class="grouprow view"><td colspan="${roleSpan()}">トランザクション：${g.cat}（店長 ${g.items.filter(i=>i.roles.manager).length}／従業員 ${g.items.filter(i=>i.roles.staff).length}／全${g.items.length}） <button class="mini" onclick="setGroupRole(${gi},true)">系統 全ON</button><button class="mini" onclick="setGroupRole(${gi},false)">全OFF</button></td></tr>`;
     g.items.forEach((it,ii)=>{
       h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n}</td>`
         +roleCells(it.roles, rk=>`toggleTxRole(${gi},${ii},'${rk}')`)+`</tr>`;
