@@ -390,7 +390,7 @@ function renderList(){
   ROLES.forEach((r,ri)=>{
     h+=`<tr><td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
     cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
-    h+=`<td>${r.system?'<span style="color:#9aa0a6;font-size:12px;font-weight:700;">全権・固定</span>':`<button class="rowedit" onclick="editRole(${ri})">編集</button>`}</td></tr>`;
+    h+=`<td>${r.system?`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（権限編集不可）</div><button class="rowedit" onclick="show('catalog')">カタログ管理 ＞</button>`:`<button class="rowedit" onclick="editRole(${ri})">編集</button>`}</td></tr>`;
   });
   document.getElementById('listTable').innerHTML=h;
 }
