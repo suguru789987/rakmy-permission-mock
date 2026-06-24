@@ -531,6 +531,10 @@ let ROLES = [
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', perm:buildPerm(PRESET.full,'company','owner'), system:true},
 ];
 const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
+/* 全権の付与（オーナーが会社ロールへ移譲）：全機能max＋adminOnly操作も付与 */
+function grantFullPerm(){ const p={}; CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ setFeatVal(p,c.id,fi,f,maxV(f.k)); (f.ops||[]).forEach(o=>{ if(o.adminOnly) p[opKey(c.id,fi,o.id)]=true; }); })); return p; }
+function delegateFull(ri){ const r=ROLES[ri]; r.perm=grantFullPerm(); r.delegated=true; renderList(); }
+function revokeFull(ri){ const r=ROLES[ri]; r.perm=buildPerm(PRESET.company,r.scope,r.key); r.delegated=false; renderList(); }
 let _roleSeq=0, rmTier='shop';
 function createRole(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
@@ -569,7 +573,8 @@ function renderList(){
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
-    else act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><div style="color:#9aa0a6;font-size:10.5px;margin-top:4px;">カタログ＝全件（本部レベル）</div>`;
+    else if(r.delegated) act=`<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが移譲）</div><button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#9aa0a6;margin-top:5px;" onclick="revokeFull(${ri})">全権を解除</button>`;
+    else act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="delegateFull(${ri})">全権を付与 ＞</button>`;
     h+=`<td>${act}</td></tr>`;
   });
   document.getElementById('listTable').innerHTML=h;
