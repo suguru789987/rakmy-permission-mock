@@ -65,6 +65,12 @@
   .summ-row .cnt{ color:#9aa0a6; font-weight:400; font-size:11.5px; margin-left:8px;}
   .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
   .mixedchip{ font-size:10.5px; background:#f59e0b; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
+  .detailbtn{ border:1px solid var(--line); background:#fff; color:var(--green-d); border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px; margin-left:14px; white-space:nowrap;}
+  .detailbtn:hover{ background:#f3fbf7;}
+  .detailhead{ display:flex; align-items:center; gap:12px; padding:6px 0 14px; margin-bottom:6px; border-bottom:2px solid var(--line); font-size:12.5px; color:#555; flex-wrap:wrap;}
+  .detailhead .dh-title{ font-size:17px; font-weight:700; color:var(--ink);}
+  .backbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px;}
+  .backbtn:hover{ background:#f6f7f9;}
   .bulk{ display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:12.5px; color:#555;}
   .bulk button{ border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 11px; cursor:pointer; font-size:12px;}
   .roleline{ display:flex; align-items:center; gap:16px; margin-bottom:8px;}
@@ -270,7 +276,7 @@ let ROLES = [
   {name:'本部（全権）', key:'full',    scope:'company', perm:buildPerm(PRESET.full,'company','full'), system:true},
 ];
 
-let cur = { idx:0, scope:'shop', perm:{}, expanded:{}, expandedCat:{} };
+let cur = { idx:0, scope:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null };
 
 /* ===== 一覧 ===== */
 function listSummary(perm,cid){
@@ -303,7 +309,7 @@ function show(v){
 function editRole(ri){
   if(ROLES[ri].system){ alert('「本部（全権）」は全権固定のため編集できません。'); return; }
   const r=ROLES[ri];
-  cur={idx:ri,scope:r.scope,perm:JSON.parse(JSON.stringify(r.perm)),expanded:{},expandedCat:{}};
+  cur={idx:ri,scope:r.scope,perm:JSON.parse(JSON.stringify(r.perm)),expanded:{},view:'cats',detailCat:null};
   document.getElementById('roleName').textContent=r.name;
   document.getElementById('scopeChip').textContent='対象範囲：'+(r.scope==='company'?'会社スコープ（全社）':'店舗スコープ（自店舗のみ）');
   renderBody(); show('edit');
@@ -325,21 +331,29 @@ function catSel(perm,cid){   // カテゴリ一括値（0/1/2）か'mixed'を返
   return 'mixed';
 }
 function renderBody(){
-  let h='<p class="hint">カテゴリ単位で一括設定でき、▶で機能・操作・指標まで掘り下げられます。混在は「一部」表示。</p>';
+  if(cur.view==='detail' && cur.detailCat) renderCatDetail(cur.detailCat);
+  else renderCatList();
+  renderExcluded();
+}
+/* メイン：カテゴリ一覧（全体設定） */
+function renderCatList(){
+  let h='<p class="hint">全体設定：カテゴリ単位で一括（なし／閲覧／操作）。機能・操作・指標を細かく設定するには「詳細 ＞」で各カテゴリの設定画面へ。混在は「一部」表示。</p>';
   visibleCats().forEach(c=>{
     const feats=c.features.filter(f=>!f.fixed);
-    const sel=catSel(cur.perm,c.id), exp=cur.expandedCat[c.id];
+    const sel=catSel(cur.perm,c.id);
     const seg=[0,1,2].map(s=>`<button data-v="${s}" class="${sel===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${['なし','閲覧','操作'][s]}</button>`).join('');
     const mixed = sel==='mixed' ? '<span class="mixedchip">一部</span>' : '';
-    h+=`<div class="summ-row"><span class="caret" onclick="toggleCat('${c.id}')">${exp?'▼':'▶'}</span><div class="cn">${c.name}${c.hasNew?'<span class="badge-new">★★含む</span>':''}<span class="cnt">（${feats.length}機能）</span>${mixed}</div><div class="seg">${seg}</div></div>`;
-    if(exp){
-      h+='<div class="l2wrap">';
-      c.features.forEach((f,fi)=>{ if(!f.fixed) h+=featRowHTML(c.id,f,fi); });
-      h+='</div>';
-    }
+    h+=`<div class="summ-row"><div class="cn">${c.name}${c.hasNew?'<span class="badge-new">★★含む</span>':''}<span class="cnt">（${feats.length}機能）</span>${mixed}</div><div class="seg">${seg}</div><button class="detailbtn" onclick="openCat('${c.id}')">詳細 ＞</button></div>`;
   });
   document.getElementById('editBody').innerHTML=h;
-  renderExcluded();
+}
+/* 詳細：1カテゴリの設定画面（遷移先） */
+function renderCatDetail(cid){
+  const c=CATEGORIES.find(x=>x.id===cid);
+  let h=`<div class="detailhead"><button class="backbtn" onclick="closeCat()">◀ カテゴリ一覧へ</button><span class="dh-title">${c.name}</span><span class="cnt">（詳細設定・第二〜三階層）</span><span style="flex:1"></span>`
+    +`このカテゴリ一括：<button class="mini" onclick="setCatVal('${cid}',2)">操作</button><button class="mini" onclick="setCatVal('${cid}',1)">閲覧</button><button class="mini" onclick="setCatVal('${cid}',0)">なし</button></div>`;
+  c.features.forEach((f,fi)=>{ if(!f.fixed) h+=featRowHTML(cid,f,fi); });
+  document.getElementById('editBody').innerHTML=h;
 }
 function featRowHTML(cid,f,fi){
   if(f.noStaff && ROLES[cur.idx].key==='staff'){      // 従業員：DnD編集は構造的に不可
@@ -379,7 +393,8 @@ function featRowHTML(cid,f,fi){
   }
   return html;
 }
-function toggleCat(cid){ cur.expandedCat[cid]=!cur.expandedCat[cid]; renderBody(); }
+function openCat(cid){ cur.view='detail'; cur.detailCat=cid; cur.expanded={}; renderBody(); window.scrollTo(0,0); }
+function closeCat(){ cur.view='cats'; cur.detailCat=null; renderBody(); window.scrollTo(0,0); }
 function toggleExp(ek){ cur.expanded[ek]=!cur.expanded[ek]; renderBody(); }
 function setFeat(cid,fi,s){ const f=CATEGORIES.find(c=>c.id===cid).features[fi]; setFeatVal(cur.perm,cid,fi,f,s); renderBody(); }
 function toggleOp(cid,fi,opid){ const k=opKey(cid,fi,opid); cur.perm[k]=!cur.perm[k]; renderBody(); }
