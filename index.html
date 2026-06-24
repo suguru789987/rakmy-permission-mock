@@ -63,6 +63,8 @@
   .summ-row{ display:flex; align-items:center; padding:13px 6px; border-bottom:1px solid #f0f2f4;}
   .summ-row .cn{ flex:1; font-weight:700; font-size:14.5px;}
   .summ-row .cnt{ color:#9aa0a6; font-weight:400; font-size:11.5px; margin-left:8px;}
+  .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
+  .mixedchip{ font-size:10.5px; background:#f59e0b; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
   .bulk{ display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:12.5px; color:#555;}
   .bulk button{ border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 11px; cursor:pointer; font-size:12px;}
   .roleline{ display:flex; align-items:center; gap:16px; margin-bottom:8px;}
@@ -123,10 +125,6 @@
       </div>
       <div class="legend" style="margin-bottom:14px; color:#0a7a55;">
         DnD編集：会社画面＝本部のみ／店舗画面＝店長まで／従業員は不可。 指標の閲覧範囲は入れ子 <b style="background:#21262b">本部(全指標)</b> ⊇ <b style="background:#1bbf73">店長(本部が許可)</b> ⊇ <b style="background:#3b82f6">従業員(閲覧許可)</b>。
-      </div>
-      <div class="modeTog" id="modeTog">
-        <button class="on" data-m="summary" onclick="setMode('summary')">概要設定（第一階層）</button>
-        <button data-m="detail" onclick="setMode('detail')">詳細設定（第一〜三階層）</button>
       </div>
       <div id="editBody"></div>
       <div id="excludedNote" class="hint" style="margin-top:16px;"></div>
@@ -243,7 +241,11 @@ function catVal(perm,cid){                 // L1集計値（非fixedのみ）
 }
 function setCatVal(cid,val){               // L1一括→各L2→L3
   const cat=CATEGORIES.find(c=>c.id===cid);
-  cat.features.forEach((f,fi)=>{ if(!f.fixed) setFeatVal(cur.perm,cid,fi,f,val); });
+  cat.features.forEach((f,fi)=>{
+    if(f.fixed) return;
+    if(f.noStaff && ROLES[cur.idx].key==='staff') return;   // 従業員のDnD編集は一括対象外
+    setFeatVal(cur.perm,cid,fi,f,val);
+  });
   renderBody();
 }
 
@@ -268,7 +270,7 @@ let ROLES = [
   {name:'本部（全権）', key:'full',    scope:'company', perm:buildPerm(PRESET.full,'company','full'), system:true},
 ];
 
-let cur = { idx:0, scope:'shop', perm:{}, tab:'dashboard', mode:'summary', expanded:{} };
+let cur = { idx:0, scope:'shop', perm:{}, expanded:{}, expandedCat:{} };
 
 /* ===== 一覧 ===== */
 function listSummary(perm,cid){
@@ -301,84 +303,83 @@ function show(v){
 function editRole(ri){
   if(ROLES[ri].system){ alert('「本部（全権）」は全権固定のため編集できません。'); return; }
   const r=ROLES[ri];
-  cur={idx:ri,scope:r.scope,perm:JSON.parse(JSON.stringify(r.perm)),tab:visibleCats()[0].id,mode:cur.mode||'summary',expanded:{}};
+  cur={idx:ri,scope:r.scope,perm:JSON.parse(JSON.stringify(r.perm)),expanded:{},expandedCat:{}};
   document.getElementById('roleName').textContent=r.name;
   document.getElementById('scopeChip').textContent='対象範囲：'+(r.scope==='company'?'会社スコープ（全社）':'店舗スコープ（自店舗のみ）');
-  document.querySelectorAll('#modeTog button').forEach(b=>b.classList.toggle('on',b.dataset.m===cur.mode));
   renderBody(); show('edit');
 }
-function setMode(m){ cur.mode=m; document.querySelectorAll('#modeTog button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); renderBody(); }
 const visibleCats = () => CATEGORIES.filter(c=>c.features.some(f=>!f.fixed));
 function featRange(f){ if(f.range==='shop-self') return cur.scope==='shop'?'自店舗のみ':'全社'; return ''; }
 
-/* ===== 本体描画 ===== */
+/* ===== 本体描画（1画面アコーディオン：カテゴリ→機能→操作/指標） ===== */
+function catSel(perm,cid){   // カテゴリ一括値（0/1/2）か'mixed'を返す（各機能をその値で一括したら現状と一致するか）
+  const cat=CATEGORIES.find(c=>c.id===cid);
+  const feats=cat.features.map((f,fi)=>({f,fi})).filter(x=>!x.f.fixed
+    && !(x.f.noStaff && ROLES[cur.idx].key==='staff'));
+  if(!feats.length) return 0;
+  for(const t of [2,1,0]){
+    const ok=feats.every(({f,fi})=>{ const test={}; setFeatVal(test,cid,fi,f,t);
+      return Object.keys(test).every(k=> !!perm[k] === !!test[k]); });
+    if(ok) return t;
+  }
+  return 'mixed';
+}
 function renderBody(){
-  document.getElementById('editBody').innerHTML = cur.mode==='summary'? summaryHTML() : detailHTML();
+  let h='<p class="hint">カテゴリ単位で一括設定でき、▶で機能・操作・指標まで掘り下げられます。混在は「一部」表示。</p>';
+  visibleCats().forEach(c=>{
+    const feats=c.features.filter(f=>!f.fixed);
+    const sel=catSel(cur.perm,c.id), exp=cur.expandedCat[c.id];
+    const seg=[0,1,2].map(s=>`<button data-v="${s}" class="${sel===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${['なし','閲覧','操作'][s]}</button>`).join('');
+    const mixed = sel==='mixed' ? '<span class="mixedchip">一部</span>' : '';
+    h+=`<div class="summ-row"><span class="caret" onclick="toggleCat('${c.id}')">${exp?'▼':'▶'}</span><div class="cn">${c.name}${c.hasNew?'<span class="badge-new">★★含む</span>':''}<span class="cnt">（${feats.length}機能）</span>${mixed}</div><div class="seg">${seg}</div></div>`;
+    if(exp){
+      h+='<div class="l2wrap">';
+      c.features.forEach((f,fi)=>{ if(!f.fixed) h+=featRowHTML(c.id,f,fi); });
+      h+='</div>';
+    }
+  });
+  document.getElementById('editBody').innerHTML=h;
   renderExcluded();
 }
-/* 概要設定：第一階層のみ */
-function summaryHTML(){
-  let h='<p class="hint">第一階層（機能カテゴリ）単位で一括設定します。細かく分けたい場合は「詳細設定」へ。</p>';
-  visibleCats().forEach(c=>{
-    const cnt=c.features.filter(f=>!f.fixed).length, v=catVal(cur.perm,c.id);
-    const seg=[0,1,2].map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${['なし','閲覧','操作'][s]}</button>`).join('');
-    h+=`<div class="summ-row"><div class="cn">${c.name}${c.hasNew?'<span class="badge-new">★★含む</span>':''}<span class="cnt">（${cnt}機能）</span></div><div class="seg">${seg}</div></div>`;
-  });
-  return h;
-}
-/* 詳細設定：第一(タブ)→第二(機能)→第三(操作) */
-function detailHTML(){
-  const vis=visibleCats();
-  if(!vis.find(c=>c.id===cur.tab)) cur.tab=vis[0].id;
-  const cat=CATEGORIES.find(c=>c.id===cur.tab);
-  let tabs=vis.map(c=>{
-    const nv=c.features.some(f=>!f.fixed&&f.new);
-    return `<div class="tab ${c.id===cur.tab?'active':''}" onclick="selTab('${c.id}')">${c.name}${nv?'<span class="dot"></span>':''}</div>`;
-  }).join('');
-  let body=`<div class="bulk"><span style="font-weight:700;">${cat.name}（第二階層）</span><span style="flex:1"></span>このカテゴリ一括：<button onclick="setCatVal('${cur.tab}',2)">操作</button><button onclick="setCatVal('${cur.tab}',1)">閲覧</button><button onclick="setCatVal('${cur.tab}',0)">なし</button></div>`;
-  cat.features.forEach((f,fi)=>{
-    if(f.fixed) return;
-    if(f.noStaff && ROLES[cur.idx].key==='staff'){      // 従業員：DnD編集は構造的に不可
-      setFeatVal(cur.perm,cur.tab,fi,f,minV(f.k));
-      body+=`<div class="feat"><span class="caret"></span><div class="fn">${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span></div><div class="lockmsg">🔒 従業員はDnD編集不可（許可された指標の閲覧のみ）</div></div>`;
-      return;
+function featRowHTML(cid,f,fi){
+  if(f.noStaff && ROLES[cur.idx].key==='staff'){      // 従業員：DnD編集は構造的に不可
+    setFeatVal(cur.perm,cid,fi,f,minV(f.k));
+    return `<div class="feat"><span class="caret"></span><div class="fn">${f.n}<span class="badge-new">★★新規実装</span><span class="badge-future">将来対応</span></div><div class="lockmsg">🔒 従業員はDnD編集不可（許可された指標の閲覧のみ）</div></div>`;
+  }
+  const kd=KIND[f.k], v=featVal(cur.perm,cid,fi,f), rng=featRange(f);
+  const opsShow = hasItems(f) ? OPS[f.k].filter(o=>o.id!=='view') : OPS[f.k];
+  const hasL3 = opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
+  const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
+  const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('');
+  const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${hasItems(f)?`<span class="kindtag">表示項目 ${itemKeys(f).length}</span>`:''}`;
+  let html=`<div class="feat">${caret}<div class="fn">${f.n}${badges}</div><div class="seg ${kd.lock?'locked':''}">${seg}</div></div>`;
+  if(hasL3 && exp){
+    let inner='';
+    if(opsShow.length>0){
+      const boxes=opsShow.map(o=>{ const on=cur.perm[opKey(cid,fi,o.id)], lv1=o.id==='view';
+        return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} onclick="toggleOp('${cid}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
+      inner+=`<div class="l3bar"><span>操作詳細：許可する操作を選択</span></div>${boxes}`;
     }
-    const kd=KIND[f.k], v=featVal(cur.perm,cur.tab,fi,f), rng=featRange(f);
-    // 操作詳細に出す操作：指標を持つ機能は「閲覧」をL2が担うのでviewを除外、それ以外は全操作
-    const opsShow = hasItems(f) ? OPS[f.k].filter(o=>o.id!=='view') : OPS[f.k];
-    const hasL3 = opsShow.length>0 || hasItems(f), ek=cur.tab+'_'+fi, exp=cur.expanded[ek];
-    const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
-    const seg=kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" ${kd.lock?'disabled':''} onclick="setFeat('${cur.tab}',${fi},${s})">${kd.lab[s]}</button>`).join('');
-    const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${hasItems(f)?`<span class="kindtag">表示項目 ${itemKeys(f).length}</span>`:''}`;
-    body+=`<div class="feat">${caret}<div class="fn">${f.n}${badges}</div><div class="seg ${kd.lock?'locked':''}">${seg}</div></div>`;
-    if(hasL3 && exp){
-      let inner='';
-      if(opsShow.length>0){                 // 操作詳細（エクスポート／登録／編集／削除…）
-        const boxes=opsShow.map(o=>{ const on=cur.perm[opKey(cur.tab,fi,o.id)], lv1=o.id==='view';
-          return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} onclick="toggleOp('${cur.tab}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
-        inner+=`<div class="l3bar"><span>操作詳細：許可する操作を選択</span></div>${boxes}`;
+    if(hasItems(f)){
+      const tot=itemKeys(f).length, on=itemKeys(f).filter(k=>cur.perm[opKey(cid,fi,k)]).length;
+      inner+=`<div class="l3bar" style="margin-top:8px;"><span>閲覧詳細：見せる指標／項目を選択（${on}/${tot}）</span><span style="flex:1"></span>`
+        +`<button class="mini" onclick="setItemsAll('${cid}',${fi},true)">全表示</button>`
+        +`<button class="mini" onclick="setItemsAll('${cid}',${fi},false)">全非表示</button></div>`;
+      if(f.items){
+        inner+=f.items.map((it,ii)=>{ const c=cur.perm[opKey(cid,fi,'i'+ii)];
+          return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'i${ii}')"> ${it.n}</label>`;}).join('');
+      } else {
+        inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div>`
+          + g.items.map((it,ii)=>{ const k='g'+gi+'_'+ii, c=cur.perm[opKey(cid,fi,k)];
+              return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cid}',${fi},'${k}')"> ${it.n}</label>`;}).join('')
+        ).join('');
       }
-      if(hasItems(f)){                       // 閲覧詳細（見せる指標／項目）
-        const tot=itemKeys(f).length, on=itemKeys(f).filter(k=>cur.perm[opKey(cur.tab,fi,k)]).length;
-        inner+=`<div class="l3bar" style="margin-top:8px;"><span>閲覧詳細：見せる指標／項目を選択（${on}/${tot}）</span><span style="flex:1"></span>`
-          +`<button class="mini" onclick="setItemsAll('${cur.tab}',${fi},true)">全表示</button>`
-          +`<button class="mini" onclick="setItemsAll('${cur.tab}',${fi},false)">全非表示</button></div>`;
-        if(f.items){
-          inner+=f.items.map((it,ii)=>{ const c=cur.perm[opKey(cur.tab,fi,'i'+ii)];
-            return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cur.tab}',${fi},'i${ii}')"> ${it.n}</label>`;}).join('');
-        } else {
-          inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div>`
-            + g.items.map((it,ii)=>{ const k='g'+gi+'_'+ii, c=cur.perm[opKey(cur.tab,fi,k)];
-                return `<label><input type="checkbox" ${c?'checked':''} onclick="toggleItem('${cur.tab}',${fi},'${k}')"> ${it.n}</label>`;}).join('')
-          ).join('');
-        }
-      }
-      body+=`<div class="l3">${inner}</div>`;
     }
-  });
-  return `<div class="tabs">${tabs}</div>${body}`;
+    html+=`<div class="l3">${inner}</div>`;
+  }
+  return html;
 }
-function selTab(id){ cur.tab=id; renderBody(); }
+function toggleCat(cid){ cur.expandedCat[cid]=!cur.expandedCat[cid]; renderBody(); }
 function toggleExp(ek){ cur.expanded[ek]=!cur.expanded[ek]; renderBody(); }
 function setFeat(cid,fi,s){ const f=CATEGORIES.find(c=>c.id===cid).features[fi]; setFeatVal(cur.perm,cid,fi,f,s); renderBody(); }
 function toggleOp(cid,fi,opid){ const k=opKey(cid,fi,opid); cur.perm[k]=!cur.perm[k]; renderBody(); }
