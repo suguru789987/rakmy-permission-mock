@@ -96,6 +96,7 @@
   table.list tr.ownerrow td.name{ font-weight:800;}
   .crown{ margin-right:6px;}
   .ownerbadge{ display:inline-block; font-size:10px; font-weight:700; color:#fff; background:#caa12a; border-radius:10px; padding:1px 8px; margin-left:8px; vertical-align:middle;}
+  .rolechip{ display:inline-block; font-size:11.5px; font-weight:700; color:#2c5d9e; background:#eaf2fb; border:1px solid #cfe0f5; border-radius:12px; padding:2px 10px; margin:2px 4px 2px 0;}
   .ccat{ font-size:11px; color:#9aa0a6; margin-right:6px;}
   .rolesel{ display:flex; align-items:center; gap:8px; margin-bottom:14px;}
   .rolesel .bl{ font-weight:700; font-size:13px; color:#444;}
@@ -182,6 +183,7 @@
     <a class="sec">ダッシュボード</a><a>売上分析</a><a>集計・レポート</a>
     <a class="sec">設定 ▾</a>
     <a onclick="show('summary')" id="nav-summary">役割サマリ</a>
+    <a onclick="show('users')" id="nav-users">ユーザー割当</a>
     <a onclick="openCatalogAll()" id="nav-catalog">UIカスタマイズ 指標カタログ</a>
   </nav>
 
@@ -245,6 +247,25 @@
       <div style="overflow:auto;"><table class="list" id="summaryTable"></table></div>
     </div>
   </main>
+
+  <!-- ユーザー割当 -->
+  <main id="view-users" class="hide">
+    <div class="titlebar"><h1>ユーザー割当</h1><div class="sp"></div></div>
+    <div class="panel">
+      <p class="hint"><b>ユーザーにロールを割り当てる</b>画面。<b>1人に複数ロール可（兼務）</b>＝有効権限は<b>許可の合算（union・広い方が勝つ）</b>。<b>未割当はdeny-all</b>（何も見えない）＝安全側の既定。スコープ（自店舗／指定店舗群／全社）はロール側の設定が効きます。</p>
+      <table class="list" id="usersTable"></table>
+    </div>
+  </main>
+</div>
+
+<!-- ロール割当モーダル -->
+<div id="assignModal" class="modal-overlay hide">
+  <div class="modal" style="width:520px;">
+    <h3 id="amTitle">ロールを割り当て</h3>
+    <p class="modal-note" style="min-height:auto;">付与するロールを選択（複数可）。有効権限は選んだロールの<b>許可の合算</b>。未選択なら deny-all。</p>
+    <div id="assignList" style="margin-top:6px;"></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeAssign()">キャンセル</button><button class="btn primary" onclick="saveAssign()">保存</button></div>
+  </div>
 </div>
 
 <!-- 権限作成モーダル -->
@@ -255,9 +276,16 @@
     <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
     <label class="ml">区分</label>
     <div class="rolesel" id="rmTier" style="margin:0;">
-      <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール（自店舗）</button>
-      <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（全社・本部）</button>
+      <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
+      <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
     </div>
+    <label class="ml">データ範囲（スコープ）</label>
+    <div class="rolesel" id="rmScope" style="margin:0;">
+      <button class="rolebtn on" data-s="self" onclick="rmSetScope('self')">自店舗のみ</button>
+      <button class="rolebtn" data-s="shops" onclick="rmSetScope('shops')">指定店舗群（エリア）</button>
+      <button class="rolebtn" data-s="all" onclick="rmSetScope('all')">全社</button>
+    </div>
+    <div id="rmShops" class="hide" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div>
     <div class="modal-note" id="rmNote"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeRoleModal()">キャンセル</button>
@@ -312,7 +340,7 @@ const CATALOG = {
   tags:[{n:'重点商品'},{n:'高粗利メニュー'},{n:'新メニュー'},{n:'曜日キャンペーン'},{n:'ランチ／ディナー区分'}]
 };
 const _allCat=()=>[...CATALOG.dimensions,...CATALOG.transactions.flatMap(g=>g.items),...CATALOG.tags];
-_allCat().forEach(it=>it.roles={manager:true,staff:true,keiri:true,jinji:true});   // 既定は各ロールのカタログに入れる（本部が後で外す）
+_allCat().forEach(it=>it.roles={manager:true,staff:true,area:true,keiri:true,jinji:true});   // 既定は各ロールのカタログに入れる（本部が後で外す）
 const tagsFor = rk => CATALOG.tags.filter(t=>t.roles[rk]);
 const dimsFor = rk => CATALOG.dimensions.filter(d=>d.roles[rk]);
 
@@ -578,13 +606,16 @@ function buildPerm(presetFn,scope,roleKey){
   }));
   return p;
 }
+const SHOPS=['麺屋ミライ 渋谷店','麺屋ミライ 新宿店','麺屋ミライ 池袋店','麺屋ミライ 横浜店','麺屋ミライ 大宮店'];
 let ROLES = [
-  {name:'店長',   key:'manager', tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.manager,'shop','manager')},
-  {name:'従業員', key:'staff',   tier:'shop',    scope:'shop',    perm:buildPerm(PRESET.staff,'shop','staff')},
-  {name:'経理担当',   key:'keiri',   tier:'company', scope:'company', perm:buildPerm(PRESET.company,'company','keiri')},
-  {name:'人事担当',   key:'jinji',   tier:'company', scope:'company', perm:buildPerm(PRESET.company,'company','jinji')},
-  {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', perm:buildPerm(PRESET.full,'company','owner'), system:true},
+  {name:'店長',   key:'manager', tier:'shop',    scope:'shop',    scopeType:'self', perm:buildPerm(PRESET.manager,'shop','manager')},
+  {name:'従業員', key:'staff',   tier:'shop',    scope:'shop',    scopeType:'self', perm:buildPerm(PRESET.staff,'shop','staff')},
+  {name:'エリア長', key:'area',  tier:'shop',    scope:'shop',    scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildPerm(PRESET.manager,'shop','manager')},
+  {name:'経理担当',   key:'keiri',   tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.company,'company','keiri')},
+  {name:'人事担当',   key:'jinji',   tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.company,'company','jinji')},
+  {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner'), system:true},
 ];
+function scopeLabel(r){ if(r.scopeType==='shops') return '指定店舗群（'+((r.shops||[]).length)+'店舗）'; if(r.scopeType==='all'||r.scope==='company') return r.tier==='company'?'会社（全社・本部）':'全社'; return '店舗（自店舗）'; }
 const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
 /* 全権の付与（オーナーが会社ロールへ移譲）：全機能max＋adminOnly操作も付与 */
 function grantFullPerm(){ const p={}; CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ setFeatVal(p,c.id,fi,f,maxV(f.k)); (f.ops||[]).forEach(o=>{ if(o.adminOnly) p[opKey(c.id,fi,o.id)]=true; }); })); return p; }
@@ -607,18 +638,24 @@ function renderDelegateList(){
   document.getElementById('delegateList').innerHTML=h;
 }
 let _roleSeq=0, rmTier='shop';
-function createRole(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
+let rmScope='self';
+function createRole(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); rmSetScope('self'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  rmSetScope(t==='company'?'all':'self');   // 区分に応じた既定スコープ
   document.getElementById('rmNote').textContent = t==='shop'
-    ? '店舗ロール：自店舗が対象。最小権限から開始し、「カタログ作成」で見せる指標/タグを選びます。'
-    : '会社ロール：全社・本部レベル。本部専用機能も可否設定でき、カタログは全件を閲覧できます。'; }
+    ? '店舗ロール：店舗現場向け。最小権限から開始し、「カタログ作成」で見せる指標/タグを選びます。'
+    : '会社ロール：本部レベル。本部専用機能も可否設定でき、カタログは全件を閲覧できます。'; }
+function rmSetScope(s){ rmScope=s; document.querySelectorAll('#rmScope button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+  const box=document.getElementById('rmShops'); box.classList.toggle('hide',s!=='shops');
+  if(s==='shops'&&!box.dataset.built){ box.innerHTML=SHOPS.map((sh,i)=>`<label class="ro"><input type="checkbox" class="rmShopCb" value="${sh}" ${i<3?'checked':''}> ${sh}</label>`).join(''); box.dataset.built='1'; } }
 function closeRoleModal(){ document.getElementById('roleModal').classList.add('hide'); }
 function submitRoleModal(){
   const nm=document.getElementById('rmName').value.trim();
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
   const company=rmTier==='company'; _roleSeq++; const key='role'+_roleSeq, tier=rmTier, scope=tier;
+  const shops = rmScope==='shops' ? [...document.querySelectorAll('.rmShopCb:checked')].map(c=>c.value) : undefined;
   _allCat().forEach(it=>it.roles[key]=company);   // 会社ロール=全件で開始／店舗ロール=空から作る（カタログ管理で調整）
-  ROLES.push({name:nm, key, tier, scope, perm:buildPerm(company?PRESET.company:PRESET.staff, scope, key)});
+  ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm:buildPerm(company?PRESET.company:PRESET.staff, scope, key)});
   closeRoleModal(); editRole(ROLES.length-1);
 }
 
@@ -637,7 +674,7 @@ function renderList(){
   let h=`<tr><th class="name" rowspan="2">権限名</th><th colspan="${vc.length}" class="grp grpview">閲覧権限（分析・レポート）</th><th colspan="${oc.length}" class="grp grpops">操作・設定権限</th><th rowspan="2"></th></tr>`;
   h+='<tr>'+cols.map(c=>`<th>${c.name}${c.hasNew?' ●':''}</th>`).join('')+'</tr>';
   const grp=r=>r.system?'owner':r.tier, GORDER={owner:0,company:1,shop:2};
-  const GLAB={shop:'店舗ロール（自店舗）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
+  const GLAB={shop:'店舗ロール（店舗現場）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
   const GCLS={shop:'view',owner:'owner',company:'ops'};
   const rows=ROLES.map((r,ri)=>({r,ri})).sort((a,b)=>GORDER[grp(a.r)]-GORDER[grp(b.r)]||a.ri-b.ri);
   let lastG=null;
@@ -647,7 +684,7 @@ function renderList(){
       if(lastG!==null) h+=`<tr class="spacerrow"><td colspan="${cols.length+2}"></td></tr>`;   // 群の間に余白＝独立分離
       h+=`<tr class="grouprow ${GCLS[g]}"><td colspan="${cols.length+2}">${GLAB[g]}</td></tr>`; lastG=g;
     }
-    h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.scope==='company'?'会社（全社）':'店舗（自店舗）'}</span></td>`;
+    h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
     cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
@@ -660,12 +697,46 @@ function renderList(){
 
 /* ===== 切替 ===== */
 function show(v){
-  ['list','edit','catalog','summary'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
-  ['list','edit','catalog','summary'].forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
+  const VIEWS=['list','edit','catalog','summary','users'];
+  VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
+  VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='list') renderList();
   if(v==='catalog') renderCatalog();
   if(v==='summary') renderSummary();
+  if(v==='users') renderUsers();
 }
+/* ===== ユーザー割当 ===== */
+let USERS=[
+  {name:'田中 太郎', org:'渋谷店', roleKeys:['manager']},
+  {name:'佐藤 花子', org:'本部', roleKeys:['keiri']},
+  {name:'鈴木 一郎', org:'新宿店 ／ 本部（兼務）', roleKeys:['manager','keiri']},
+  {name:'高橋 実',   org:'首都圏エリア', roleKeys:['area']},
+  {name:'渡辺 桜',   org:'本部', roleKeys:['jinji','keiri']},
+  {name:'山田 新人', org:'渋谷店（入社直後）', roleKeys:[]},
+];
+let _assignUi=-1;
+function roleByKey(k){ return ROLES.find(r=>r.key===k); }
+function renderUsers(){
+  let h=`<tr><th class="name">ユーザー</th><th>所属</th><th>割当ロール（複数可＝合算）</th><th>有効権限</th><th></th></tr>`;
+  USERS.forEach((u,ui)=>{
+    const chips=u.roleKeys.length? u.roleKeys.map(k=>{const r=roleByKey(k);return `<span class="rolechip">${r?r.name:k}</span>`;}).join('') : '<span style="color:#c33;font-size:12px;font-weight:700;">未割当</span>';
+    let eff;
+    if(!u.roleKeys.length) eff=`<span style="color:#c33;font-weight:700;">deny-all（何も見えない）</span>`;
+    else { const scopes=[...new Set(u.roleKeys.map(k=>{const r=roleByKey(k);return r?scopeLabel(r):'';}))].join(' ＋ ');
+      eff=`許可の<b>合算（union）</b><br><span style="color:#9aa0a6;font-size:11px;">範囲：${scopes}</span>`; }
+    h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.org}</td><td>${chips}</td><td style="font-size:12px;">${eff}</td>`
+      +`<td style="text-align:right;"><button class="rowedit" onclick="openAssign(${ui})">割当を編集</button></td></tr>`;
+  });
+  document.getElementById('usersTable').innerHTML=h;
+}
+function openAssign(ui){ _assignUi=ui; const u=USERS[ui];
+  document.getElementById('amTitle').textContent=u.name+' のロール割当';
+  document.getElementById('assignList').innerHTML=ROLES.filter(r=>!r.system).map(r=>
+    `<label class="ro" style="display:flex;gap:8px;padding:7px 4px;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''}> <b>${r.name}</b><span style="color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}・${scopeLabel(r)}</span></label>`).join('');
+  document.getElementById('assignModal').classList.remove('hide');
+}
+function closeAssign(){ document.getElementById('assignModal').classList.add('hide'); }
+function saveAssign(){ USERS[_assignUi].roleKeys=[...document.querySelectorAll('.amCb:checked')].map(c=>c.value); closeAssign(); renderUsers(); toast(USERS[_assignUi].name+' の割当を保存しました'); }
 function renderSummary(){
   const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
   const allN={tx:CATALOG.transactions.flatMap(g=>g.items).length, dim:CATALOG.dimensions.length, tag:CATALOG.tags.length};
