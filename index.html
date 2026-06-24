@@ -257,7 +257,7 @@
   <main id="view-users" class="hide">
     <div class="titlebar"><h1>ユーザー割当</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
     <div class="panel">
-      <p class="hint"><b>ユーザーにロールを割り当てる</b>画面。<b>1人に複数ロール可（兼務）</b>＝有効権限は<b>許可の合算（union・広い方が勝つ）</b>。<b>未割当はdeny-all</b>（何も見えない）＝安全側の既定。スコープ（自店舗／指定店舗群／全社）はロール側の設定が効きます。</p>
+      <p class="hint"><b>従業員一覧／アカウントmaster と連動</b>：ユーザー・<b>所属店舗</b>・<b>役職</b>はmasterから取得（ここでは追加・改名しない）。本画面では<b>権限ロールの割当のみ</b>を行い、<b>所属店舗ごとにグループ表示</b>。<br><b>1人に複数ロール可（兼務）</b>＝有効権限は<b>許可の合算（union）</b>。<b>未割当はdeny-all</b>（安全側の既定）。スコープはロール側設定が効く。<br>※ 役職（店長/スタッフ/経理…）に応じた<b>推奨ロールの初期提示</b>も可能（masterの役職→既定ロールのマッピング）。</p>
       <table class="list" id="usersTable"></table>
     </div>
   </main>
@@ -711,26 +711,33 @@ function show(v){
   if(v==='users') renderUsers();
 }
 /* ===== ユーザー割当 ===== */
+// 従業員一覧／アカウントmaster と連動（name/shop/title はそこから取得）。ここでは roleKeys（権限割当）のみ編集。
 let USERS=[
-  {name:'田中 太郎', org:'渋谷店', roleKeys:['manager']},
-  {name:'佐藤 花子', org:'本部', roleKeys:['keiri']},
-  {name:'鈴木 一郎', org:'新宿店 ／ 本部（兼務）', roleKeys:['manager','keiri']},
-  {name:'高橋 実',   org:'首都圏エリア', roleKeys:['area']},
-  {name:'渡辺 桜',   org:'本部', roleKeys:['jinji','keiri']},
-  {name:'山田 新人', org:'渋谷店（入社直後）', roleKeys:[]},
+  {name:'田中 太郎', shop:'麺屋ミライ 渋谷店', title:'店長',        roleKeys:['manager']},
+  {name:'伊藤 健',   shop:'麺屋ミライ 渋谷店', title:'スタッフ',     roleKeys:['staff']},
+  {name:'山田 新人', shop:'麺屋ミライ 渋谷店', title:'アルバイト（入社直後）', roleKeys:[]},
+  {name:'中村 優',   shop:'麺屋ミライ 新宿店', title:'店長',        roleKeys:['manager']},
+  {name:'鈴木 一郎', shop:'麺屋ミライ 新宿店', title:'店長 兼 本部経理（兼務）', roleKeys:['manager','keiri']},
+  {name:'高橋 実',   shop:'首都圏エリア',     title:'エリアマネージャー', roleKeys:['area']},
+  {name:'佐藤 花子', shop:'本部',             title:'経理',        roleKeys:['keiri']},
+  {name:'渡辺 桜',   shop:'本部',             title:'人事 兼 経理', roleKeys:['jinji','keiri']},
 ];
 let _assignUi=-1;
 function roleByKey(k){ return ROLES.find(r=>r.key===k); }
 function renderUsers(){
-  let h=`<tr><th class="name">ユーザー</th><th>所属</th><th>割当ロール（複数可＝合算）</th><th>有効権限</th><th></th></tr>`;
-  USERS.forEach((u,ui)=>{
-    const chips=u.roleKeys.length? u.roleKeys.map(k=>{const r=roleByKey(k);return `<span class="rolechip">${r?r.name:k}</span>`;}).join('') : '<span style="color:#c33;font-size:12px;font-weight:700;">未割当</span>';
-    let eff;
-    if(!u.roleKeys.length) eff=`<span style="color:#c33;font-weight:700;">deny-all（何も見えない）</span>`;
-    else { const scopes=[...new Set(u.roleKeys.map(k=>{const r=roleByKey(k);return r?scopeLabel(r):'';}))].join(' ＋ ');
-      eff=`許可の<b>合算（union）</b><br><span style="color:#9aa0a6;font-size:11px;">範囲：${scopes}</span>`; }
-    h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.org}</td><td>${chips}</td><td style="font-size:12px;">${eff}</td>`
-      +`<td style="text-align:right;"><button class="rowedit" onclick="openAssign(${ui})">割当を編集</button></td></tr>`;
+  let h=`<tr><th class="name">ユーザー</th><th>役職（master連動）</th><th>割当ロール（複数可＝合算）</th><th>有効権限</th><th></th></tr>`;
+  const shops=[...new Set(USERS.map(u=>u.shop))];   // 所属店舗ごとにグループ
+  shops.forEach(sh=>{
+    h+=`<tr class="grouprow view"><td colspan="5">🏬 ${sh}（${USERS.filter(u=>u.shop===sh).length}名）</td></tr>`;
+    USERS.forEach((u,ui)=>{ if(u.shop!==sh) return;
+      const chips=u.roleKeys.length? u.roleKeys.map(k=>{const r=roleByKey(k);return `<span class="rolechip">${r?r.name:k}</span>`;}).join('') : '<span style="color:#c33;font-size:12px;font-weight:700;">未割当</span>';
+      let eff;
+      if(!u.roleKeys.length) eff=`<span style="color:#c33;font-weight:700;">deny-all（何も見えない）</span>`;
+      else { const scopes=[...new Set(u.roleKeys.map(k=>{const r=roleByKey(k);return r?scopeLabel(r):'';}))].join(' ＋ ');
+        eff=`許可の<b>合算（union）</b><br><span style="color:#9aa0a6;font-size:11px;">範囲：${scopes}</span>`; }
+      h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.title}</td><td>${chips}</td><td style="font-size:12px;">${eff}</td>`
+        +`<td style="text-align:right;"><button class="rowedit" onclick="openAssign(${ui})">割当を編集</button></td></tr>`;
+    });
   });
   document.getElementById('usersTable').innerHTML=h;
 }
