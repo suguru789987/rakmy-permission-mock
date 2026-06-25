@@ -135,6 +135,7 @@
   .condsel{ border:1px solid #b9d2ee; border-radius:7px; padding:6px 10px; font-size:13px; font-weight:700; color:#1f3b5e; background:#fff; cursor:pointer;}
   .tplchip{ display:inline-flex; align-items:center; gap:4px; background:#eef9f2; border:1px solid #bfe6cf; border-radius:14px; padding:3px 5px 3px 12px; font-size:12.5px; font-weight:700; color:#0f7d49;}
   .tplbtn{ border:none; background:#159b5d; color:#fff; border-radius:10px; font-size:10.5px; font-weight:700; padding:3px 8px; cursor:pointer;} .tplbtn.del{ background:#c0573a; padding:3px 7px;}
+  .barsep{ width:1px; height:26px; background:var(--line); margin:0 4px;}
   .condentry{ display:flex; align-items:center; gap:12px; justify-content:space-between; background:#fffdf3; border:1px solid #f0e3b8; border-radius:9px; padding:12px 14px; margin:0 0 12px;}
   .ce-tit{ display:block; font-size:14px; font-weight:800; color:#8a6d1a;} .ce-sub{ display:block; font-size:11.5px; color:#9a8a55; margin-top:2px;}
   .csec{ border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px;}
@@ -309,6 +310,7 @@
       <span class="scopechip" id="csRole" style="background:#159b5d;">店長</span>
       <div class="sp"></div>
       <span id="csTplBar" style="display:flex;gap:8px;align-items:center;"></span>
+      <span class="barsep"></span>
       <button class="btn ghost" onclick="show('catalog')">キャンセル</button>
       <button class="btn primary" onclick="applyCondset()">適用してカタログへ戻る</button>
     </div>
