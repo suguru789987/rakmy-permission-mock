@@ -298,6 +298,7 @@
       <h1>指標カタログ</h1>
       <span class="scopechip" style="background:#21262b;">本部／オーナー</span>
       <div class="sp"></div>
+      <button class="btn ghost" onclick="show('tpllist')">マイテンプレート一覧 ＞</button>
       <button class="btn ghost" onclick="show('list')">← 権限設定へ</button>
     </div>
     <div class="panel">
@@ -311,6 +312,7 @@
     <div class="titlebar">
       <h1>指標条件設定</h1>
       <span class="scopechip" id="csRole" style="background:#159b5d;">店長</span>
+      <button class="btn ghost" style="margin-left:10px;" onclick="show('tpllist')">マイテンプレート一覧 ＞</button>
       <div class="sp"></div>
       <button class="btn ghost" onclick="show('catalog')">キャンセル</button>
       <span id="csTplBar" style="display:flex;gap:8px;align-items:center;"></span>
@@ -319,6 +321,19 @@
     <div class="panel">
       <p class="hint">①推奨テンプレートを土台に → ②条件ルールを上から重ねて（後の行が優先）→ ③プレビューを確認 → 適用。マイテンプレートの保存・更新は右上で。個別の例外は戻ってから指標表のトグルで調整。</p>
       <div id="condsetBody"></div>
+    </div>
+  </main>
+
+  <!-- マイテンプレート一覧（管理） -->
+  <main id="view-tpllist" class="hide">
+    <div class="titlebar">
+      <h1>マイテンプレート一覧</h1>
+      <div class="sp"></div>
+      <button class="btn ghost" onclick="show('catalog')">← 指標カタログへ</button>
+    </div>
+    <div class="panel">
+      <p class="hint">指標条件設定で「名前をつけて保存」したテンプレート（①ベース＋②条件ルール一式）の一覧。<b>編集</b>＝条件設定画面で開いて直す（対象ロールは指標カタログの選択ロール）。<b>削除</b>でテンプレを破棄。<br>※ 現状はセッション内保持（モック）。本番はDB保存で全社共有・恒久化。</p>
+      <table class="list" id="tplListBody"></table>
     </div>
   </main>
 
@@ -609,6 +624,18 @@ function closeTplModal(){ document.getElementById('tplModal').classList.add('hid
 function submitTplName(){ const nm=(document.getElementById('tplNameInput').value||'').trim(); if(!nm){ document.getElementById('tplNameInput').style.borderColor='#c33'; return; } CONDTPL.push({name:nm,base:condBase,rules:condRules.map(r=>({...r}))}); curTplIdx=CONDTPL.length-1; closeTplModal(); renderCondset(); toast('マイテンプレート「'+nm+'」を保存しました'); }
 function updateCondTpl(){ if(curTplIdx<0) return; const t=CONDTPL[curTplIdx]; t.base=condBase; t.rules=condRules.map(r=>({...r})); renderCondset(); toast('「'+t.name+'」を更新しました'); }
 function delCondTplCur(){ if(curTplIdx<0) return; const nm=CONDTPL[curTplIdx].name; CONDTPL.splice(curTplIdx,1); curTplIdx=-1; renderCondset(); toast('「'+nm+'」を削除しました'); }
+function renderTplList(){
+  let h;
+  if(!CONDTPL.length){ h=`<tr><td style="padding:16px;color:#9aa0a6;">保存済みのマイテンプレートはありません。指標条件設定で「名前をつけて保存」すると、ここに一覧表示されます。</td></tr>`; document.getElementById('tplListBody').innerHTML=h; return; }
+  const BLAB={floor:'現場スタッフ向け',manager:'店長向け',admin:'管理者・経理向け',keep:'現状から'};
+  h=`<tr><th class="name">テンプレート名</th><th>ベース</th><th>条件ルール</th><th></th></tr>`;
+  CONDTPL.forEach((t,i)=>{ const rules=t.rules.length? t.rules.map(r=>r.grp==='カスタムタグ'?`タグ→${r.act}`:`${r.grp}/${r.type}→${r.act}`).join('／') : 'なし（ベースのみ）';
+    h+=`<tr><td class="name">★ ${t.name}</td><td>${BLAB[t.base]||t.base}</td><td style="font-size:12px;color:#555;">${rules}</td>`
+      +`<td style="text-align:right;white-space:nowrap;"><button class="rowedit" onclick="editTplFromList(${i})">編集</button> <button class="rowedit" style="background:#c0573a;" onclick="delTplFromList(${i})">削除</button></td></tr>`; });
+  document.getElementById('tplListBody').innerHTML=h;
+}
+function editTplFromList(i){ show('condset'); loadCondTplSel(String(i)); }
+function delTplFromList(i){ const nm=CONDTPL[i].name; CONDTPL.splice(i,1); if(curTplIdx===i) curTplIdx=-1; else if(curTplIdx>i) curTplIdx--; renderTplList(); toast('「'+nm+'」を削除しました'); }
 function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; renderCondset(); toast('「'+t.name+'」を読み込みました'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
@@ -889,7 +916,7 @@ function renderList(){
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','edit','catalog','summary','users','condset'];
+  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist'];
   VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='list') renderList();
@@ -897,6 +924,7 @@ function show(v){
   if(v==='summary') renderSummary();
   if(v==='users') renderUsers();
   if(v==='condset') renderCondset();
+  if(v==='tpllist') renderTplList();
 }
 /* ===== ユーザー割当 ===== */
 // 従業員一覧／アカウントmaster と連動（name/shop/title はそこから取得）。ここでは roleKeys（権限割当）のみ編集。
