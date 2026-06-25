@@ -686,7 +686,7 @@ function renderCondset(){
     ['keep','現状から（触らない）','今のカタログをそのまま土台に。条件ルールで部分的に上書き。']], du=defaultUseCase();
   // そのロールに一致する推奨テンプレ＋「現状から」だけ（下位/上位テンプレは出さない）
   const shownBases=bases.filter(([b])=> b===du || b==='keep');
-  if(!shownBases.some(([b])=>b===condBase)) condBase=du;
+  if(condBase!=='new' && !shownBases.some(([b])=>b===condBase)) condBase=du;   // 'new'(新規=まっさら)はリセットしない
   const BLAB={floor:'現場スタッフ向け',manager:'店長向け',admin:'管理者・経理向け',keep:'現状から（触らない）'};
   let h=`<div class="csec"><div class="csec-h">① テンプレートから開始</div>`;
   // 1段目：テンプレート選択（推奨＋保存＋新規作成 を1プルダウンに統合）
