@@ -612,6 +612,8 @@ function setGroupRole(gi,on){ CATALOG.transactions[gi].items.forEach(it=>roleCol
 /* ユースケース別 推奨プリセット（機微度ベースで一括設定） */
 const USECASE={ floor:{label:'現場スタッフ向け', sub:'売上・客数中心／利益・人件費は隠す', allow:s=>s==='open', tags:false}, manager:{label:'店長向け', sub:'運営に必要／純利益・粗利は隠す', allow:s=>s!=='exec', tags:true}, admin:{label:'管理者・経理向け', sub:'全指標', allow:()=>true, tags:true} };
 function defaultUseCase(){ const r=ROLES.find(x=>x.key===catalogRole); if(!r) return 'floor'; if(r.key==='staff') return 'floor'; if(r.key==='manager'||r.key==='area') return 'manager'; if(r.tier==='company') return 'admin'; return r.tier==='shop'?'floor':'admin'; }
+/* ロール名に紐づく“専用”推奨テンプレートのみ返す（無ければnull＝新規作成へ誘導）。店舗/会社ロール共通：紐づくのは従業員=現場/店長=店長/経理=管理者経理/オーナー=全権(=admin)のみ。人事・エリア長・カスタムロールはnull */
+function rolePreset(k){ if(k==='staff') return 'floor'; if(k==='manager') return 'manager'; if(k==='keiri'||k==='owner') return 'admin'; return null; }
 function applyRecommend(uc){ if(catalogRole==='all') return; const c=USECASE[uc];
   CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ it.roles[catalogRole]=c.allow(it.sens||'open'); enforceNesting(it.roles,catalogRole); }));
   CATALOG.tags.forEach(t=>{ t.roles[catalogRole]=c.tags; enforceNesting(t.roles,catalogRole); });
@@ -647,7 +649,7 @@ function computeCondTags(){ return CATALOG.tags.map(t=>({t, on:(t.n in condOverr
 function toggleCondItem(name){ const it=CATALOG.transactions.flatMap(g=>g.items).find(x=>x.n===name); if(!it) return; if(it.scope==='company'&&!roleScopeAll()){ toast('全社集計のため、このロール（自店舗）では表示できません'); return; } const eff=(name in condOverride)?condOverride[name]:condItemOn(it); condOverride[name]=!eff; renderCondset(); }
 function toggleCondTag(name){ const t=CATALOG.tags.find(x=>x.n===name); if(!t) return; const eff=(name in condOverride)?condOverride[name]:condTagOn(t); condOverride[name]=!eff; renderCondset(); }
 let condAdvOpen=false;
-function openCondset(){ condBase=defaultUseCase(); condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; condNew=false; copyMode=false; tplDdOpen=false; markCondClean(); show('condset'); }
+function openCondset(){ condBase=rolePreset(catalogRole)||'keep'; condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; condNew=false; copyMode=false; tplDdOpen=false; markCondClean(); show('condset'); }
 document.addEventListener('click', function(e){ if(tplDdOpen){ const inside=e.target.closest&&e.target.closest('.hdd'); if(!inside){ tplDdOpen=false; const v=document.getElementById('view-condset'); if(v&&!v.classList.contains('hide')) renderCondset(); } } });
 function toggleCondAdv(){ condAdvOpen=!condAdvOpen; renderCondset(); }
 function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; condOverride={}; condNew=false; copyMode=false; markCondClean(); renderCondset(); }   // 土台変更で個別上書きはリセット
@@ -666,7 +668,8 @@ let CONDTPL=[], curTplIdx=-1, condBaseline='';
 function condStateStr(){ return JSON.stringify({b:condBase,c:condRules,o:condOverride,cp:copySrc}); }
 function markCondClean(){ condBaseline=condStateStr(); }   // 現在状態を「保存済み＝変更なし」基準に
 function condDirty(){ return condStateStr()!==condBaseline; }
-function tplBarHTML(){   // 変更がある時だけ保存ボタンを出す（ダーティ判定）
+function tplBarHTML(){   // 内部判断で出し分け：新規作成＝常に「名前をつけて保存」／既存＝変更時のみ「更新して保存」／推奨ベース＝変更時のみ「名前をつけて保存」
+  if(condNew) return `<button class="btn ghost" onclick="openTplSaveModal()">名前をつけて保存</button>`;   // 新規作成モードは作成が目的＝常に保存可
   const dirty=condDirty();
   if(curTplIdx>=0) return dirty ? `<button class="btn ghost" onclick="updateCondTpl()">更新して保存</button>` : `<span style="color:#9aa0a6;font-size:12px;">変更なし</span>`;
   return dirty ? `<button class="btn ghost" onclick="openTplSaveModal()">名前をつけて保存</button>` : `<span style="color:#9aa0a6;font-size:12px;">変更なし</span>`;
@@ -710,17 +713,17 @@ function renderCondset(){
     ['floor','現場スタッフ向け','🔓現場OKの指標のみ表示。利益・原価・人件費（金額）は隠す。'],
     ['manager','店長向け','🔓現場OK＋🔸店長まで表示。🔒経営機密（純利益・粗利）は隠す。'],
     ['admin','管理者・経理向け','全指標を表示（機微度の制限なし）。'],
-    ['keep','現状から（触らない）','今のカタログをそのまま土台に。条件ルールで部分的に上書き。']], du=defaultUseCase();
-  // そのロールに一致する推奨テンプレ＋「現状から」だけ（下位/上位テンプレは出さない）
-  const shownBases=bases.filter(([b])=> b===du || b==='keep');
-  if(condBase!=='new' && !shownBases.some(([b])=>b===condBase)) condBase=du;   // 'new'(新規=まっさら)はリセットしない
+    ['keep','現状から（触らない）','今のカタログをそのまま土台に。条件ルールで部分的に上書き。']], du=rolePreset(catalogRole);
+  // ロール名に紐づく専用推奨があればそれ＋「現状から」。無ければ「現状から」のみ（新規作成へ誘導）
+  const shownBases=bases.filter(([b])=> (du && b===du) || b==='keep');
+  if(condBase!=='new' && !shownBases.some(([b])=>b===condBase)) condBase=du||'keep';   // 'new'(新規=まっさら)はリセットしない。専用推奨が無ければ現状から
   const BLAB={floor:'現場スタッフ向け',manager:'店長向け',admin:'管理者・経理向け',keep:'現状から（触らない）'};
   let h=`<div class="csec"><div class="csec-h">① テンプレートから開始</div>`;
   // 1段目：テンプレート選択（独自ハードプルダウン：推奨／保存／新規作成）
   const curLabel = condNew ? '＋ 新規テンプレートを作成' : (curTplIdx>=0 ? '★ '+CONDTPL[curTplIdx].name : (copySrc ? 'コピー：'+roleLabel(copySrc) : (BLAB[condBase]||condBase)+(condBase===du?'（推奨）':'')));
   let dd=`<button class="hdd-btn" onclick="event.stopPropagation();toggleTplDd()">${curLabel}<span class="hdd-ar">▾</span></button>`;
   dd+=`<div class="hdd-panel${tplDdOpen?'':' hide'}">`
-    +`<div class="hdd-grp">推奨テンプレート</div>`+shownBases.map(([b])=>`<div class="hdd-opt ${(condBase===b&&curTplIdx<0&&!copySrc&&!condNew)?'on':''}" onclick="pickTpl('base:${b}')">${BLAB[b]}${b===du?' <span class="recpill">推奨</span>':''}</div>`).join('')
+    +`<div class="hdd-grp">推奨テンプレート</div>`+(du?'':`<div class="hdd-empty">このロール名に紐づく専用の推奨はありません。<br>「新規テンプレートを作成」（他ロールをコピー可）でどうぞ。</div>`)+shownBases.map(([b])=>`<div class="hdd-opt ${(condBase===b&&curTplIdx<0&&!copySrc&&!condNew)?'on':''}" onclick="pickTpl('base:${b}')">${BLAB[b]}${b===du?' <span class="recpill">推奨</span>':''}</div>`).join('')
     +`<div class="hdd-grp">保存テンプレート</div>`+(CONDTPL.length?CONDTPL.map((t,i)=>`<div class="hdd-opt ${curTplIdx===i?'on':''}" onclick="pickTpl('tpl:${i}')">★ ${t.name}</div>`).join(''):`<div class="hdd-empty">（保存済みなし）</div>`)
     +`<div class="hdd-grp">新規テンプレート作成</div><div class="hdd-opt ${condNew?'on':''}" onclick="pickTpl('new')">＋ 新規テンプレートを作成</div>`
     +`</div>`;
