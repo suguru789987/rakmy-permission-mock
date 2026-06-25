@@ -316,7 +316,7 @@
       <div class="sp"></div>
       <button class="btn ghost" onclick="show('catalog')">キャンセル</button>
       <span id="csTplBar" style="display:flex;gap:8px;align-items:center;"></span>
-      <button class="btn primary" onclick="applyCondset()">適用</button>
+      <button class="btn primary" onclick="applyCondset()">カタログへ戻る</button>
     </div>
     <div class="panel">
       <p class="hint">①推奨テンプレートを土台に → ②条件ルールを上から重ねて（後の行が優先）→ ③プレビューを確認 → 適用。マイテンプレートの保存・更新は右上で。個別の例外は戻ってから指標表のトグルで調整。</p>
@@ -616,7 +616,7 @@ function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.ro
 let CONDTPL=[], curTplIdx=-1;
 function tplBarHTML(){   // 文脈で出し分け：新規＝名前をつけて保存／既存＝更新して保存
   return curTplIdx>=0
-    ? `<button class="btn ghost" onclick="updateCondTpl()">更新して保存</button>`
+    ? `<button class="btn ghost" onclick="updateCondTpl()">更新</button>`
     : `<button class="btn ghost" onclick="openTplSaveModal()">名前をつけて保存</button>`;
 }
 function openTplSaveModal(){ document.getElementById('tplNameInput').value=''; document.getElementById('tplNameInput').style.borderColor=''; document.getElementById('tplModal').classList.remove('hide'); setTimeout(()=>document.getElementById('tplNameInput').focus(),40); }
