@@ -808,9 +808,12 @@ function submitRoleModal(){
 let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
 
 /* ===== 一覧 ===== */
-function listSummary(perm,cid){
+function listSummary(role,cid){
   const cat=CATEGORIES.find(c=>c.id===cid);
-  const vals=cat.features.map((f,fi)=>({v:featVal(perm,cid,fi,f),k:f.k}));
+  // そのロールで編集対象になる機能だけで集計（店舗ロールは本部専用fixedを除外＝非表示分を勘定しない）
+  const shown=cat.features.map((f,fi)=>({f,fi})).filter(({f})=> f.fixed ? role.tier==='company' : true);
+  if(!shown.length) return '<span class="mk no">✕</span>';   // 全て本部専用＝店舗ロールには非該当（なし）
+  const vals=shown.map(({f,fi})=>({v:featVal(role.perm,cid,fi,f),k:f.k}));
   if(vals.every(x=>x.v===maxV(x.k))) return '<span class="mk op">◯</span>';
   if(vals.every(x=>x.v===minV(x.k))) return '<span class="mk no">✕</span>';
   return '<span class="mk vw">△</span>';
@@ -831,7 +834,7 @@ function renderList(){
       h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${cols.length}"></td><td class="actcol"></td></tr>`; lastG=g;
     }
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
-    cols.forEach(c=>h+=`<td>${listSummary(r.perm,c.id)}</td>`);
+    cols.forEach(c=>h+=`<td>${listSummary(r,c.id)}</td>`);
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
