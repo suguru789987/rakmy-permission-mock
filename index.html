@@ -583,11 +583,13 @@ function renderCondset(){
     ['manager','店長向け','🔓現場OK＋🔸店長まで表示。🔒経営機密（純利益・粗利）は隠す。'],
     ['admin','管理者・経理向け','全指標を表示（機微度の制限なし）。'],
     ['keep','現状から（触らない）','今のカタログをそのまま土台に。条件ルールで部分的に上書き。']], du=defaultUseCase();
-  // ロールのレベルを超える上位テンプレートは出さない（過剰露出防止）。自分のレベル以下＋現状からのみ
+  // ロール種別で出し分け：店舗ロール＝現場/店長系、会社ロール＝管理者・経理系。さらに自分のレベル以下＋現状から
   const LV={floor:1,manager:2,admin:3};
-  const shownBases=bases.filter(([b])=> b==='keep' || LV[b]<=LV[du]);
+  const _role=ROLES.find(x=>x.key===catalogRole), isCo=_role&&_role.tier==='company';
+  const tierOK=b=> isCo ? b==='admin' : (b==='floor'||b==='manager');
+  const shownBases=bases.filter(([b])=> b==='keep' || (tierOK(b) && LV[b]<=LV[du]));
   if(!shownBases.some(([b])=>b===condBase)) condBase=du;
-  let h=`<div class="csec"><div class="csec-h">① 推奨テンプレートから開始 <span class="csec-note">（このロールのレベル以下のみ・カードにカーソルで定義）</span></div><div class="baserow">`
+  let h=`<div class="csec"><div class="csec-h">① 推奨テンプレートから開始 <span class="csec-note">（このロール種別・レベルに応じて表示・カードにカーソルで定義）</span></div><div class="baserow">`
     +shownBases.map(([b,l,d])=>`<label class="baseopt ${condBase===b?'on':''}"><input type="radio" name="cbase" ${condBase===b?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')+`</div></div>`;
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順に適用＝後の行が優先）</div>`;
   if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（推奨テンプレートのみ適用）。「＋ 条件を追加」で「率は見せ金額は隠す」等を指定。</p>`;
