@@ -267,7 +267,6 @@
   <main id="view-edit" class="hide">
     <div class="titlebar">
       <h1>権限編集</h1><div class="sp"></div>
-      <button class="btn ghost" onclick="openAccessCond()">⚙ 条件で一括設定 ＞</button>
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
       <button class="btn primary" onclick="saveRole()">保存</button>
     </div>
@@ -311,21 +310,6 @@
     <div class="panel">
       <p class="hint">①推奨テンプレートを土台に → ②条件ルールを上から重ねて（後の行が優先）→ ③プレビューを確認 → 適用。個別の例外は戻ってから指標表のトグルで調整。</p>
       <div id="condsetBody"></div>
-    </div>
-  </main>
-
-  <!-- 機能アクセス条件設定（専用画面） -->
-  <main id="view-acccond" class="hide">
-    <div class="titlebar">
-      <h1>機能アクセス条件設定</h1>
-      <span class="scopechip" id="acRole" style="background:#159b5d;">店長</span>
-      <div class="sp"></div>
-      <button class="btn ghost" onclick="show('edit')">キャンセル</button>
-      <button class="btn primary" onclick="applyAccessCond()">適用して権限編集へ戻る</button>
-    </div>
-    <div class="panel">
-      <p class="hint">画面（機能）の<b>閲覧／操作可否</b>を、<b>対象カテゴリ</b>ごとに一括設定（会社ロールは「本部専用機能」も指定可）。①ベース → ②条件ルール（後の行が優先）→ ③プレビュー → 適用。個別の例外は戻って機能ごとのコントロールで調整。</p>
-      <div id="acccondBody"></div>
     </div>
   </main>
 
@@ -609,54 +593,6 @@ function renderCondset(){
   h+=`</div>`;
   document.getElementById('condsetBody').innerHTML=h;
 }
-/* ===== 機能アクセス条件設定（画面ごとの 閲覧/操作可否を 条件文で一括） ===== */
-const KINDLABEL={base:'常時',view:'分析閲覧',edit:'設定',action:'実行',admin:'管理'};
-const ACC_GRP=['すべて','閲覧系（分析・レポート）','操作・設定系','──個別カテゴリ──',...CATEGORIES.map(c=>c.name)], ACC_KIND=['すべて','常時','分析閲覧','設定','実行','管理'], ACC_FIXED=['すべて','本部専用のみ','本部専用を除く'], ACC_ACT=['なし','閲覧','操作'];
-let accBase='keep', accRules=[];
-function openAccessCond(){ accBase='keep'; accRules=[]; show('acccond'); }
-function setAccBase(b){ accBase=b; renderAccessCond(); }
-function addAccRule(){ accRules.push({grp:'操作・設定系',fixed:'すべて',act:'操作'}); renderAccessCond(); }
-function accGrpSelect(i,val){   // 大別／個別を optgroup で明確化
-  const big=['すべて','閲覧系（分析・レポート）','操作・設定系'];
-  let o=`<optgroup label="大別">`+big.map(g=>`<option ${val===g?'selected':''}>${g}</option>`).join('')+`</optgroup>`;
-  o+=`<optgroup label="個別カテゴリ">`+CATEGORIES.map(c=>`<option ${val===c.name?'selected':''}>${c.name}</option>`).join('')+`</optgroup>`;
-  return `<select class="condsel" onchange="setAccRule(${i},'grp',this.value)">${o}</select>`; }
-function setAccRule(i,f,v){ accRules[i][f]=v; renderAccessCond(); }
-function delAccRule(i){ accRules.splice(i,1); renderAccessCond(); }
-function computeAccess(){ const res=[];
-  CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ const shown=f.fixed?cur.tier==='company':true; if(!shown) return;
-    let v = accBase==='keep' ? featVal(cur.perm,c.id,fi,f) : PRESET[accBase](f);
-    accRules.forEach(r=>{ const mg = r.grp.startsWith('すべて')?true : r.grp.startsWith('閲覧系')?c.group==='view' : r.grp==='操作・設定系'?c.group==='ops' : c.name===r.grp,
-        mf=(r.fixed||'すべて').startsWith('すべて')||((r.fixed||'').includes('のみ')?!!f.fixed:!f.fixed);
-      if(mg&&mf) v={'なし':0,'閲覧':1,'操作':2}[r.act]; });
-    v=Math.min(v,maxV(f.k)); v=Math.max(v,minV(f.k));
-    res.push({c,fi,f,v}); }));
-  return res; }
-function applyAccessCond(){ computeAccess().forEach(({c,fi,f,v})=>setFeatVal(cur.perm,c.id,fi,f,v)); renderBody(); show('edit'); toast('「'+ROLES[cur.idx].name+'」に機能アクセス条件を適用しました'); }
-function renderAccessCond(){
-  document.getElementById('acRole').textContent=ROLES[cur.idx].name;
-  const bases=[
-    ['keep','現状から（推奨）','今の「'+ROLES[cur.idx].name+'」の設定をそのまま土台にします。リセットせず、下の条件ルールで部分的に上書きしたい時の既定。'],
-    ['staff','最小レベル（分析閲覧のみ）','分析は閲覧のみ／操作・設定・実行・管理はすべて「なし」。最小権限からゼロベースで組む土台。'],
-    ['manager','店舗運営レベル（操作まで）','分析閲覧＋店舗の操作（設定・実行）まで可。本部専用機能・管理（admin）は不可。'],
-    ['company','本部レベル（管理まで）','操作・設定・管理（admin）まで可の本部レベル。経理／人事など会社ロール相当の土台。']];
-  let h=`<div class="csec"><div class="csec-h">① ベースから開始 <span class="csec-note">（カードにカーソルで定義を表示）</span></div><div class="baserow">`
-    +bases.map(([b,l,d])=>`<label class="baseopt ${accBase===b?'on':''}"><input type="radio" name="abase" ${accBase===b?'checked':''} onclick="setAccBase('${b}')"> ${l}${b==='keep'?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')+`</div></div>`;
-  h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順＝後の行が優先）</div>`;
-  if(!accRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（ベースのみ）。「＋条件を追加」で「操作・設定系を操作にする」「予算管理を閲覧にする」等を指定。</p>`;
-  accRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setAccRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''} ${o.startsWith('──')?'disabled':''}>${o}</option>`).join('')}</select>`;
-    const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`, isCo=cur.tier==='company';
-    h+=`<div class="crow">${fld('対象カテゴリ',accGrpSelect(i,r.grp))}`
-      +(isCo?`<span class="condw">のうち</span>${fld('本部専用機能',sel(ACC_FIXED,r.fixed,'fixed'))}`:'')
-      +`<span class="condw">を</span>${fld('与える可否（なし/閲覧/操作）',sel(ACC_ACT,r.act,'act'))}<span class="condw">にする</span><button class="mini" onclick="delAccRule(${i})">削除</button></div>`; });
-  h+=`<button class="btn ghost" style="margin-top:8px;" onclick="addAccRule()">＋ 条件を追加</button></div>`;
-  const res=computeAccess(), cnt={0:0,1:0,2:0}; res.forEach(x=>cnt[x.v]++);
-  h+=`<div class="csec"><div class="csec-h">③ プレビュー</div><div class="prevbar"><span style="color:#159b5d">操作 ${cnt[2]}</span><span style="color:#2c5d9e">閲覧 ${cnt[1]}</span><span style="color:#c0392b">なし ${cnt[0]}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}機能</span></div>`;
-  CATEGORIES.forEach(c=>{ const items=res.filter(x=>x.c===c); if(!items.length) return;
-    h+=`<div class="prevgrp">${c.name}</div><div class="prevlist">`+items.map(x=>{ const lab=['なし','閲覧','操作'][x.v], cls=['off','vw','on'][x.v]; return `<span class="prevchip ${cls}">${x.f.n}：${lab}</span>`; }).join('')+`</div>`; });
-  h+=`</div>`;
-  document.getElementById('acccondBody').innerHTML=h;
-}
 let catalogTab='metrics', catalogRole='manager';
 function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
@@ -892,7 +828,7 @@ function renderList(){
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','edit','catalog','summary','users','condset','acccond'];
+  const VIEWS=['list','edit','catalog','summary','users','condset'];
   VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='list') renderList();
@@ -900,7 +836,6 @@ function show(v){
   if(v==='summary') renderSummary();
   if(v==='users') renderUsers();
   if(v==='condset') renderCondset();
-  if(v==='acccond') renderAccessCond();
 }
 /* ===== ユーザー割当 ===== */
 // 従業員一覧／アカウントmaster と連動（name/shop/title はそこから取得）。ここでは roleKeys（権限割当）のみ編集。
