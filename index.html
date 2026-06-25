@@ -149,6 +149,9 @@
   .baseopt:hover .tip{ opacity:1; visibility:visible;}
   .csec-note{ font-size:11px; font-weight:500; color:#9aa0a6; margin-left:6px;}
   .recpill{ font-size:10px; font-weight:700; color:#fff; background:#159b5d; border-radius:9px; padding:1px 7px;}
+  .tplrow{ display:flex; align-items:flex-start; gap:14px; padding:11px 0; border-bottom:1px dashed var(--line);}
+  .tplrow:last-child{ border-bottom:none;}
+  .tplrl{ width:140px; flex-shrink:0; font-size:12.5px; font-weight:800; color:#555; padding-top:9px; line-height:1.4;}
   .advrow{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--line);}
   .advtgl{ background:#f3f5f8; border:1px solid var(--line); border-radius:8px; padding:8px 14px; font-size:12.5px; font-weight:700; color:#444; cursor:pointer;}
   .advtgl:hover{ border-color:#159b5d; color:#159b5d;}
@@ -323,7 +326,7 @@
       <button class="btn primary" onclick="applyCondset()">カタログへ戻る</button>
     </div>
     <div class="panel">
-      <p class="hint">① テンプレートを選ぶ → すぐ下の<b>プレビュー</b>で結果を確認。さらに細かく調整したいときだけ、①下段の<b>「⚙ 条件ルールで微調整」</b>を開いて上書きルールを追加（後の行が優先）。保存・更新・カタログへ戻るは右上。</p>
+      <p class="hint">① <b>推奨テンプレート／保存テンプレート／他ロールからコピー</b>のいずれかを土台に選ぶ → すぐ下の<b>②プレビュー</b>で結果を確認。さらに細かくは①下段<b>「詳細カスタマイズ」</b>で条件を追加（後の行が優先）。保存・更新・カタログへ戻るは右上。</p>
       <div id="condsetBody"></div>
     </div>
   </main>
@@ -601,16 +604,16 @@ function applyCondition(){ if(catalogRole==='all') return;
 /* ===== 指標条件設定（専用画面・推奨＋条件ルールのリスト＋プレビュー） ===== */
 let condBase='manager', condRules=[];
 const COND_GRP=['すべての系統','売上','コスト','利益','カスタムタグ'], COND_TYPE=['すべての種別','金額（合計）','率（％）','構成比','前年比','件数','時間'], COND_SENS=['すべて','🔓現場OK','🔸店長まで','🔒経営機密'], COND_ACT=['表示する','表示しない'];
-function computeCondTags(){ return CATALOG.tags.map(t=>{ let on = condBase==='keep'?!!t.roles[catalogRole]:USECASE[condBase].tags; condRules.forEach(r=>{ if(r.grp==='カスタムタグ') on=(r.act==='表示する'); }); return {t,on}; }); }
+function computeCondTags(){ return CATALOG.tags.map(t=>{ let on = copySrc ? !!t.roles[copySrc] : (condBase==='keep'?!!t.roles[catalogRole]:USECASE[condBase].tags); condRules.forEach(r=>{ if(r.grp==='カスタムタグ') on=(r.act==='表示する'); }); return {t,on}; }); }
 let condAdvOpen=false;
-function openCondset(){ condBase=defaultUseCase(); condRules=[]; curTplIdx=-1; condAdvOpen=false; show('condset'); }
+function openCondset(){ condBase=defaultUseCase(); condRules=[]; curTplIdx=-1; condAdvOpen=false; copySrc=null; show('condset'); }
 function toggleCondAdv(){ condAdvOpen=!condAdvOpen; renderCondset(); }
-function setCondBase(b){ condBase=b; curTplIdx=-1; renderCondset(); }   // 組込みベース選択＝マイテンプレ選択を解除（新規扱い）
+function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; renderCondset(); }   // 組込みベース選択＝マイテンプレ/コピー選択を解除
 function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}); renderCondset(); }
 function setCondRule(i,f,v){ condRules[i][f]=v; renderCondset(); }
 function delCondRule(i){ condRules.splice(i,1); renderCondset(); }
 function computeCond(){ const res=[];
-  CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ let on = condBase==='keep' ? !!it.roles[catalogRole] : USECASE[condBase].allow(it.sens||'open');
+  CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ let on = copySrc ? !!it.roles[copySrc] : (condBase==='keep' ? !!it.roles[catalogRole] : USECASE[condBase].allow(it.sens||'open'));
     condRules.forEach(r=>{ const mg=r.grp.startsWith('すべて')||it.g===r.grp, mt=r.type.startsWith('すべて')||it.t===T_MAP[r.type], ms=r.sens.startsWith('すべて')||(it.sens||'open')===S_MAP[r.sens];
       if(mg&&mt&&ms) on=(r.act==='表示する'); });
     res.push({it,on}); }));
@@ -642,7 +645,11 @@ function renderTplList(){
 }
 function editTplFromList(i){ show('condset'); loadCondTplSel(String(i)); }
 function delTplFromList(i){ const nm=CONDTPL[i].name; CONDTPL.splice(i,1); if(curTplIdx===i) curTplIdx=-1; else if(curTplIdx>i) curTplIdx--; renderTplList(); toast('「'+nm+'」を削除しました'); }
-function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; renderCondset(); toast('「'+t.name+'」を読み込みました'); }
+function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; copySrc=null; renderCondset(); toast('「'+t.name+'」を読み込みました'); }
+function onTplSelect(v){ const i=+v; if(i<0){ curTplIdx=-1; renderCondset(); return; } loadCondTplSel(String(i)); }
+/* 他ロールからコピー：選択した元ロールの現在のカタログ（指標/タグ）を土台にする */
+let copySrc=null;
+function onCopySrc(v){ copySrc=v||null; if(copySrc){ curTplIdx=-1; } renderCondset(); if(copySrc) toast('「'+roleLabel(copySrc)+'」の設定を土台にしました（適用で現在のロールにコピー）'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
   const bases=[
@@ -653,13 +660,26 @@ function renderCondset(){
   // そのロールに一致する推奨テンプレ＋「現状から」だけ（下位/上位テンプレは出さない）
   const shownBases=bases.filter(([b])=> b===du || b==='keep');
   if(!shownBases.some(([b])=>b===condBase)) condBase=du;
-  let h=`<div class="csec"><div class="csec-h">① テンプレートから開始 <span class="csec-note">（推奨＋マイテンプレート／カードにカーソルで定義）</span></div><div class="baserow">`
-    +shownBases.map(([b,l,d])=>`<label class="baseopt ${(condBase===b&&curTplIdx<0)?'on':''}"><input type="radio" name="cbase" ${(condBase===b&&curTplIdx<0)?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')
-    +CONDTPL.map((t,i)=>`<label class="baseopt mytpl ${curTplIdx===i?'on':''}"><input type="radio" name="cbase" ${curTplIdx===i?'checked':''} onclick="loadCondTplSel(${i})"> ★${t.name}${curTplIdx===i?` <button class="tpldel" onclick="event.preventDefault();event.stopPropagation();delCondTplCur()">削除</button>`:''}</label>`).join('')
-    +`</div>`;
-  // 下段エキストラ：条件ルールで微調整（折りたたみ）
+  let h=`<div class="csec"><div class="csec-h">① テンプレートから開始</div>`;
+  // 1段目：推奨テンプレート選択
+  h+=`<div class="tplrow"><span class="tplrl">推奨テンプレート</span><div class="baserow" style="flex:1;">`
+    +shownBases.map(([b,l,d])=>`<label class="baseopt ${(condBase===b&&curTplIdx<0&&!copySrc)?'on':''}"><input type="radio" name="cbase" ${(condBase===b&&curTplIdx<0&&!copySrc)?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')
+    +`</div></div>`;
+  // 2段目：保存テンプレート選択（プルダウンで適用）
+  h+=`<div class="tplrow"><span class="tplrl">保存テンプレート</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
+    +(CONDTPL.length
+      ? `<select class="condsel" onchange="onTplSelect(this.value)"><option value="-1" ${curTplIdx<0?'selected':''}>マイテンプレートを選択…</option>${CONDTPL.map((t,i)=>`<option value="${i}" ${curTplIdx===i?'selected':''}>★ ${t.name}</option>`).join('')}</select>${curTplIdx>=0?`<span style="color:#0f7d49;font-size:12px;font-weight:700;">選択中（変更は右上「更新」）</span><button class="mini" style="background:#c0573a;" onclick="delCondTplCur()">削除</button>`:''}`
+      : `<span style="color:#9aa0a6;font-size:12px;">保存済みなし。条件を作り右上「名前をつけて保存」で追加。</span>`)
+    +`<span style="flex:1"></span><button class="mini" onclick="show('tpllist')">一覧 ＞</button></div></div>`;
+  // 3段目：他ロールからコピー（元ロールの現在設定を土台に→適用でこのロールにコピー）
+  h+=`<div class="tplrow"><span class="tplrl">他ロールからコピー</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
+    +`<select class="condsel" onchange="onCopySrc(this.value)"><option value="">コピー元ロールを選択…</option>${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}" ${copySrc===k?'selected':''}>${roleLabel(k)}</option>`).join('')}</select>`
+    +(copySrc?`<span style="color:#2c5d9e;font-size:12px;font-weight:700;">「${roleLabel(copySrc)}」の現在設定を土台中</span><button class="mini" onclick="onCopySrc('')">解除</button>`:`<span style="color:#9aa0a6;font-size:11.5px;">選んだロールの現在の指標/タグ設定を土台にし、適用でこのロールへコピー</span>`)
+    +`</div></div>`;
+  // 4段目：詳細カスタマイズ（条件追加）
   const advShown = condAdvOpen || condRules.length>0;
-  h+=`<div class="advrow"><button class="advtgl" onclick="toggleCondAdv()">${advShown?'▾':'▸'} ⚙ 条件ルールで微調整${condRules.length?`（${condRules.length}件適用中）`:'（任意：率は見せ金額は隠す 等）'}</button></div>`;
+  h+=`<div class="tplrow"><span class="tplrl">詳細カスタマイズ<br><span style="font-weight:400;color:#9aa0a6;">（条件追加）</span></span><div style="flex:1;">`
+    +`<button class="advtgl" onclick="toggleCondAdv()">${advShown?'▾':'▸'} ⚙ 条件ルールで微調整${condRules.length?`（${condRules.length}件適用中）`:'（任意：率は見せ金額は隠す 等）'}</button>`;
   if(advShown){
     h+=`<div class="advbox">`;
     if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12px;padding:2px 2px 8px;">条件ルールなし（テンプレートのみ適用）。「＋ 条件を追加」で上から順（後の行が優先）に上書きルールを指定。</p>`;
@@ -671,7 +691,7 @@ function renderCondset(){
         +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
     h+=`<button class="btn ghost" style="margin-top:6px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
   }
-  h+=`</div>`;   // ① csec close
+  h+=`</div></div>`;   // close row3 + ① csec
   const res=computeCond(), on=res.filter(x=>x.on).length;
   h+=`<div class="csec"><div class="csec-h">② プレビュー（結果）</div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
   // 逆算ガード：金額(非表示) が 率×母数 で逆算できる組合せを警告
