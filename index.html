@@ -125,7 +125,10 @@
   .recobtn{ display:flex; flex-direction:column; align-items:flex-start; gap:1px; background:#fff; border:1.5px solid #d9c97a; border-radius:8px; padding:7px 13px; font-size:13px; font-weight:700; color:#5b4d1a; cursor:pointer; line-height:1.3;}
   .recobtn small{ font-weight:500; font-size:10.5px; color:#9a8a55;}
   .recobtn:hover{ background:#fbf4d8; border-color:#caa12a;}
-  .recobtn.floor{ border-color:#9ccfae;} .recobtn.mgr{ border-color:#9bbfe0;} .recobtn.admin{ border-color:#c9a3d8;}
+  .recobtn.primary{ background:#159b5d; border-color:#159b5d; color:#fff;} .recobtn.primary small{ color:#d4f0e1;}
+  .recobtn.primary:hover{ background:#0f7d49;}
+  .recobtn.alt{ flex-direction:row; padding:6px 12px; font-size:12px; background:#fff; border-color:#d9c97a; color:#5b4d1a;}
+  .recoor{ font-size:11.5px; color:#9a8a55; margin:0 2px;}
   .sens{ display:inline-block; font-size:10px; font-weight:700; border-radius:9px; padding:1px 7px; margin-left:6px; vertical-align:middle;}
   .sens.open{ background:#e8f6ee; color:#1f7a4d;} .sens.mgr{ background:#eaf2fb; color:#2c5d9e;} .sens.exec{ background:#fdeaea; color:#c0392b;}
   .l3grid label.ro{ color:#6b7280;}
@@ -489,7 +492,8 @@ function setAllRole(on){ if(catalogRole==='all') return; curTabItems().forEach(i
 /* 系統（トランザクション群）単位の一括（対象ロール列ぶん） */
 function setGroupRole(gi,on){ CATALOG.transactions[gi].items.forEach(it=>roleCols().forEach(rk=>{ it.roles[rk]=on; enforceNesting(it.roles,rk); })); renderCatalog(); }
 /* ユースケース別 推奨プリセット（機微度ベースで一括設定） */
-const USECASE={ floor:{label:'現場スタッフ向け', allow:s=>s==='open', tags:false}, manager:{label:'店長向け', allow:s=>s!=='exec', tags:true}, admin:{label:'管理者・経理向け', allow:()=>true, tags:true} };
+const USECASE={ floor:{label:'現場スタッフ向け', sub:'売上・客数中心／利益・人件費は隠す', allow:s=>s==='open', tags:false}, manager:{label:'店長向け', sub:'運営に必要／純利益・粗利は隠す', allow:s=>s!=='exec', tags:true}, admin:{label:'管理者・経理向け', sub:'全指標', allow:()=>true, tags:true} };
+function defaultUseCase(){ const r=ROLES.find(x=>x.key===catalogRole); if(!r) return 'floor'; if(r.key==='staff') return 'floor'; if(r.key==='manager'||r.key==='area') return 'manager'; if(r.tier==='company') return 'admin'; return r.tier==='shop'?'floor':'admin'; }
 function applyRecommend(uc){ if(catalogRole==='all') return; const c=USECASE[uc];
   CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ it.roles[catalogRole]=c.allow(it.sens||'open'); enforceNesting(it.roles,catalogRole); }));
   CATALOG.tags.forEach(t=>{ t.roles[catalogRole]=c.tags; enforceNesting(t.roles,catalogRole); });
@@ -519,12 +523,12 @@ function renderCatalog(){
       +`<select class="roleselect" onchange="setCatalogRole(this.value)">${opts.map(([v,nm])=>`<option value="${v}" ${catalogRole===v?'selected':''}>${nm}</option>`).join('')}</select>`
       +` <span style="margin-left:10px;font-size:12px;color:#555;">他ロールからコピー：</span><select class="roleselect" id="copySrc">${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}">${roleLabel(k)}</option>`).join('')}</select><button class="mini" onclick="copyFromRole()">コピー</button><button class="mini" onclick="setAllRole(true)">このタブ全ON</button><button class="mini" onclick="setAllRole(false)">全OFF</button>`
       +`<span style="flex:1"></span>${nestShown?`<span style="font-size:11.5px;color:#0a7a55;">🔒 入れ子：店長 ⊇ 従業員</span>`:''}</div>`;
-    h+=`<div class="catbanner cb-ops"><span class="cb-tag">カタログ作成</span><span class="cb-name">${roleLabel(catalogRole)}</span><span class="cb-sub">このロールに入れる項目を選択 → 役割画面に反映。下の推奨から一発で土台、個別調整も可</span></div>`;
-    h+=`<div class="recobar"><span class="recolab">⭐ ユースケース推奨（機微度で一括）：</span>`
-      +`<button class="recobtn floor" onclick="applyRecommend('floor')">現場スタッフ向け<small>売上・客数中心／利益・人件費は隠す</small></button>`
-      +`<button class="recobtn mgr" onclick="applyRecommend('manager')">店長向け<small>運営に必要／純利益・粗利は隠す</small></button>`
-      +`<button class="recobtn admin" onclick="applyRecommend('admin')">管理者・経理向け<small>全指標</small></button></div>`;
-    h+=`<p class="hint" style="margin:-2px 0 12px;">※ 推奨は機微度（🔓現場OK／🔸店長まで／🔒経営機密）で一括設定。例：オーナーが店長・従業員に<b>純利益・粗利を見せない</b>→「現場」「店長」向けで自動OFF。適用後に個別トグルで微調整可。新規ロールも自動でプルダウンに追加。オーナーは常に全件。</p>`;
+    const _def=defaultUseCase(), _others=['floor','manager','admin'].filter(u=>u!==_def);
+    h+=`<div class="recobar"><span class="recolab">💡「${roleLabel(catalogRole)}」の推奨設定：</span>`
+      +`<button class="recobtn primary" onclick="applyRecommend('${_def}')">${USECASE[_def].label}（推奨）<small>${USECASE[_def].sub}</small></button>`
+      +`<span class="recoor">／ 別テンプレート：</span>`
+      +_others.map(u=>`<button class="recobtn alt" onclick="applyRecommend('${u}')">${USECASE[u].label}</button>`).join('')+`</div>`;
+    h+=`<p class="hint" style="margin:-2px 0 12px;">※ 選択中ロールの性質から<b>推奨テンプレート</b>を自動提示（機微度 🔓現場OK／🔸店長まで／🔒経営機密 で一括）。例：店長・従業員は🔒経営機密（純利益・粗利）を自動OFF。適用後に個別トグルで微調整可。オーナーは常に全件。</p>`;
   }
   if(catalogTab==='tags') h+=tagCatalogHTML();
   else h+=metricsCatalogHTML();
