@@ -650,11 +650,8 @@ function renderCondset(){
     ['manager','店長向け','🔓現場OK＋🔸店長まで表示。🔒経営機密（純利益・粗利）は隠す。'],
     ['admin','管理者・経理向け','全指標を表示（機微度の制限なし）。'],
     ['keep','現状から（触らない）','今のカタログをそのまま土台に。条件ルールで部分的に上書き。']], du=defaultUseCase();
-  // ロール種別で出し分け：店舗ロール＝現場/店長系、会社ロール＝管理者・経理系。さらに自分のレベル以下＋現状から
-  const LV={floor:1,manager:2,admin:3};
-  const _role=ROLES.find(x=>x.key===catalogRole), isCo=_role&&_role.tier==='company';
-  const tierOK=b=> isCo ? b==='admin' : (b==='floor'||b==='manager');
-  const shownBases=bases.filter(([b])=> b==='keep' || (tierOK(b) && LV[b]<=LV[du]));
+  // そのロールに一致する推奨テンプレ＋「現状から」だけ（下位/上位テンプレは出さない）
+  const shownBases=bases.filter(([b])=> b===du || b==='keep');
   if(!shownBases.some(([b])=>b===condBase)) condBase=du;
   let h=`<div class="csec"><div class="csec-h">① テンプレートから開始 <span class="csec-note">（推奨＋マイテンプレート／カードにカーソルで定義）</span></div><div class="baserow">`
     +shownBases.map(([b,l,d])=>`<label class="baseopt ${(condBase===b&&curTplIdx<0)?'on':''}"><input type="radio" name="cbase" ${(condBase===b&&curTplIdx<0)?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')
