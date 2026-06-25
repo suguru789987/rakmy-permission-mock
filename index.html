@@ -484,6 +484,11 @@ const CATALOG = {
 };
 const _allCat=()=>[...CATALOG.dimensions,...CATALOG.transactions.flatMap(g=>g.items),...CATALOG.tags];
 _allCat().forEach(it=>it.roles={manager:true,staff:true,area:true,keiri:true,jinji:true});   // 既定は各ロールのカタログに入れる（本部が後で外す）
+// 全社集計（scope:company）の指標は店舗スコープのロール（店長/従業員/エリア）には初期から付与しない（誤露出防止）
+CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ if(it.scope==='company'){ it.roles.manager=false; it.roles.staff=false; it.roles.area=false; } }));
+// 指標がこのロールのスコープで許可されるか（全社集計は全社スコープのロールのみ）
+function roleScopeAllKey(k){ const r=ROLES.find(x=>x.key===k); return !!(r&&r.scopeType==='all'); }
+function catItemAllowed(it,rk){ return !!it.roles[rk] && !(it.scope==='company' && !roleScopeAllKey(rk)); }
 const tagsFor = rk => CATALOG.tags.filter(t=>t.roles[rk]);
 const dimsFor = rk => CATALOG.dimensions.filter(d=>d.roles[rk]);
 
@@ -1142,7 +1147,7 @@ function featRowHTML(cid,f,fi,group){
   const hasL3 = !!f.subitems || opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
   let itemTag='';
-  if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(CATALOG.dimensions.length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>i.roles[rk]).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
+  if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(CATALOG.dimensions.length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>catItemAllowed(i,rk)).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
   else if(hasItems(f)){ const ks=itemKeys(f), on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length; itemTag=`<span class="kindtag">指標 ${on}/${ks.length} 表示</span>`; }
   const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
   // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
@@ -1176,7 +1181,7 @@ function featRowHTML(cid,f,fi,group){
       } else {  // display：ディメンション（全役割共通）＋トランザクション（役割別）
         const dims=CATALOG.dimensions; cnt+=dims.length;   // ディメンションは全役割共通＝常時全件
         if(dims.length) body+=`<div class="l3grp">ディメンション（全役割共通）</div><div class="l3grid">`+dims.map(d=>`<label class="ro" data-name="${d.n}"><input type="checkbox" checked disabled> ${d.n}</label>`).join('')+`</div>`;
-        CATALOG.transactions.forEach(g=>{ const its=g.items.filter(i=>i.roles[rk]); if(!its.length) return; cnt+=its.length;
+        CATALOG.transactions.forEach(g=>{ const its=g.items.filter(i=>catItemAllowed(i,rk)); if(!its.length) return; cnt+=its.length;
           body+=`<div class="l3grp">トランザクション：${g.cat}</div><div class="l3grid">`+its.map(it=>`<label class="ro" data-name="${it.n}"><input type="checkbox" checked disabled> ${it.n}</label>`).join('')+`</div>`;});
         if(!cnt) body=`<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログに項目がありません。</div>`;
       }
