@@ -174,6 +174,7 @@
   .prevchip.clk{ cursor:pointer;} .prevchip.clk:hover{ filter:brightness(.96); box-shadow:0 0 0 2px rgba(0,0,0,.06);}
   .prevchip.ov{ box-shadow:0 0 0 2px #f0a93a;} /* 個別上書き済み */
   .ovbadge{ font-size:10.5px; font-weight:700; color:#fff; background:#e0892a; border-radius:10px; padding:1px 8px; margin-left:6px;}
+  .copychk{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#2c5d9e; cursor:pointer;}
   .leakwarn{ background:#fdf3e7; border:1px solid #e8b87a; border-left:4px solid #d98324; border-radius:8px; padding:10px 14px; margin:4px 0 12px; font-size:12.5px; color:#8a5a16; line-height:1.6;}
   .leakwarn ul{ margin:6px 0 0; padding-left:20px;} .leakwarn li{ margin:2px 0;}
   .sens{ display:inline-block; font-size:10px; font-weight:700; border-radius:9px; padding:1px 7px; margin-left:6px; vertical-align:middle;}
@@ -617,9 +618,9 @@ function computeCondTags(){ return CATALOG.tags.map(t=>({t, on:(t.n in condOverr
 function toggleCondItem(name){ const it=CATALOG.transactions.flatMap(g=>g.items).find(x=>x.n===name); if(!it) return; const eff=(name in condOverride)?condOverride[name]:condItemOn(it); condOverride[name]=!eff; renderCondset(); }
 function toggleCondTag(name){ const t=CATALOG.tags.find(x=>x.n===name); if(!t) return; const eff=(name in condOverride)?condOverride[name]:condTagOn(t); condOverride[name]=!eff; renderCondset(); }
 let condAdvOpen=false;
-function openCondset(){ condBase=defaultUseCase(); condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; show('condset'); }
+function openCondset(){ condBase=defaultUseCase(); condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; condNew=false; copyMode=false; show('condset'); }
 function toggleCondAdv(){ condAdvOpen=!condAdvOpen; renderCondset(); }
-function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; condOverride={}; renderCondset(); }   // 土台変更で個別上書きはリセット
+function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; condOverride={}; condNew=false; copyMode=false; renderCondset(); }   // 土台変更で個別上書きはリセット
 function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}); renderCondset(); }
 function setCondRule(i,f,v){ condRules[i][f]=v; renderCondset(); }
 function delCondRule(i){ condRules.splice(i,1); renderCondset(); }
@@ -651,16 +652,18 @@ function renderTplList(){
 }
 function editTplFromList(i){ show('condset'); loadCondTplSel(String(i)); }
 function delTplFromList(i){ const nm=CONDTPL[i].name; CONDTPL.splice(i,1); if(curTplIdx===i) curTplIdx=-1; else if(curTplIdx>i) curTplIdx--; renderTplList(); toast('「'+nm+'」を削除しました'); }
-function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; copySrc=null; condOverride={}; renderCondset(); toast('「'+t.name+'」を読み込みました'); }
+function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; copySrc=null; condOverride={}; condNew=false; copyMode=false; renderCondset(); toast('「'+t.name+'」を読み込みました'); }
 function onTplSelect(v){ const i=+v; if(i<0){ curTplIdx=-1; renderCondset(); return; } loadCondTplSel(String(i)); }
 /* 統合テンプレートプルダウン：base:推奨 / tpl:保存 / new:新規作成 */
 function onTemplatePick(v){
-  if(v==='new'){ condBase=defaultUseCase(); condRules=[]; condOverride={}; curTplIdx=-1; copySrc=null; condAdvOpen=true; renderCondset(); toast('新規テンプレート：詳細カスタマイズで条件を追加し、右上「名前をつけて保存」'); return; }
+  if(v==='new'){ condNew=true; copyMode=false; condBase=defaultUseCase(); condRules=[]; condOverride={}; curTplIdx=-1; copySrc=null; condAdvOpen=true; renderCondset(); toast('新規テンプレート：必要なら「コピーで作成」、条件を組み右上「名前をつけて保存」'); return; }
+  condNew=false; copyMode=false;
   if(v.startsWith('base:')){ setCondBase(v.slice(5)); return; }
   if(v.startsWith('tpl:')){ loadCondTplSel(v.slice(4)); return; }
 }
 /* 他ロールからコピー：選択した元ロールの現在のカタログ（指標/タグ）を土台にする */
-let copySrc=null;
+let copySrc=null, condNew=false, copyMode=false;
+function toggleCopyMode(){ copyMode=!copyMode; if(!copyMode){ copySrc=null; condOverride={}; } renderCondset(); }
 function onCopySrc(v){ copySrc=v||null; if(copySrc){ curTplIdx=-1; } condOverride={}; renderCondset(); if(copySrc) toast('「'+roleLabel(copySrc)+'」の設定を土台にしました（適用で現在のロールにコピー）'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
@@ -677,17 +680,19 @@ function renderCondset(){
   // 1段目：テンプレート選択（推奨＋保存＋新規作成 を1プルダウンに統合）
   h+=`<div class="tplrow"><span class="tplrl">テンプレート</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
     +`<select class="condsel" style="min-width:240px;" onchange="onTemplatePick(this.value)">`
-      +`<optgroup label="推奨テンプレート">`+shownBases.map(([b])=>`<option value="base:${b}" ${(condBase===b&&curTplIdx<0&&!copySrc)?'selected':''}>${BLAB[b]}${b===du?'（推奨）':''}</option>`).join('')+`</optgroup>`
+      +`<optgroup label="推奨テンプレート">`+shownBases.map(([b])=>`<option value="base:${b}" ${(condBase===b&&curTplIdx<0&&!copySrc&&!condNew)?'selected':''}>${BLAB[b]}${b===du?'（推奨）':''}</option>`).join('')+`</optgroup>`
       +(CONDTPL.length?`<optgroup label="保存テンプレート">`+CONDTPL.map((t,i)=>`<option value="tpl:${i}" ${curTplIdx===i?'selected':''}>★ ${t.name}</option>`).join('')+`</optgroup>`:'')
-      +`<optgroup label="操作">${copySrc?`<option value="" selected>（他ロールからコピー中）</option>`:''}<option value="new">＋ 新規テンプレートを作成</option></optgroup>`
+      +`<optgroup label="操作"><option value="new" ${condNew?'selected':''}>＋ 新規テンプレートを作成</option></optgroup>`
     +`</select>`
     +(curTplIdx>=0?`<span style="color:#0f7d49;font-size:12px;font-weight:700;">選択中（条件を直して右上「更新」）</span><button class="mini" style="background:#c0573a;" onclick="delCondTplCur()">このテンプレを削除</button>`:'')
     +`<span style="flex:1"></span><button class="mini" onclick="show('tpllist')">一覧 ＞</button></div></div>`;
-  // 3段目：他ロールからコピー（元ロールの現在設定を土台に→適用でこのロールにコピー）
-  h+=`<div class="tplrow"><span class="tplrl">他ロールからコピー</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
-    +`<select class="condsel" onchange="onCopySrc(this.value)"><option value="">コピー元ロールを選択…</option>${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}" ${copySrc===k?'selected':''}>${roleLabel(k)}</option>`).join('')}</select>`
-    +(copySrc?`<span style="color:#2c5d9e;font-size:12px;font-weight:700;">「${roleLabel(copySrc)}」の現在設定を土台中</span><button class="mini" onclick="onCopySrc('')">解除</button>`:`<span style="color:#9aa0a6;font-size:11.5px;">選んだロールの現在の指標/タグ設定を土台にし、適用でこのロールへコピー</span>`)
-    +`</div></div>`;
+  // 新規作成モードのときだけ：コピーで作成（チェック→コピー元ロールのプルダウン）
+  if(condNew){
+    h+=`<div class="tplrow"><span class="tplrl">新規作成オプション</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">`
+      +`<label class="copychk"><input type="checkbox" ${copyMode?'checked':''} onclick="toggleCopyMode()"> コピーで作成（他ロールの設定を土台に）</label>`
+      +(copyMode?`<select class="condsel" onchange="onCopySrc(this.value)"><option value="">コピー元ロールを選択…</option>${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}" ${copySrc===k?'selected':''}>${roleLabel(k)}</option>`).join('')}</select>${copySrc?`<span style="color:#2c5d9e;font-size:12px;font-weight:700;">「${roleLabel(copySrc)}」を土台中</span>`:`<span style="color:#9aa0a6;font-size:11.5px;">選んだロールの現在の指標/タグ設定を土台にコピー</span>`}`:`<span style="color:#9aa0a6;font-size:11.5px;">未チェックなら推奨テンプレを土台に新規作成。下で条件を組み、右上「名前をつけて保存」</span>`)
+      +`</div></div>`;
+  }
   // 4段目：詳細カスタマイズ（条件ルールの編集・追加・削除）。テンプレ選択中は自動で開いて編集
   const editing = curTplIdx>=0;
   const advShown = condAdvOpen || condRules.length>0 || editing;
