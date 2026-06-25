@@ -231,6 +231,7 @@
   .seg button.on[data-v="0"]{ background:#cc3333; color:#fff; font-weight:700;}
   .seg button.on[data-v="1"]{ background:var(--blue); color:#fff; font-weight:700;}
   .seg button.on[data-v="2"]{ background:var(--green); color:#fff; font-weight:700;}
+  .seg button.on[data-v="3"]{ background:#0a6b3d; color:#fff; font-weight:700;}
   .seg.locked button{ background:#eef3f0; color:#7a9b88; cursor:default; font-weight:700;}
   .summ-row{ display:flex; align-items:center; padding:13px 6px; border-bottom:1px solid #f0f2f4;}
   .summ-row .cn{ flex:1; font-weight:700; font-size:14.5px;}
@@ -453,7 +454,7 @@
 const KIND = {
   base:   {vals:[1],     lab:{1:'閲覧（既定）'}, tag:'常時', lock:true},
   view:   {vals:[0,1],   lab:{0:'なし',1:'閲覧'}, tag:'閲覧専用'},
-  edit:   {vals:[0,1,2], lab:{0:'なし',1:'閲覧',2:'操作'}, tag:'設定'},
+  edit:   {vals:[0,1,2,3], lab:{0:'なし',1:'閲覧',2:'操作',3:'全て'}, tag:'設定'},
   action: {vals:[0,2],   lab:{0:'なし',2:'実行可'}, tag:'実行'},
   admin:  {vals:[0,2],   lab:{0:'なし',2:'設定可'}, tag:'管理'},
 };
@@ -467,6 +468,11 @@ const OPS = {
 };
 const maxV = k => KIND[k].vals[KIND[k].vals.length-1];
 const minV = k => KIND[k].vals[0];
+const VLAB = {0:'なし',1:'閲覧',2:'操作',3:'全て'};   // カテゴリ一括用の汎用ラベル
+// 機能ごとに選べる権限値（CRUD系で削除opがあれば 全て(3) まで／画面項目2軸は 操作(2) まで）
+function featVals(f){ if(f.k!=='edit') return KIND[f.k].vals; if(f.subitems) return [0,1,2]; return opsOf(f).some(o=>o.id==='delete')?[0,1,2,3]:[0,1,2]; }
+// カテゴリで選べる値の和集合（昇順）。カテゴリ一括（概要・全機能一括）に使う
+function catVals(c){ const s=new Set(); c.features.forEach(f=>{ if(!featShown(f)) return; if(f.noStaff && ROLES[cur.idx].key==='staff') return; featVals(f).forEach(v=>s.add(v)); }); const a=[...s].sort((x,y)=>x-y); return a.length?a:[0]; }
 
 /* 本部が管理する共有カタログ。roles={manager,staff}=各役割のカタログに入れるか, isNew=要確認 */
 const ROLE_KEYS=['manager','staff']; const ROLE_LABEL={manager:'店長',staff:'従業員'};
@@ -568,7 +574,7 @@ function setFeatVal(perm,cid,fi,f,val){    // L2値→L3（操作／指標／画
   if(f.subitems){ f.subitems.forEach((s,ii)=>{ perm[opKey(cid,fi,siKey(fi,ii,'v'))]=val>=1; perm[opKey(cid,fi,siKey(fi,ii,'o'))]=val>=2; }); return; }
   opsOf(f).forEach(o=>{
     if(o.adminOnly) return;   // 本部のみの操作（作成等）はL2一括の対象外（本部のみtrueはbuildPermで付与）
-    perm[opKey(cid,fi,o.id)] = f.k==='base' ? true : val>=2 ? true : val===1 ? (o.id==='view') : false;
+    perm[opKey(cid,fi,o.id)] = f.k==='base' ? true : val>=3 ? true : val===2 ? (o.id!=='delete') : val===1 ? (o.id==='view') : false;
   });
   if(hasItems(f)) itemKeys(f).forEach(k=>perm[opKey(cid,fi,k)] = val>=1);  // 指標は閲覧で全表示が既定
 }
@@ -579,6 +585,7 @@ function featVal(perm,cid,fi,f){           // L3→L2値を導出
   const ops=opsOf(f), on=ops.filter(o=>perm[opKey(cid,fi,o.id)]);
   if(on.length===0) return 0;
   if(on.length===1 && on[0].id==='view') return 1;
+  if(perm[opKey(cid,fi,'delete')]) return 3;   // 削除on＝全て
   return 2;
 }
 function toggleSub(cid,fi,ii,ax){ const k=opKey(cid,fi,siKey(fi,ii,ax)); cur.perm[k]=!cur.perm[k];
@@ -1102,7 +1109,7 @@ function catSel(perm,cid){   // カテゴリ一括値（0/1/2）か'mixed'を返
   const feats=cat.features.map((f,fi)=>({f,fi})).filter(x=>featShown(x.f)
     && !(x.f.noStaff && ROLES[cur.idx].key==='staff'));
   if(!feats.length) return 0;
-  for(const t of [2,1,0]){
+  for(const t of catVals(cat).slice().reverse()){
     const ok=feats.every(({f,fi})=>{ const test={}; setFeatVal(test,cid,fi,f,t);
       return Object.keys(test).every(k=> !!perm[k] === !!test[k]); });
     if(ok) return t;
@@ -1122,7 +1129,7 @@ function renderCatList(){
     if(c.group!==lastGroup){ h+=`<div class="catsection cs-${c.group}">${GROUP_LABEL[c.group]}</div>`; lastGroup=c.group; }
     const feats=c.features.filter(f=>featShown(f));
     const sel=catSel(cur.perm,c.id);
-    const seg=[0,1,2].map(s=>`<button data-v="${s}" class="${sel===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${['なし','閲覧','操作'][s]}</button>`).join('');
+    const seg=catVals(c).slice().reverse().map(s=>`<button data-v="${s}" class="${sel===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${VLAB[s]}</button>`).join('');
     const mixed = sel==='mixed' ? '<span class="mixedchip">一部</span>' : '';
     h+=`<div class="summ-row"><div class="cn">${c.name}${c.hasNew?'<span class="badge-new">★★含む</span>':''}<span class="cnt">（${feats.length}機能）</span>${mixed}</div><div class="seg">${seg}</div><button class="detailbtn" onclick="openCat('${c.id}')">詳細 ＞</button></div>`;
   });
@@ -1134,7 +1141,7 @@ function renderCatDetail(cid){
   const featCount=c.features.filter(f=>featShown(f)).length;
   let h=`<div class="detailhead"><button class="backbtn" onclick="closeCat()">◀ カテゴリ一覧へ</button></div>`
     +`<div class="catbanner cb-${c.group}"><span class="cb-tag">カテゴリ</span><span class="cb-name">${c.name}</span><span class="cb-sub">${GROUP_LABEL[c.group]}・${featCount}機能</span></div>`
-    +`<div class="bulkrow"><span class="bl">全機能を一括：</span><button class="bulkbtn" onclick="setCatVal('${cid}',0)">なし</button><button class="bulkbtn" onclick="setCatVal('${cid}',1)">閲覧</button><button class="bulkbtn" onclick="setCatVal('${cid}',2)">操作</button></div>`
+    +`<div class="bulkrow"><span class="bl">全機能を一括：</span>${catVals(c).slice().reverse().map(s=>`<button class="bulkbtn" onclick="setCatVal('${cid}',${s})">${VLAB[s]}</button>`).join('')}</div>`
     +`<div class="featlbl">▾ この中の機能（${featCount}）</div>`;
   c.features.forEach((f,fi)=>{ if(featShown(f)) h+=featRowHTML(cid,f,fi,c.group); });
   document.getElementById('editBody').innerHTML=h;
@@ -1156,7 +1163,7 @@ function featRowHTML(cid,f,fi,group){
   // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
   const ctrl = kd.lock
     ? `<span class="fixedpill">閲覧・固定</span>`
-    : `<div class="seg">${kd.vals.map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('')}</div>`;
+    : `<div class="seg">${featVals(f).slice().reverse().map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('')}</div>`;
   let html=`<div class="featcard acc-${group}"><div class="feat">${caret}<div class="fn"><span class="featchip">機能</span>${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
   if(hasL3 && exp){
     let inner='';
