@@ -811,8 +811,8 @@ let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats',
 function listSummary(role,cid){
   const cat=CATEGORIES.find(c=>c.id===cid);
   // そのロールで編集対象になる機能だけで集計（店舗ロールは本部専用fixedを除外＝非表示分を勘定しない）
-  const shown=cat.features.map((f,fi)=>({f,fi})).filter(({f})=> f.fixed ? role.tier==='company' : true);
-  if(!shown.length) return '<span class="mk no">✕</span>';   // 全て本部専用＝店舗ロールには非該当（なし）
+  const shown=cat.features.map((f,fi)=>({f,fi})).filter(({f})=> (f.fixed ? role.tier==='company' : true) && !(f.noStaff && role.key==='staff'));
+  if(!shown.length) return '<span class="mk no">✕</span>';   // 全て非該当（なし）
   const vals=shown.map(({f,fi})=>({v:featVal(role.perm,cid,fi,f),k:f.k}));
   if(vals.every(x=>x.v===maxV(x.k))) return '<span class="mk op">◯</span>';
   if(vals.every(x=>x.v===minV(x.k))) return '<span class="mk no">✕</span>';
@@ -914,7 +914,7 @@ function renderSummary(){
 function editRole(ri){
   if(ROLES[ri].system){ toast('「オーナー（全権）」は全権固定のため編集できません'); return; }
   const r=ROLES[ri];
-  cur={idx:ri,scope:r.scope,tier:r.tier,perm:JSON.parse(JSON.stringify(r.perm)),expanded:{},view:'cats',detailCat:null,itemFilter:{}};
+  cur={idx:ri,scope:r.scope,tier:r.tier,perm:r.perm,expanded:{},view:'cats',detailCat:null,itemFilter:{}};   // 参照で編集＝一覧に即反映（保存はトースト確認）
   document.getElementById('roleName').textContent=r.name;
   document.getElementById('scopeChip').textContent='対象範囲：'+(r.scope==='company'?'会社スコープ（全社）':'店舗スコープ（自店舗のみ）')+(r.tier==='company'?' ・本部ロール':'');
   renderBody(); show('edit');
