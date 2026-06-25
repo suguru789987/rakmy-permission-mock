@@ -133,6 +133,8 @@
   .condlab{ font-size:12.5px; font-weight:800; color:#2c5d9e; margin-right:2px;}
   .condw{ font-size:13px; color:#444; font-weight:700;}
   .condsel{ border:1px solid #b9d2ee; border-radius:7px; padding:6px 10px; font-size:13px; font-weight:700; color:#1f3b5e; background:#fff; cursor:pointer;}
+  .tplchip{ display:inline-flex; align-items:center; gap:4px; background:#eef9f2; border:1px solid #bfe6cf; border-radius:14px; padding:3px 5px 3px 12px; font-size:12.5px; font-weight:700; color:#0f7d49;}
+  .tplbtn{ border:none; background:#159b5d; color:#fff; border-radius:10px; font-size:10.5px; font-weight:700; padding:3px 8px; cursor:pointer;} .tplbtn.del{ background:#c0573a; padding:3px 7px;}
   .condentry{ display:flex; align-items:center; gap:12px; justify-content:space-between; background:#fffdf3; border:1px solid #f0e3b8; border-radius:9px; padding:12px 14px; margin:0 0 12px;}
   .ce-tit{ display:block; font-size:14px; font-weight:800; color:#8a6d1a;} .ce-sub{ display:block; font-size:11.5px; color:#9a8a55; margin-top:2px;}
   .csec{ border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px;}
@@ -576,6 +578,14 @@ function computeCond(){ const res=[];
 function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); });
   computeCondTags().forEach(({t,on})=>{ t.roles[catalogRole]=on; enforceNesting(t.roles,catalogRole); });   // タグも反映（ベース＋カスタムタグ条件）
   show('catalog'); toast('「'+roleLabel(catalogRole)+'」のカタログに条件設定を適用しました'); }
+/* マイテンプレート：①ベース＋②条件ルールを名前付きで保存・読込・編集・削除（組込みは標準既定で不可） */
+let CONDTPL=[];
+function saveCondTpl(){ const nm=(document.getElementById('condTplName').value||'').trim(); if(!nm){ document.getElementById('condTplName').style.borderColor='#c33'; return; }
+  const tpl={name:nm, base:condBase, rules:condRules.map(r=>({...r}))}; const ex=CONDTPL.findIndex(t=>t.name===nm); if(ex>=0) CONDTPL[ex]=tpl; else CONDTPL.push(tpl);
+  renderCondset(); toast('マイテンプレート「'+nm+'」を保存しました'); }
+function loadCondTpl(i){ const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase();
+  condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); renderCondset(); toast('「'+t.name+'」を読み込みました（編集して同名で保存＝上書き）'); }
+function delCondTpl(i){ const t=CONDTPL[i]; CONDTPL.splice(i,1); renderCondset(); toast('「'+t.name+'」を削除しました'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
   const bases=[
@@ -591,6 +601,10 @@ function renderCondset(){
   if(!shownBases.some(([b])=>b===condBase)) condBase=du;
   let h=`<div class="csec"><div class="csec-h">① 推奨テンプレートから開始 <span class="csec-note">（このロール種別・レベルに応じて表示・カードにカーソルで定義）</span></div><div class="baserow">`
     +shownBases.map(([b,l,d])=>`<label class="baseopt ${condBase===b?'on':''}"><input type="radio" name="cbase" ${condBase===b?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')+`</div></div>`;
+  h+=`<div class="csec"><div class="csec-h">マイテンプレート（保存・編集・削除）</div><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
+    +(CONDTPL.length?CONDTPL.map((t,i)=>`<span class="tplchip">${t.name}<button class="tplbtn" onclick="loadCondTpl(${i})">読込</button><button class="tplbtn del" onclick="delCondTpl(${i})">✕</button></span>`).join(''):`<span style="color:#9aa0a6;font-size:12px;">保存済みなし</span>`)
+    +`<span class="recoor">｜</span><input id="condTplName" class="condsel" style="width:160px;" placeholder="名前を付けて保存"><button class="btn primary" style="padding:6px 12px;" onclick="saveCondTpl()">現在の設定を保存</button></div>`
+    +`<p style="color:#9aa0a6;font-size:11.5px;margin:6px 0 0;">※ ①ベース＋②条件ルールをまとめて保存。読込で再利用、編集（読込→直して<b>同名で保存＝上書き</b>）、✕で削除。組込み（現場/店長/管理者）は標準既定のため削除不可—複製したいときは選んで「保存」。</p></div>`;
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順に適用＝後の行が優先）</div>`;
   if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（推奨テンプレートのみ適用）。「＋ 条件を追加」で「率は見せ金額は隠す」等を指定。</p>`;
   condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
