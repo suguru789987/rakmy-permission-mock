@@ -149,6 +149,10 @@
   .baseopt:hover .tip{ opacity:1; visibility:visible;}
   .csec-note{ font-size:11px; font-weight:500; color:#9aa0a6; margin-left:6px;}
   .recpill{ font-size:10px; font-weight:700; color:#fff; background:#159b5d; border-radius:9px; padding:1px 7px;}
+  .advrow{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--line);}
+  .advtgl{ background:#f3f5f8; border:1px solid var(--line); border-radius:8px; padding:8px 14px; font-size:12.5px; font-weight:700; color:#444; cursor:pointer;}
+  .advtgl:hover{ border-color:#159b5d; color:#159b5d;}
+  .advbox{ margin-top:10px; padding:12px; background:#fafbfc; border:1px solid #eef0f3; border-radius:8px;}
   .baseopt.mytpl{ border-style:dashed; border-color:#9bbfe0; color:#2c5d9e;}
   .baseopt.mytpl.on{ border-style:solid; border-color:#3b82f6; background:#eaf2fb; color:#1f3b5e;}
   .tpldel{ border:none; background:#c0573a; color:#fff; border-radius:9px; font-size:10px; font-weight:700; padding:2px 8px; margin-left:6px; cursor:pointer;}
@@ -319,7 +323,7 @@
       <button class="btn primary" onclick="applyCondset()">カタログへ戻る</button>
     </div>
     <div class="panel">
-      <p class="hint">①推奨テンプレートを土台に → ②条件ルールを上から重ねて（後の行が優先）→ ③プレビューを確認 → 適用。マイテンプレートの保存・更新は右上で。個別の例外は戻ってから指標表のトグルで調整。</p>
+      <p class="hint">① テンプレートを選ぶ → すぐ下の<b>プレビュー</b>で結果を確認。さらに細かく調整したいときだけ、①下段の<b>「⚙ 条件ルールで微調整」</b>を開いて上書きルールを追加（後の行が優先）。保存・更新・カタログへ戻るは右上。</p>
       <div id="condsetBody"></div>
     </div>
   </main>
@@ -598,7 +602,9 @@ function applyCondition(){ if(catalogRole==='all') return;
 let condBase='manager', condRules=[];
 const COND_GRP=['すべての系統','売上','コスト','利益','カスタムタグ'], COND_TYPE=['すべての種別','金額（合計）','率（％）','構成比','前年比','件数','時間'], COND_SENS=['すべて','🔓現場OK','🔸店長まで','🔒経営機密'], COND_ACT=['表示する','表示しない'];
 function computeCondTags(){ return CATALOG.tags.map(t=>{ let on = condBase==='keep'?!!t.roles[catalogRole]:USECASE[condBase].tags; condRules.forEach(r=>{ if(r.grp==='カスタムタグ') on=(r.act==='表示する'); }); return {t,on}; }); }
-function openCondset(){ condBase=defaultUseCase(); condRules=[]; curTplIdx=-1; show('condset'); }
+let condAdvOpen=false;
+function openCondset(){ condBase=defaultUseCase(); condRules=[]; curTplIdx=-1; condAdvOpen=false; show('condset'); }
+function toggleCondAdv(){ condAdvOpen=!condAdvOpen; renderCondset(); }
 function setCondBase(b){ condBase=b; curTplIdx=-1; renderCondset(); }   // 組込みベース選択＝マイテンプレ選択を解除（新規扱い）
 function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}); renderCondset(); }
 function setCondRule(i,f,v){ condRules[i][f]=v; renderCondset(); }
@@ -653,18 +659,24 @@ function renderCondset(){
   let h=`<div class="csec"><div class="csec-h">① テンプレートから開始 <span class="csec-note">（推奨＋マイテンプレート／カードにカーソルで定義）</span></div><div class="baserow">`
     +shownBases.map(([b,l,d])=>`<label class="baseopt ${(condBase===b&&curTplIdx<0)?'on':''}"><input type="radio" name="cbase" ${(condBase===b&&curTplIdx<0)?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')
     +CONDTPL.map((t,i)=>`<label class="baseopt mytpl ${curTplIdx===i?'on':''}"><input type="radio" name="cbase" ${curTplIdx===i?'checked':''} onclick="loadCondTplSel(${i})"> ★${t.name}${curTplIdx===i?` <button class="tpldel" onclick="event.preventDefault();event.stopPropagation();delCondTplCur()">削除</button>`:''}</label>`).join('')
-    +`</div></div>`;
-  h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順に適用＝後の行が優先）</div>`;
-  if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（推奨テンプレートのみ適用）。「＋ 条件を追加」で「率は見せ金額は隠す」等を指定。</p>`;
-  condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
-    const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
-    const isTag=r.grp==='カスタムタグ';
-    h+=`<div class="crow">${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
-      +(isTag?`<span class="condw">（タグ全体・種別/機微度は対象外）</span>`:`<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機微度',sel(COND_SENS,r.sens,'sens'))}<span class="condw">）</span>`)
-      +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
-  h+=`<button class="btn ghost" style="margin-top:8px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
+    +`</div>`;
+  // 下段エキストラ：条件ルールで微調整（折りたたみ）
+  const advShown = condAdvOpen || condRules.length>0;
+  h+=`<div class="advrow"><button class="advtgl" onclick="toggleCondAdv()">${advShown?'▾':'▸'} ⚙ 条件ルールで微調整${condRules.length?`（${condRules.length}件適用中）`:'（任意：率は見せ金額は隠す 等）'}</button></div>`;
+  if(advShown){
+    h+=`<div class="advbox">`;
+    if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12px;padding:2px 2px 8px;">条件ルールなし（テンプレートのみ適用）。「＋ 条件を追加」で上から順（後の行が優先）に上書きルールを指定。</p>`;
+    condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+      const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
+      const isTag=r.grp==='カスタムタグ';
+      h+=`<div class="crow">${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
+        +(isTag?`<span class="condw">（タグ全体・種別/機微度は対象外）</span>`:`<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機微度',sel(COND_SENS,r.sens,'sens'))}<span class="condw">）</span>`)
+        +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
+    h+=`<button class="btn ghost" style="margin-top:6px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
+  }
+  h+=`</div>`;   // ① csec close
   const res=computeCond(), on=res.filter(x=>x.on).length;
-  h+=`<div class="csec"><div class="csec-h">③ プレビュー</div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
+  h+=`<div class="csec"><div class="csec-h">② プレビュー（結果）</div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
   // 逆算ガード：金額(非表示) が 率×母数 で逆算できる組合せを警告
   const onMap={}; res.forEach(x=>onMap[x.it.n]=x.on);
   const leaks=LEAK.filter(L=>onMap[L.amount]===false && onMap[L.ratio]===true && onMap[L.base]===true);
