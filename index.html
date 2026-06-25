@@ -676,10 +676,12 @@ function renderCondset(){
     +`<select class="condsel" onchange="onCopySrc(this.value)"><option value="">コピー元ロールを選択…</option>${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}" ${copySrc===k?'selected':''}>${roleLabel(k)}</option>`).join('')}</select>`
     +(copySrc?`<span style="color:#2c5d9e;font-size:12px;font-weight:700;">「${roleLabel(copySrc)}」の現在設定を土台中</span><button class="mini" onclick="onCopySrc('')">解除</button>`:`<span style="color:#9aa0a6;font-size:11.5px;">選んだロールの現在の指標/タグ設定を土台にし、適用でこのロールへコピー</span>`)
     +`</div></div>`;
-  // 4段目：詳細カスタマイズ（条件追加）
-  const advShown = condAdvOpen || condRules.length>0;
-  h+=`<div class="tplrow"><span class="tplrl">詳細カスタマイズ<br><span style="font-weight:400;color:#9aa0a6;">（条件追加）</span></span><div style="flex:1;">`
-    +`<button class="advtgl" onclick="toggleCondAdv()">${advShown?'▾':'▸'} ⚙ 条件ルールで微調整${condRules.length?`（${condRules.length}件適用中）`:'（任意：率は見せ金額は隠す 等）'}</button>`;
+  // 4段目：詳細カスタマイズ（条件ルールの編集・追加・削除）。テンプレ選択中は自動で開いて編集
+  const editing = curTplIdx>=0;
+  const advShown = condAdvOpen || condRules.length>0 || editing;
+  const advLabel = editing ? `📝 選択テンプレの条件ルールを編集（${condRules.length}件）` : `⚙ 条件ルールで微調整${condRules.length?`（${condRules.length}件適用中）`:'（任意：率は見せ金額は隠す 等）'}`;
+  h+=`<div class="tplrow"><span class="tplrl">${editing?'条件ルール編集':'詳細カスタマイズ'}<br><span style="font-weight:400;color:#9aa0a6;">（条件の追加・編集・削除）</span></span><div style="flex:1;">`
+    +`<button class="advtgl" onclick="toggleCondAdv()">${advShown?'▾':'▸'} ${advLabel}</button>`;
   if(advShown){
     h+=`<div class="advbox">`;
     if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12px;padding:2px 2px 8px;">条件ルールなし（テンプレートのみ適用）。「＋ 条件を追加」で上から順（後の行が優先）に上書きルールを指定。</p>`;
