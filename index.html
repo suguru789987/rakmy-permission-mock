@@ -308,11 +308,12 @@
       <h1>指標条件設定</h1>
       <span class="scopechip" id="csRole" style="background:#159b5d;">店長</span>
       <div class="sp"></div>
+      <span id="csTplBar" style="display:flex;gap:8px;align-items:center;"></span>
       <button class="btn ghost" onclick="show('catalog')">キャンセル</button>
       <button class="btn primary" onclick="applyCondset()">適用してカタログへ戻る</button>
     </div>
     <div class="panel">
-      <p class="hint">①推奨テンプレートを土台に → ②条件ルールを上から重ねて（後の行が優先）→ ③プレビューを確認 → 適用。個別の例外は戻ってから指標表のトグルで調整。</p>
+      <p class="hint">①推奨テンプレートを土台に → ②条件ルールを上から重ねて（後の行が優先）→ ③プレビューを確認 → 適用。マイテンプレートの保存・更新は右上で。個別の例外は戻ってから指標表のトグルで調整。</p>
       <div id="condsetBody"></div>
     </div>
   </main>
@@ -374,6 +375,20 @@
 
 <!-- トースト通知 -->
 <div id="toast" class="toast"></div>
+
+<!-- マイテンプレート名モーダル -->
+<div id="tplModal" class="modal-overlay hide">
+  <div class="modal">
+    <h3>マイテンプレートとして保存</h3>
+    <p class="modal-note" style="min-height:auto;">現在の①ベース＋②条件ルールを名前を付けて保存します。後で読込・更新・削除できます。</p>
+    <label class="ml">テンプレート名</label>
+    <input id="tplNameInput" class="modal-input" placeholder="例：店長_自社版 / 新店_最小" onkeydown="if(event.key==='Enter')submitTplName();this.style.borderColor='';">
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeTplModal()">キャンセル</button>
+      <button class="btn primary" onclick="submitTplName()">保存</button>
+    </div>
+  </div>
+</div>
 
 <!-- 全権の付与先指定モーダル（オーナー） -->
 <div id="delegateModal" class="modal-overlay hide">
@@ -564,7 +579,7 @@ function applyCondition(){ if(catalogRole==='all') return;
 let condBase='manager', condRules=[];
 const COND_GRP=['すべての系統','売上','コスト','利益','カスタムタグ'], COND_TYPE=['すべての種別','金額（合計）','率（％）','構成比','前年比','件数','時間'], COND_SENS=['すべて','🔓現場OK','🔸店長まで','🔒経営機密'], COND_ACT=['表示する','表示しない'];
 function computeCondTags(){ return CATALOG.tags.map(t=>{ let on = condBase==='keep'?!!t.roles[catalogRole]:USECASE[condBase].tags; condRules.forEach(r=>{ if(r.grp==='カスタムタグ') on=(r.act==='表示する'); }); return {t,on}; }); }
-function openCondset(){ condBase=defaultUseCase(); condRules=[]; show('condset'); }
+function openCondset(){ condBase=defaultUseCase(); condRules=[]; curTplIdx=-1; show('condset'); }
 function setCondBase(b){ condBase=b; renderCondset(); }
 function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}); renderCondset(); }
 function setCondRule(i,f,v){ condRules[i][f]=v; renderCondset(); }
@@ -578,14 +593,21 @@ function computeCond(){ const res=[];
 function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); });
   computeCondTags().forEach(({t,on})=>{ t.roles[catalogRole]=on; enforceNesting(t.roles,catalogRole); });   // タグも反映（ベース＋カスタムタグ条件）
   show('catalog'); toast('「'+roleLabel(catalogRole)+'」のカタログに条件設定を適用しました'); }
-/* マイテンプレート：①ベース＋②条件ルールを名前付きで保存・読込・編集・削除（組込みは標準既定で不可） */
-let CONDTPL=[];
-function saveCondTpl(){ const nm=(document.getElementById('condTplName').value||'').trim(); if(!nm){ document.getElementById('condTplName').style.borderColor='#c33'; return; }
-  const tpl={name:nm, base:condBase, rules:condRules.map(r=>({...r}))}; const ex=CONDTPL.findIndex(t=>t.name===nm); if(ex>=0) CONDTPL[ex]=tpl; else CONDTPL.push(tpl);
-  renderCondset(); toast('マイテンプレート「'+nm+'」を保存しました'); }
-function loadCondTpl(i){ const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase();
-  condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); renderCondset(); toast('「'+t.name+'」を読み込みました（編集して同名で保存＝上書き）'); }
-function delCondTpl(i){ const t=CONDTPL[i]; CONDTPL.splice(i,1); renderCondset(); toast('「'+t.name+'」を削除しました'); }
+/* マイテンプレート：①ベース＋②条件ルール一式を保存。保存・更新は上部バー（適用ボタンの左）に文脈で出し分け */
+let CONDTPL=[], curTplIdx=-1;
+function tplBarHTML(){
+  const sel = CONDTPL.length ? `<select class="condsel" style="padding:6px 10px;" onchange="loadCondTplSel(this.value)"><option value="-1">マイテンプレ読込…</option>${CONDTPL.map((t,i)=>`<option value="${i}" ${curTplIdx===i?'selected':''}>${t.name}</option>`).join('')}</select>` : '';
+  const save = curTplIdx>=0
+    ? `<button class="btn ghost" onclick="updateCondTpl()">更新して保存</button><button class="btn ghost" style="color:#c0573a;border-color:#e3b4a6;" onclick="delCondTplCur()">削除</button>`
+    : `<button class="btn ghost" onclick="openTplSaveModal()">名前をつけて保存</button>`;
+  return sel+save;
+}
+function openTplSaveModal(){ document.getElementById('tplNameInput').value=''; document.getElementById('tplNameInput').style.borderColor=''; document.getElementById('tplModal').classList.remove('hide'); setTimeout(()=>document.getElementById('tplNameInput').focus(),40); }
+function closeTplModal(){ document.getElementById('tplModal').classList.add('hide'); }
+function submitTplName(){ const nm=(document.getElementById('tplNameInput').value||'').trim(); if(!nm){ document.getElementById('tplNameInput').style.borderColor='#c33'; return; } CONDTPL.push({name:nm,base:condBase,rules:condRules.map(r=>({...r}))}); curTplIdx=CONDTPL.length-1; closeTplModal(); renderCondset(); toast('マイテンプレート「'+nm+'」を保存しました'); }
+function updateCondTpl(){ if(curTplIdx<0) return; const t=CONDTPL[curTplIdx]; t.base=condBase; t.rules=condRules.map(r=>({...r})); renderCondset(); toast('「'+t.name+'」を更新しました'); }
+function delCondTplCur(){ if(curTplIdx<0) return; const nm=CONDTPL[curTplIdx].name; CONDTPL.splice(curTplIdx,1); curTplIdx=-1; renderCondset(); toast('「'+nm+'」を削除しました'); }
+function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; renderCondset(); toast('「'+t.name+'」を読み込みました'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
   const bases=[
@@ -601,10 +623,6 @@ function renderCondset(){
   if(!shownBases.some(([b])=>b===condBase)) condBase=du;
   let h=`<div class="csec"><div class="csec-h">① 推奨テンプレートから開始 <span class="csec-note">（このロール種別・レベルに応じて表示・カードにカーソルで定義）</span></div><div class="baserow">`
     +shownBases.map(([b,l,d])=>`<label class="baseopt ${condBase===b?'on':''}"><input type="radio" name="cbase" ${condBase===b?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')+`</div></div>`;
-  h+=`<div class="csec"><div class="csec-h">マイテンプレート（保存・編集・削除）</div><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
-    +(CONDTPL.length?CONDTPL.map((t,i)=>`<span class="tplchip">${t.name}<button class="tplbtn" onclick="loadCondTpl(${i})">読込</button><button class="tplbtn del" onclick="delCondTpl(${i})">✕</button></span>`).join(''):`<span style="color:#9aa0a6;font-size:12px;">保存済みなし</span>`)
-    +`<span class="recoor">｜</span><input id="condTplName" class="condsel" style="width:160px;" placeholder="名前を付けて保存"><button class="btn primary" style="padding:6px 12px;" onclick="saveCondTpl()">現在の設定を保存</button></div>`
-    +`<p style="color:#9aa0a6;font-size:11.5px;margin:6px 0 0;">※ ①ベース＋②条件ルールをまとめて保存。読込で再利用、編集（読込→直して<b>同名で保存＝上書き</b>）、✕で削除。組込み（現場/店長/管理者）は標準既定のため削除不可—複製したいときは選んで「保存」。</p></div>`;
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順に適用＝後の行が優先）</div>`;
   if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（推奨テンプレートのみ適用）。「＋ 条件を追加」で「率は見せ金額は隠す」等を指定。</p>`;
   condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
@@ -627,6 +645,7 @@ function renderCondset(){
   if(tres.length) h+=`<div class="prevgrp">カスタムタグ（表示 ${tres.filter(x=>x.on).length}／${tres.length}）</div><div class="prevlist">`+tres.map(x=>`<span class="prevchip ${x.on?'on':'off'}">${x.on?'◯':'✕'} ${x.t.n}</span>`).join('')+`</div>`;
   h+=`</div>`;
   document.getElementById('condsetBody').innerHTML=h;
+  document.getElementById('csTplBar').innerHTML=tplBarHTML();
 }
 let catalogTab='metrics', catalogRole='manager';
 function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
