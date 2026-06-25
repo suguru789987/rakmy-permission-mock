@@ -739,9 +739,13 @@ function renderCondset(){
   h+=`<div class="editsub-h">指標を個別に編集（カードをクリック）</div>`
     +`<div class="clickhint">👆 各カードを<b>クリック</b>すると <b style="color:#0f7d49">◯ 表示</b> ⇄ <b style="color:#b23b32">✕ 非表示</b> が切り替わります。系統ごとの<b>「全表示／全非表示」</b>でまとめて切替も可。</div>`
     +`<div class="prevbar"><span class="prevon">◯ 表示 ${on}</span><span class="prevoff">✕ 非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
+  // 店舗指標の集計ラベルはロールのスコープで出し分け（自店舗／管轄店／店舗別）
+  const _cr=ROLES.find(x=>x.key===catalogRole), _csc=_cr?_cr.scopeType:'self';
+  const storeHdr = '■ 店舗指標（'+(_csc==='all'?'店舗別集計':_csc==='shops'?'管轄店集計':'自店舗集計')+'）';
+  const compHdr = '■ 会社指標（全社集計）'+(_csc==='all'?'':'＝会社ロール／オーナーのみ');
   let lastScope=null;
   CATALOG.transactions.forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
-    if(g.cscope!==lastScope){ h+=`<div class="scopehdr ${g.cscope}">${g.cscope==='company'?'■ 会社指標（全社集計）＝会社ロール／オーナーのみ':'■ 店舗指標（自店舗集計）'}</div>`; lastScope=g.cscope; }
+    if(g.cscope!==lastScope){ h+=`<div class="scopehdr ${g.cscope}">${g.cscope==='company'?compHdr:storeHdr}</div>`; lastScope=g.cscope; }
     h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}） <button class="mini" onclick="setGroupOverride('${g.cat}',true)">全表示</button><button class="mini" onclick="setGroupOverride('${g.cat}',false)">全非表示</button></div><div class="prevlist">`+items.map(x=> x.locked
       ? `<span class="prevchip locked" title="全社集計のため、このロール（自店舗スコープ）では表示できません。会社ロール/オーナーで閲覧可">🔒 ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`
       : `<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
