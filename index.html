@@ -173,7 +173,9 @@
   .prevchip{ font-size:11.5px; border-radius:7px; padding:3px 9px; border:1px solid var(--line);}
   .prevchip.on{ background:#eef9f2; color:#0f7d49; border-color:#bfe6cf;} .prevchip.off{ background:#fbeeee; color:#b23b32; border-color:#f0cfcb;}
   .prevchip.vw{ background:#eaf2fb; color:#2c5d9e; border-color:#cfe0f5;}
-  .prevchip.clk{ cursor:pointer;} .prevchip.clk:hover{ filter:brightness(.96); box-shadow:0 0 0 2px rgba(0,0,0,.06);}
+  .prevchip{ user-select:none;}
+  .prevchip.clk{ cursor:pointer; transition:.1s;} .prevchip.clk:hover{ transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); filter:brightness(.97);}
+  .clickhint{ background:#eef6fb; border:1px solid #cfe4f2; border-radius:8px; padding:8px 12px; font-size:12px; color:#2c5d9e; margin:8px 0 10px;}
   .prevchip.ov{ box-shadow:0 0 0 2px #f0a93a;} /* 個別上書き済み */
   .ovbadge{ font-size:10.5px; font-weight:700; color:#fff; background:#e0892a; border-radius:10px; padding:1px 8px; margin-left:6px;}
   .copychk{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#2c5d9e; cursor:pointer;}
@@ -627,6 +629,8 @@ function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）
 function setCondRule(i,f,v){ condRules[i][f]=v; renderCondset(); }
 function delCondRule(i){ condRules.splice(i,1); renderCondset(); }
 function clearCondOverride(){ condOverride={}; renderCondset(); toast('個別調整をクリアしました'); }
+function setGroupOverride(cat,on){ const g=CATALOG.transactions.find(x=>x.cat===cat); if(!g) return; g.items.forEach(it=>condOverride[it.n]=on); renderCondset(); }
+function setTagsOverride(on){ CATALOG.tags.forEach(t=>condOverride[t.n]=on); renderCondset(); }
 function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); });
   computeCondTags().forEach(({t,on})=>{ t.roles[catalogRole]=on; enforceNesting(t.roles,catalogRole); });   // タグも反映（ベース＋カスタムタグ条件）
   show('catalog'); toast('「'+roleLabel(catalogRole)+'」のカタログに条件設定を適用しました'); }
@@ -711,16 +715,18 @@ function renderCondset(){
       +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
   h+=`<button class="btn ghost" style="margin-top:6px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
   // 指標（クリックで個別ON/OFF）
-  h+=`<div class="editsub-h" style="margin-top:14px;">指標（クリックで個別ON/OFF）<span style="font-weight:400;color:#9aa0a6;font-size:11.5px;margin-left:8px;">条件の上に手動上書き</span></div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
+  h+=`<div class="editsub-h" style="margin-top:14px;">指標を個別に編集（カードをクリック）</div>`
+    +`<div class="clickhint">👆 各カードを<b>クリック</b>すると <b style="color:#0f7d49">◯ 表示</b> ⇄ <b style="color:#b23b32">✕ 非表示</b> が切り替わります。系統ごとの<b>「全表示／全非表示」</b>でまとめて切替も可。</div>`
+    +`<div class="prevbar"><span class="prevon">◯ 表示 ${on}</span><span class="prevoff">✕ 非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
   // 逆算ガード：金額(非表示) が 率×母数 で逆算できる組合せを警告
   const onMap={}; res.forEach(x=>onMap[x.it.n]=x.on);
   const leaks=LEAK.filter(L=>onMap[L.amount]===false && onMap[L.ratio]===true && onMap[L.base]===true);
   if(leaks.length) h+=`<div class="leakwarn"><b>⚠️ 逆算リスク（${leaks.length}件）</b>：金額を隠していても、率×母数で逆算できます。完全に隠すなら率も非表示に。`
     +`<ul>`+leaks.map(L=>`<li>「${L.amount}」(非表示) ＝ <b>${L.ratio}</b> × <b>${L.base}</b> で逆算可</li>`).join('')+`</ul></div>`;
   CATALOG.transactions.forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
-    h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}）</div><div class="prevlist">`+items.map(x=>`<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示/非表示を切替">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
+    h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}） <button class="mini" onclick="setGroupOverride('${g.cat}',true)">全表示</button><button class="mini" onclick="setGroupOverride('${g.cat}',false)">全非表示</button></div><div class="prevlist">`+items.map(x=>`<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
   const tres=computeCondTags();
-  if(tres.length) h+=`<div class="prevgrp">カスタムタグ（表示 ${tres.filter(x=>x.on).length}／${tres.length}）</div><div class="prevlist">`+tres.map(x=>`<span class="prevchip clk ${x.on?'on':'off'}${(x.t.n in condOverride)?' ov':''}" onclick="toggleCondTag('${x.t.n}')" title="クリックで表示/非表示を切替">${x.on?'◯':'✕'} ${x.t.n}</span>`).join('')+`</div>`;
+  if(tres.length) h+=`<div class="prevgrp">カスタムタグ（表示 ${tres.filter(x=>x.on).length}／${tres.length}） <button class="mini" onclick="setTagsOverride(true)">全表示</button><button class="mini" onclick="setTagsOverride(false)">全非表示</button></div><div class="prevlist">`+tres.map(x=>`<span class="prevchip clk ${x.on?'on':'off'}${(x.t.n in condOverride)?' ov':''}" onclick="toggleCondTag('${x.t.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.t.n}</span>`).join('')+`</div>`;
   h+=`</div>`;
   document.getElementById('condsetBody').innerHTML=h;
   document.getElementById('csTplBar').innerHTML=tplBarHTML();
