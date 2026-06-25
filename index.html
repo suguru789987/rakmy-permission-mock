@@ -146,7 +146,11 @@
   .baseopt:hover .tip{ opacity:1; visibility:visible;}
   .csec-note{ font-size:11px; font-weight:500; color:#9aa0a6; margin-left:6px;}
   .recpill{ font-size:10px; font-weight:700; color:#fff; background:#159b5d; border-radius:9px; padding:1px 7px;}
-  .crow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px; border:1px solid #eef0f3; border-radius:8px; margin-bottom:7px; background:#fafbfc;}
+  .crow{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px; padding:10px; border:1px solid #eef0f3; border-radius:8px; margin-bottom:7px; background:#fafbfc;}
+  .crow .condw{ padding-bottom:7px;}
+  .crow .mini{ margin-bottom:1px;}
+  .cfield{ display:inline-flex; flex-direction:column; gap:3px;}
+  .cflab{ font-size:10px; font-weight:700; color:#8a93a0; padding-left:2px;}
   .prevbar{ display:flex; gap:14px; align-items:center; margin-bottom:10px; font-size:13px; font-weight:700;}
   .prevon{ color:#159b5d;} .prevoff{ color:#c0392b;}
   .prevgrp{ font-size:12px; font-weight:700; color:#2c5d9e; margin:8px 0 5px;}
@@ -595,7 +599,8 @@ function renderCondset(){
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順に適用＝後の行が優先）</div>`;
   if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（推奨テンプレートのみ適用）。「＋ 条件を追加」で「率は見せ金額は隠す」等を指定。</p>`;
   condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
-    h+=`<div class="crow">${sel(COND_GRP,r.grp,'grp')}<span class="condw">の</span>${sel(COND_TYPE,r.type,'type')}<span class="condw">（機微度</span>${sel(COND_SENS,r.sens,'sens')}<span class="condw">）を</span>${sel(COND_ACT,r.act,'act')}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
+    const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
+    h+=`<div class="crow">${fld('系統',sel(COND_GRP,r.grp,'grp'))}<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機微度',sel(COND_SENS,r.sens,'sens'))}<span class="condw">）を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
   h+=`<button class="btn ghost" style="margin-top:8px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
   const res=computeCond(), on=res.filter(x=>x.on).length;
   h+=`<div class="csec"><div class="csec-h">③ プレビュー</div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
@@ -636,7 +641,8 @@ function renderAccessCond(){
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順＝後の行が優先）</div>`;
   if(!accRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（ベースのみ）。「＋条件を追加」で「操作・設定系を操作にする」「本部専用をなしにする」等を指定。</p>`;
   accRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setAccRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''} ${o.startsWith('──')?'disabled':''}>${o}</option>`).join('')}</select>`;
-    h+=`<div class="crow">${sel(ACC_GRP,r.grp,'grp')}<span class="condw">の 性質</span>${sel(ACC_KIND,r.kind,'kind')}<span class="condw">（</span>${sel(ACC_FIXED,r.fixed,'fixed')}<span class="condw">）を</span>${sel(ACC_ACT,r.act,'act')}<span class="condw">にする</span><button class="mini" onclick="delAccRule(${i})">削除</button></div>`; });
+    const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
+    h+=`<div class="crow">${fld('対象カテゴリ',sel(ACC_GRP,r.grp,'grp'))}<span class="condw">の</span>${fld('機能の性質',sel(ACC_KIND,r.kind,'kind'))}<span class="condw">（</span>${fld('本部専用',sel(ACC_FIXED,r.fixed,'fixed'))}<span class="condw">）を</span>${fld('与える可否',sel(ACC_ACT,r.act,'act'))}<span class="condw">にする</span><button class="mini" onclick="delAccRule(${i})">削除</button></div>`; });
   h+=`<button class="btn ghost" style="margin-top:8px;" onclick="addAccRule()">＋ 条件を追加</button></div>`;
   const res=computeAccess(), cnt={0:0,1:0,2:0}; res.forEach(x=>cnt[x.v]++);
   h+=`<div class="csec"><div class="csec-h">③ プレビュー</div><div class="prevbar"><span style="color:#159b5d">操作 ${cnt[2]}</span><span style="color:#2c5d9e">閲覧 ${cnt[1]}</span><span style="color:#c0392b">なし ${cnt[0]}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}機能</span></div>`;
