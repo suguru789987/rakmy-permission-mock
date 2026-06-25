@@ -560,7 +560,8 @@ function applyCondition(){ if(catalogRole==='all') return;
   renderCatalog(); toast(`条件「${g}の${t}を${show?'表示':'非表示'}」を ${cnt}指標 に適用しました`); }
 /* ===== 指標条件設定（専用画面・推奨＋条件ルールのリスト＋プレビュー） ===== */
 let condBase='manager', condRules=[];
-const COND_GRP=['すべての系統','売上','コスト','利益'], COND_TYPE=['すべての種別','金額（合計）','率（％）','構成比','前年比','件数','時間'], COND_SENS=['すべて','🔓現場OK','🔸店長まで','🔒経営機密'], COND_ACT=['表示する','表示しない'];
+const COND_GRP=['すべての系統','売上','コスト','利益','カスタムタグ'], COND_TYPE=['すべての種別','金額（合計）','率（％）','構成比','前年比','件数','時間'], COND_SENS=['すべて','🔓現場OK','🔸店長まで','🔒経営機密'], COND_ACT=['表示する','表示しない'];
+function computeCondTags(){ return CATALOG.tags.map(t=>{ let on = condBase==='keep'?!!t.roles[catalogRole]:USECASE[condBase].tags; condRules.forEach(r=>{ if(r.grp==='カスタムタグ') on=(r.act==='表示する'); }); return {t,on}; }); }
 function openCondset(){ condBase=defaultUseCase(); condRules=[]; show('condset'); }
 function setCondBase(b){ condBase=b; renderCondset(); }
 function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}); renderCondset(); }
@@ -573,7 +574,7 @@ function computeCond(){ const res=[];
     res.push({it,on}); }));
   return res; }
 function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); });
-  if(condBase!=='keep') CATALOG.tags.forEach(t=>{ t.roles[catalogRole]=USECASE[condBase].tags; enforceNesting(t.roles,catalogRole); });
+  computeCondTags().forEach(({t,on})=>{ t.roles[catalogRole]=on; enforceNesting(t.roles,catalogRole); });   // タグも反映（ベース＋カスタムタグ条件）
   show('catalog'); toast('「'+roleLabel(catalogRole)+'」のカタログに条件設定を適用しました'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
@@ -588,7 +589,10 @@ function renderCondset(){
   if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（推奨テンプレートのみ適用）。「＋ 条件を追加」で「率は見せ金額は隠す」等を指定。</p>`;
   condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
     const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
-    h+=`<div class="crow">${fld('系統',sel(COND_GRP,r.grp,'grp'))}<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機微度',sel(COND_SENS,r.sens,'sens'))}<span class="condw">）を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
+    const isTag=r.grp==='カスタムタグ';
+    h+=`<div class="crow">${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
+      +(isTag?`<span class="condw">（タグ全体・種別/機微度は対象外）</span>`:`<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機微度',sel(COND_SENS,r.sens,'sens'))}<span class="condw">）</span>`)
+      +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
   h+=`<button class="btn ghost" style="margin-top:8px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
   const res=computeCond(), on=res.filter(x=>x.on).length;
   h+=`<div class="csec"><div class="csec-h">③ プレビュー</div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
@@ -599,6 +603,8 @@ function renderCondset(){
     +`<ul>`+leaks.map(L=>`<li>「${L.amount}」(非表示) ＝ <b>${L.ratio}</b> × <b>${L.base}</b> で逆算可</li>`).join('')+`</ul></div>`;
   CATALOG.transactions.forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
     h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}）</div><div class="prevlist">`+items.map(x=>`<span class="prevchip ${x.on?'on':'off'}">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
+  const tres=computeCondTags();
+  if(tres.length) h+=`<div class="prevgrp">カスタムタグ（表示 ${tres.filter(x=>x.on).length}／${tres.length}）</div><div class="prevlist">`+tres.map(x=>`<span class="prevchip ${x.on?'on':'off'}">${x.on?'◯':'✕'} ${x.t.n}</span>`).join('')+`</div>`;
   h+=`</div>`;
   document.getElementById('condsetBody').innerHTML=h;
 }
