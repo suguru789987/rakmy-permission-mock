@@ -152,6 +152,8 @@
   .tplrow{ display:flex; align-items:flex-start; gap:14px; padding:11px 0; border-bottom:1px dashed var(--line);}
   .tplrow:last-child{ border-bottom:none;}
   .tplrl{ width:140px; flex-shrink:0; font-size:12.5px; font-weight:800; color:#555; padding-top:9px; line-height:1.4;}
+  .editsub{ background:#fafbfc; border:1px solid #eef0f3; border-radius:8px; padding:12px;}
+  .editsub-h{ font-size:12.5px; font-weight:800; color:#2c5d9e; margin-bottom:8px;}
   .advrow{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--line);}
   .advtgl{ background:#f3f5f8; border:1px solid var(--line); border-radius:8px; padding:8px 14px; font-size:12.5px; font-weight:700; color:#444; cursor:pointer;}
   .advtgl:hover{ border-color:#159b5d; color:#159b5d;}
@@ -330,7 +332,7 @@
       <button class="btn primary" onclick="applyCondset()">カタログへ戻る</button>
     </div>
     <div class="panel">
-      <p class="hint">① <b>テンプレート</b>プルダウン（推奨／保存／＋新規作成）または<b>他ロールからコピー</b>を土台に選ぶ → すぐ下の<b>②プレビュー</b>で結果を確認。さらに細かくは①下段<b>「詳細カスタマイズ」</b>で条件を追加・編集（後の行が優先）。保存・更新・カタログへ戻るは右上。</p>
+      <p class="hint">① <b>テンプレート</b>を選ぶ（推奨／保存／＋新規作成。新規は「コピーで作成」可）。→ ② <b>編集画面</b>で<b>条件ルールの一括</b>と<b>指標のクリック個別ON/OFF</b>を行い結果を確認。保存・更新・カタログへ戻るは右上。</p>
       <div id="condsetBody"></div>
     </div>
   </main>
@@ -693,27 +695,23 @@ function renderCondset(){
       +(copyMode?`<select class="condsel" onchange="onCopySrc(this.value)"><option value="">コピー元ロールを選択…</option>${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}" ${copySrc===k?'selected':''}>${roleLabel(k)}</option>`).join('')}</select>${copySrc?`<span style="color:#2c5d9e;font-size:12px;font-weight:700;">「${roleLabel(copySrc)}」を土台中</span>`:`<span style="color:#9aa0a6;font-size:11.5px;">選んだロールの現在の指標/タグ設定を土台にコピー</span>`}`:`<span style="color:#9aa0a6;font-size:11.5px;">未チェックなら推奨テンプレを土台に新規作成。下で条件を組み、右上「名前をつけて保存」</span>`)
       +`</div></div>`;
   }
-  // 4段目：詳細カスタマイズ（条件ルールの編集・追加・削除）。テンプレ選択中は自動で開いて編集
-  const editing = curTplIdx>=0;
-  const advShown = condAdvOpen || condRules.length>0 || editing;
-  const advLabel = editing ? `📝 選択テンプレの条件ルールを編集（${condRules.length}件）` : `⚙ 条件ルールで微調整${condRules.length?`（${condRules.length}件適用中）`:'（任意：率は見せ金額は隠す 等）'}`;
-  h+=`<div class="tplrow"><span class="tplrl">${editing?'条件ルール編集':'詳細カスタマイズ'}<br><span style="font-weight:400;color:#9aa0a6;">（条件の追加・編集・削除）</span></span><div style="flex:1;">`
-    +`<button class="advtgl" onclick="toggleCondAdv()">${advShown?'▾':'▸'} ${advLabel}</button>`;
-  if(advShown){
-    h+=`<div class="advbox">`;
-    if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12px;padding:2px 2px 8px;">条件ルールなし（テンプレートのみ適用）。「＋ 条件を追加」で上から順（後の行が優先）に上書きルールを指定。</p>`;
-    condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
-      const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
-      const isTag=r.grp==='カスタムタグ';
-      h+=`<div class="crow">${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
-        +(isTag?`<span class="condw">（タグ全体・種別/機微度は対象外）</span>`:`<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機微度',sel(COND_SENS,r.sens,'sens'))}<span class="condw">）</span>`)
-        +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
-    h+=`<button class="btn ghost" style="margin-top:6px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
-  }
-  h+=`</div></div>`;   // close row3 + ① csec
+  h+=`</div>`;   // close ① csec（テンプレ選択のみ）
+  // ② 編集画面（条件ルール一括 ＋ 指標の個別ON/OFF を統合）
   const res=computeCond(), on=res.filter(x=>x.on).length;
   const ovN=Object.keys(condOverride).length;
-  h+=`<div class="csec"><div class="csec-h">② プレビュー（クリックで個別ON/OFF）${ovN?` <span class="ovbadge">個別調整 ${ovN}件</span> <button class="mini" onclick="clearCondOverride()">調整をクリア</button>`:''}</div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標　各チップをクリックで切替（テンプレ＋条件の上に手動上書き）</span></div>`;
+  h+=`<div class="csec"><div class="csec-h">② 編集（条件ルール＋指標の個別ON/OFF）${ovN?` <span class="ovbadge">個別調整 ${ovN}件</span> <button class="mini" onclick="clearCondOverride()">調整をクリア</button>`:''}</div>`;
+  // 条件ルール（一括上書き）
+  h+=`<div class="editsub"><div class="editsub-h">条件ルールで一括（後の行が優先）</div>`;
+  if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12px;padding:2px 2px 8px;">条件ルールなし。「＋ 条件を追加」で「率は見せ・金額は隠す」等の一括ルールを指定。下の指標はクリックで個別にON/OFFできます。</p>`;
+  condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
+    const isTag=r.grp==='カスタムタグ';
+    h+=`<div class="crow">${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
+      +(isTag?`<span class="condw">（タグ全体・種別/機微度は対象外）</span>`:`<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機微度',sel(COND_SENS,r.sens,'sens'))}<span class="condw">）</span>`)
+      +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
+  h+=`<button class="btn ghost" style="margin-top:6px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
+  // 指標（クリックで個別ON/OFF）
+  h+=`<div class="editsub-h" style="margin-top:14px;">指標（クリックで個別ON/OFF）<span style="font-weight:400;color:#9aa0a6;font-size:11.5px;margin-left:8px;">条件の上に手動上書き</span></div><div class="prevbar"><span class="prevon">表示 ${on}</span><span class="prevoff">非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
   // 逆算ガード：金額(非表示) が 率×母数 で逆算できる組合せを警告
   const onMap={}; res.forEach(x=>onMap[x.it.n]=x.on);
   const leaks=LEAK.filter(L=>onMap[L.amount]===false && onMap[L.ratio]===true && onMap[L.base]===true);
