@@ -139,7 +139,12 @@
   .csec-h{ font-size:13.5px; font-weight:800; color:#333; margin-bottom:10px;}
   .baserow{ display:flex; flex-wrap:wrap; gap:10px;}
   .baseopt{ display:flex; align-items:center; gap:7px; border:1.5px solid var(--line); border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; color:#444; cursor:pointer;}
+  .baseopt{ position:relative;}
   .baseopt.on{ border-color:#159b5d; background:#eef9f2; color:#0f7d49;}
+  .baseopt .tip{ position:absolute; bottom:calc(100% + 8px); left:0; width:270px; background:#21262b; color:#fff; font-size:11.5px; font-weight:500; line-height:1.55; text-align:left; padding:10px 12px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.28); opacity:0; visibility:hidden; transition:.15s; z-index:60;}
+  .baseopt .tip:after{ content:''; position:absolute; top:100%; left:22px; border:6px solid transparent; border-top-color:#21262b;}
+  .baseopt:hover .tip{ opacity:1; visibility:visible;}
+  .csec-note{ font-size:11px; font-weight:500; color:#9aa0a6; margin-left:6px;}
   .recpill{ font-size:10px; font-weight:700; color:#fff; background:#159b5d; border-radius:9px; padding:1px 7px;}
   .crow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px; border:1px solid #eef0f3; border-radius:8px; margin-bottom:7px; background:#fafbfc;}
   .prevbar{ display:flex; gap:14px; align-items:center; margin-bottom:10px; font-size:13px; font-weight:700;}
@@ -580,9 +585,13 @@ function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.ro
   show('catalog'); toast('「'+roleLabel(catalogRole)+'」のカタログに条件設定を適用しました'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
-  const bases=[['floor','現場スタッフ向け'],['manager','店長向け'],['admin','管理者・経理向け'],['keep','現状維持（触らない）']], du=defaultUseCase();
-  let h=`<div class="csec"><div class="csec-h">① 推奨テンプレートから開始</div><div class="baserow">`
-    +bases.map(([b,l])=>`<label class="baseopt ${condBase===b?'on':''}"><input type="radio" name="cbase" ${condBase===b?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}</label>`).join('')+`</div></div>`;
+  const bases=[
+    ['floor','現場スタッフ向け','🔓現場OKの指標のみ表示。利益・原価・人件費（金額）は隠す。'],
+    ['manager','店長向け','🔓現場OK＋🔸店長まで表示。🔒経営機密（純利益・粗利）は隠す。'],
+    ['admin','管理者・経理向け','全指標を表示（機微度の制限なし）。'],
+    ['keep','現状から（触らない）','今のカタログをそのまま土台に。条件ルールで部分的に上書き。']], du=defaultUseCase();
+  let h=`<div class="csec"><div class="csec-h">① 推奨テンプレートから開始 <span class="csec-note">（カードにカーソルで定義を表示）</span></div><div class="baserow">`
+    +bases.map(([b,l,d])=>`<label class="baseopt ${condBase===b?'on':''}"><input type="radio" name="cbase" ${condBase===b?'checked':''} onclick="setCondBase('${b}')"> ${l}${b===du?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')+`</div></div>`;
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順に適用＝後の行が優先）</div>`;
   if(!condRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（推奨テンプレートのみ適用）。「＋ 条件を追加」で「率は見せ金額は隠す」等を指定。</p>`;
   condRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setCondRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
@@ -617,9 +626,13 @@ function computeAccess(){ const res=[];
 function applyAccessCond(){ computeAccess().forEach(({c,fi,f,v})=>setFeatVal(cur.perm,c.id,fi,f,v)); renderBody(); show('edit'); toast('「'+ROLES[cur.idx].name+'」に機能アクセス条件を適用しました'); }
 function renderAccessCond(){
   document.getElementById('acRole').textContent=ROLES[cur.idx].name;
-  const bases=[['keep','現状維持（推奨）'],['staff','従業員相当（最小）'],['manager','店長相当'],['company','会社ロール相当']];
-  let h=`<div class="csec"><div class="csec-h">① ベースから開始</div><div class="baserow">`
-    +bases.map(([b,l])=>`<label class="baseopt ${accBase===b?'on':''}"><input type="radio" name="abase" ${accBase===b?'checked':''} onclick="setAccBase('${b}')"> ${l}${b==='keep'?' <span class="recpill">推奨</span>':''}</label>`).join('')+`</div></div>`;
+  const bases=[
+    ['keep','現状から（推奨）','今の「'+ROLES[cur.idx].name+'」の設定をそのまま土台にします。リセットせず、下の条件ルールで部分的に上書きしたい時の既定。'],
+    ['staff','最小レベル（分析閲覧のみ）','分析は閲覧のみ／操作・設定・実行・管理はすべて「なし」。最小権限からゼロベースで組む土台。'],
+    ['manager','店舗運営レベル（操作まで）','分析閲覧＋店舗の操作（設定・実行）まで可。本部専用機能・管理（admin）は不可。'],
+    ['company','本部レベル（管理まで）','操作・設定・管理（admin）まで可の本部レベル。経理／人事など会社ロール相当の土台。']];
+  let h=`<div class="csec"><div class="csec-h">① ベースから開始 <span class="csec-note">（カードにカーソルで定義を表示）</span></div><div class="baserow">`
+    +bases.map(([b,l,d])=>`<label class="baseopt ${accBase===b?'on':''}"><input type="radio" name="abase" ${accBase===b?'checked':''} onclick="setAccBase('${b}')"> ${l}${b==='keep'?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')+`</div></div>`;
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順＝後の行が優先）</div>`;
   if(!accRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（ベースのみ）。「＋条件を追加」で「操作・設定系を操作にする」「本部専用をなしにする」等を指定。</p>`;
   accRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setAccRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
