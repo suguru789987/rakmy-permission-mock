@@ -693,8 +693,8 @@ function renderCondset(){
   h+=`<div class="tplrow"><span class="tplrl">テンプレート</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
     +`<select class="condsel" style="min-width:240px;" onchange="onTemplatePick(this.value)">`
       +`<optgroup label="推奨テンプレート">`+shownBases.map(([b])=>`<option value="base:${b}" ${(condBase===b&&curTplIdx<0&&!copySrc&&!condNew)?'selected':''}>${BLAB[b]}${b===du?'（推奨）':''}</option>`).join('')+`</optgroup>`
-      +(CONDTPL.length?`<optgroup label="保存テンプレート">`+CONDTPL.map((t,i)=>`<option value="tpl:${i}" ${curTplIdx===i?'selected':''}>★ ${t.name}</option>`).join('')+`</optgroup>`:'')
-      +`<optgroup label="操作"><option value="new" ${condNew?'selected':''}>＋ 新規テンプレートを作成</option></optgroup>`
+      +`<optgroup label="保存テンプレート">`+(CONDTPL.length?CONDTPL.map((t,i)=>`<option value="tpl:${i}" ${curTplIdx===i?'selected':''}>★ ${t.name}</option>`).join(''):`<option disabled>（保存済みなし）</option>`)+`</optgroup>`
+      +`<optgroup label="新規テンプレート作成"><option value="new" ${condNew?'selected':''}>＋ 新規テンプレートを作成</option></optgroup>`
     +`</select>`
     +(curTplIdx>=0?`<span style="color:#0f7d49;font-size:12px;font-weight:700;">選択中（条件を直して右上「更新」）</span><button class="mini" style="background:#c0573a;" onclick="delCondTplCur()">このテンプレを削除</button>`:'')
     +`<span style="flex:1"></span><button class="mini" onclick="show('tpllist')">一覧 ＞</button></div></div>`;
