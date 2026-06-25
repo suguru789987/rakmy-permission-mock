@@ -741,7 +741,7 @@ function renderCondset(){
     +`<div class="prevbar"><span class="prevon">◯ 表示 ${on}</span><span class="prevoff">✕ 非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
   // 店舗指標の集計ラベルはロールのスコープで出し分け（自店舗／管轄店／店舗別）
   const _cr=ROLES.find(x=>x.key===catalogRole), _csc=_cr?_cr.scopeType:'self';
-  const storeHdr = '■ 店舗指標（'+(_csc==='all'?'店舗別集計':_csc==='shops'?'管轄店集計':'自店舗集計')+'）';
+  const storeHdr = '■ 店舗指標（'+(_csc==='all'?'全店・店舗別':_csc==='shops'?'管轄店・店舗別':'自店舗')+'）';
   const compHdr = '■ 会社指標（全社集計）'+(_csc==='all'?'':'＝会社ロール／オーナーのみ');
   let lastScope=null;
   CATALOG.transactions.forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
