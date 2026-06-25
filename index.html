@@ -133,6 +133,16 @@
   .condlab{ font-size:12.5px; font-weight:800; color:#2c5d9e; margin-right:2px;}
   .condw{ font-size:13px; color:#444; font-weight:700;}
   .condsel{ border:1px solid #b9d2ee; border-radius:7px; padding:6px 10px; font-size:13px; font-weight:700; color:#1f3b5e; background:#fff; cursor:pointer;}
+  .hdd{ position:relative; display:inline-block;}
+  .hdd-btn{ display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:13.5px; font-weight:700; color:#1f3b5e; background:#fff; cursor:pointer;}
+  .hdd-btn:hover{ border-color:#159b5d;}
+  .hdd-ar{ color:#9aa0a6; font-size:11px;}
+  .hdd-panel{ position:absolute; top:calc(100% + 4px); left:0; min-width:300px; max-height:360px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.2); z-index:90; padding:6px;}
+  .hdd-grp{ font-size:10.5px; font-weight:800; color:#9aa0a6; padding:9px 10px 4px; border-top:1px solid #f0f2f4;} .hdd-grp:first-child{ border-top:none;}
+  .hdd-opt{ padding:8px 12px; border-radius:7px; font-size:13px; font-weight:700; color:#333; cursor:pointer;}
+  .hdd-opt:hover{ background:#eef6fb;}
+  .hdd-opt.on{ background:#eef9f2; color:#0f7d49;}
+  .hdd-empty{ padding:8px 12px; font-size:12px; color:#9aa0a6;}
   .tplchip{ display:inline-flex; align-items:center; gap:4px; background:#eef9f2; border:1px solid #bfe6cf; border-radius:14px; padding:3px 5px 3px 12px; font-size:12.5px; font-weight:700; color:#0f7d49;}
   .tplbtn{ border:none; background:#159b5d; color:#fff; border-radius:10px; font-size:10.5px; font-weight:700; padding:3px 8px; cursor:pointer;} .tplbtn.del{ background:#c0573a; padding:3px 7px;}
   .barsep{ width:1px; height:26px; background:var(--line); margin:0 4px;}
@@ -463,8 +473,8 @@ const CATALOG = {
   transactions:[
     {cat:'売上系', items:[{n:'売上',sens:'open',g:'売上',t:'金額'},{n:'売上前年比',sens:'open',g:'売上',t:'前年比'},{n:'客数',sens:'open',g:'売上',t:'件数'},{n:'客単価',sens:'open',g:'売上',t:'金額'},{n:'来店組数',sens:'open',g:'売上',t:'件数'}]},
     {cat:'仕入・原価系', items:[{n:'仕入額',sens:'mgr',g:'コスト',t:'金額'},{n:'原価率',sens:'mgr',g:'コスト',t:'率'},{n:'廃棄ロス',sens:'open',g:'コスト',t:'金額'},{n:'在庫金額',sens:'mgr',g:'コスト',t:'金額'},{n:'棚卸差異',sens:'mgr',g:'コスト',t:'金額'}]},
-    {cat:'人件費系', items:[{n:'人件費',sens:'exec',g:'コスト',t:'金額'},{n:'人件費率',sens:'mgr',g:'コスト',t:'率'},{n:'総労働時間',sens:'open',g:'コスト',t:'時間'},{n:'人時売上高',sens:'mgr',g:'コスト',t:'金額'}]},
-    {cat:'利益系', items:[{n:'粗利',sens:'exec',g:'利益',t:'金額'},{n:'粗利率',sens:'exec',g:'利益',t:'率'},{n:'FL率',sens:'mgr',g:'利益',t:'率'},{n:'営業利益',sens:'exec',g:'利益',t:'金額'},{n:'営業利益率',sens:'exec',g:'利益',t:'率'}]}
+    {cat:'人件費系', items:[{n:'人件費（自店舗）',sens:'mgr',g:'コスト',t:'金額'},{n:'人件費率',sens:'mgr',g:'コスト',t:'率'},{n:'総労働時間',sens:'open',g:'コスト',t:'時間'},{n:'人時売上高',sens:'mgr',g:'コスト',t:'金額'},{n:'人件費（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'}]},
+    {cat:'利益系', items:[{n:'粗利（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'粗利率',sens:'mgr',g:'利益',t:'率'},{n:'FL率',sens:'mgr',g:'利益',t:'率'},{n:'営業利益（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'営業利益率',sens:'mgr',g:'利益',t:'率'},{n:'粗利（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'営業利益（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'}]}
   ],
   tags:[{n:'重点商品'},{n:'高粗利メニュー'},{n:'新メニュー'},{n:'曜日キャンペーン'},{n:'ランチ／ディナー区分'}]
 };
@@ -601,7 +611,7 @@ const sensBadge = s => s==='exec'?'<span class="sens exec">🔒経営機密</spa
 /* 条件文ビルダー：［系統］の［種別］（［機微度］）を［表示する/しない］ */
 const T_MAP={'金額（合計）':'金額','率（％）':'率','構成比':'構成比','前年比':'前年比','件数':'件数','時間':'時間'};
 /* 逆算ガード：金額 = 率 × 母数 で逆算できる組合せ（金額非表示＋率表示＋母数表示で警告） */
-const LEAK=[ {amount:'仕入額',ratio:'原価率',base:'売上'}, {amount:'人件費',ratio:'人件費率',base:'売上'}, {amount:'粗利',ratio:'粗利率',base:'売上'}, {amount:'営業利益',ratio:'営業利益率',base:'売上'} ];
+const LEAK=[ {amount:'仕入額',ratio:'原価率',base:'売上'}, {amount:'人件費（自店舗）',ratio:'人件費率',base:'売上'}, {amount:'粗利（自店舗）',ratio:'粗利率',base:'売上'}, {amount:'営業利益（自店舗）',ratio:'営業利益率',base:'売上'} ];
 const S_MAP={'🔓現場OK':'open','🔸店長まで':'mgr','🔒経営機密':'exec'};
 function applyCondition(){ if(catalogRole==='all') return;
   const g=document.getElementById('condGrp').value, t=document.getElementById('condType').value, sv=document.getElementById('condSens').value, show=document.getElementById('condAct').value==='表示する';
@@ -618,19 +628,20 @@ const COND_GRP=['すべての系統','売上','コスト','利益','カスタム
 function condItemOn(it){ let on = copySrc ? !!it.roles[copySrc] : (condBase==='new' ? false : (condBase==='keep' ? !!it.roles[catalogRole] : USECASE[condBase].allow(it.sens||'open')));
   condRules.forEach(r=>{ const mg=r.grp.startsWith('すべて')||it.g===r.grp, mt=r.type.startsWith('すべて')||it.t===T_MAP[r.type], ms=r.sens.startsWith('すべて')||(it.sens||'open')===S_MAP[r.sens]; if(mg&&mt&&ms) on=(r.act==='表示する'); }); return on; }
 function condTagOn(t){ let on = copySrc ? !!t.roles[copySrc] : (condBase==='new' ? false : (condBase==='keep'?!!t.roles[catalogRole]:USECASE[condBase].tags)); condRules.forEach(r=>{ if(r.grp==='カスタムタグ') on=(r.act==='表示する'); }); return on; }
-/* ロールの機密クリアランス：そのレベルを超える指標は表示不可（ロック） */
-const SENS_LV={open:1,mgr:2,exec:3};
-function roleClearance(){ return {floor:1,manager:2,admin:3}[defaultUseCase()]||3; }
-function condSensOptions(){ const cl=roleClearance(); return [['すべて',9],['🔓現場OK',1],['🔸店長まで',2],['🔒経営機密',3]].filter(([o,lv])=>lv===9||lv<=cl).map(([o])=>o); }
-/* プレビュー＝土台＋条件＋個別上書き。さらにロールのクリアランスを超える指標はロック（必ず非表示） */
-function computeCond(){ const cl=roleClearance(); return CATALOG.transactions.flatMap(g=>g.items).map(it=>{ let on=(it.n in condOverride)?condOverride[it.n]:condItemOn(it); const locked=(SENS_LV[it.sens||'open']||1)>cl; if(locked) on=false; return {it,on,locked}; }); }
+/* 厳密案：データ範囲（スコープ）で制御。全社集計の指標は、ロールのスコープが全社でなければロック（自店舗ロールには非該当） */
+function roleScopeAll(){ const r=ROLES.find(x=>x.key===catalogRole); return !!(r && r.scopeType==='all'); }
+/* 推奨案：機微度（機密レベル）はハードロックせずソフト分類（テンプレ既定のみ）。選択肢は全レベル表示 */
+function condSensOptions(){ return ['すべて','🔓現場OK','🔸店長まで','🔒経営機密']; }
+/* プレビュー＝土台＋条件＋個別上書き。全社集計指標は自店舗ロールではロック（スコープ制限） */
+function computeCond(){ const allScope=roleScopeAll(); return CATALOG.transactions.flatMap(g=>g.items).map(it=>{ let on=(it.n in condOverride)?condOverride[it.n]:condItemOn(it); const locked=(it.scope==='company')&&!allScope; if(locked) on=false; return {it,on,locked}; }); }
 function computeCondTags(){ return CATALOG.tags.map(t=>({t, on:(t.n in condOverride)?condOverride[t.n]:condTagOn(t), locked:false})); }
-function toggleCondItem(name){ const it=CATALOG.transactions.flatMap(g=>g.items).find(x=>x.n===name); if(!it) return; if((SENS_LV[it.sens||'open']||1)>roleClearance()){ toast('このロールの機密レベルを超えるため表示できません'); return; } const eff=(name in condOverride)?condOverride[name]:condItemOn(it); condOverride[name]=!eff; renderCondset(); }
+function toggleCondItem(name){ const it=CATALOG.transactions.flatMap(g=>g.items).find(x=>x.n===name); if(!it) return; if(it.scope==='company'&&!roleScopeAll()){ toast('全社集計のため、このロール（自店舗）では表示できません'); return; } const eff=(name in condOverride)?condOverride[name]:condItemOn(it); condOverride[name]=!eff; renderCondset(); }
 function toggleCondTag(name){ const t=CATALOG.tags.find(x=>x.n===name); if(!t) return; const eff=(name in condOverride)?condOverride[name]:condTagOn(t); condOverride[name]=!eff; renderCondset(); }
 let condAdvOpen=false;
-function openCondset(){ condBase=defaultUseCase(); condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; condNew=false; copyMode=false; show('condset'); }
+function openCondset(){ condBase=defaultUseCase(); condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; condNew=false; copyMode=false; tplDdOpen=false; markCondClean(); show('condset'); }
+document.addEventListener('click', function(e){ if(tplDdOpen){ const inside=e.target.closest&&e.target.closest('.hdd'); if(!inside){ tplDdOpen=false; const v=document.getElementById('view-condset'); if(v&&!v.classList.contains('hide')) renderCondset(); } } });
 function toggleCondAdv(){ condAdvOpen=!condAdvOpen; renderCondset(); }
-function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; condOverride={}; condNew=false; copyMode=false; renderCondset(); }   // 土台変更で個別上書きはリセット
+function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; condOverride={}; condNew=false; copyMode=false; markCondClean(); renderCondset(); }   // 土台変更で個別上書きはリセット
 function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}); renderCondset(); }
 function setCondRule(i,f,v){ condRules[i][f]=v; renderCondset(); }
 function delCondRule(i){ condRules.splice(i,1); renderCondset(); }
@@ -641,17 +652,20 @@ function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.ro
   computeCondTags().forEach(({t,on})=>{ t.roles[catalogRole]=on; enforceNesting(t.roles,catalogRole); });   // タグも反映（ベース＋カスタムタグ条件）
   show('catalog'); toast('「'+roleLabel(catalogRole)+'」のカタログに条件設定を適用しました'); }
 /* マイテンプレート：①ベース＋②条件ルール一式を保存。保存・更新は上部バー（適用ボタンの左）に文脈で出し分け */
-let CONDTPL=[], curTplIdx=-1;
-function tplBarHTML(){   // 文脈で出し分け：新規＝名前をつけて保存／既存＝更新して保存
-  return curTplIdx>=0
-    ? `<button class="btn ghost" onclick="updateCondTpl()">更新</button>`
-    : `<button class="btn ghost" onclick="openTplSaveModal()">名前をつけて保存</button>`;
+let CONDTPL=[], curTplIdx=-1, condBaseline='';
+function condStateStr(){ return JSON.stringify({b:condBase,c:condRules,o:condOverride,cp:copySrc}); }
+function markCondClean(){ condBaseline=condStateStr(); }   // 現在状態を「保存済み＝変更なし」基準に
+function condDirty(){ return condStateStr()!==condBaseline; }
+function tplBarHTML(){   // 変更がある時だけ保存ボタンを出す（ダーティ判定）
+  const dirty=condDirty();
+  if(curTplIdx>=0) return dirty ? `<button class="btn ghost" onclick="updateCondTpl()">更新して保存</button>` : `<span style="color:#9aa0a6;font-size:12px;">変更なし</span>`;
+  return dirty ? `<button class="btn ghost" onclick="openTplSaveModal()">名前をつけて保存</button>` : `<span style="color:#9aa0a6;font-size:12px;">変更なし</span>`;
 }
 function openTplSaveModal(){ document.getElementById('tplNameInput').value=''; document.getElementById('tplNameInput').style.borderColor=''; document.getElementById('tplModal').classList.remove('hide'); setTimeout(()=>document.getElementById('tplNameInput').focus(),40); }
 function closeTplModal(){ document.getElementById('tplModal').classList.add('hide'); }
-function submitTplName(){ const nm=(document.getElementById('tplNameInput').value||'').trim(); if(!nm){ document.getElementById('tplNameInput').style.borderColor='#c33'; return; } CONDTPL.push({name:nm,base:condBase,rules:condRules.map(r=>({...r}))}); curTplIdx=CONDTPL.length-1; closeTplModal(); renderCondset(); toast('マイテンプレート「'+nm+'」を保存しました'); }
-function updateCondTpl(){ if(curTplIdx<0) return; const t=CONDTPL[curTplIdx]; t.base=condBase; t.rules=condRules.map(r=>({...r})); renderCondset(); toast('「'+t.name+'」を更新しました'); }
-function delCondTplCur(){ if(curTplIdx<0) return; const nm=CONDTPL[curTplIdx].name; CONDTPL.splice(curTplIdx,1); curTplIdx=-1; renderCondset(); toast('「'+nm+'」を削除しました'); }
+function submitTplName(){ const nm=(document.getElementById('tplNameInput').value||'').trim(); if(!nm){ document.getElementById('tplNameInput').style.borderColor='#c33'; return; } CONDTPL.push({name:nm,base:condBase,rules:condRules.map(r=>({...r})),override:{...condOverride}}); curTplIdx=CONDTPL.length-1; condNew=false; markCondClean(); closeTplModal(); renderCondset(); toast('マイテンプレート「'+nm+'」を保存しました'); }
+function updateCondTpl(){ if(curTplIdx<0) return; const t=CONDTPL[curTplIdx]; t.base=condBase; t.rules=condRules.map(r=>({...r})); t.override={...condOverride}; markCondClean(); renderCondset(); toast('「'+t.name+'」を更新しました'); }
+function delCondTplCur(){ if(curTplIdx<0) return; const nm=CONDTPL[curTplIdx].name; CONDTPL.splice(curTplIdx,1); curTplIdx=-1; markCondClean(); renderCondset(); toast('「'+nm+'」を削除しました'); }
 function renderTplList(){
   let h;
   if(!CONDTPL.length){ h=`<tr><td style="padding:16px;color:#9aa0a6;">保存済みのマイテンプレートはありません。指標条件設定で「名前をつけて保存」すると、ここに一覧表示されます。</td></tr>`; document.getElementById('tplListBody').innerHTML=h; return; }
@@ -664,19 +678,22 @@ function renderTplList(){
 }
 function editTplFromList(i){ show('condset'); loadCondTplSel(String(i)); }
 function delTplFromList(i){ const nm=CONDTPL[i].name; CONDTPL.splice(i,1); if(curTplIdx===i) curTplIdx=-1; else if(curTplIdx>i) curTplIdx--; renderTplList(); toast('「'+nm+'」を削除しました'); }
-function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||t.base==='new'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; copySrc=null; condOverride={}; condNew=false; copyMode=false; renderCondset(); toast('「'+t.name+'」を読み込みました'); }
+function loadCondTplSel(v){ const i=+v; if(i<0) return; const t=CONDTPL[i]; if(!t) return; const LV={floor:1,manager:2,admin:3}; const r=ROLES.find(x=>x.key===catalogRole),isCo=r&&r.tier==='company'; const tierOK=b=>isCo?b==='admin':(b==='floor'||b==='manager'); const du=defaultUseCase(); condBase=(t.base==='keep'||t.base==='new'||(tierOK(t.base)&&LV[t.base]<=LV[du]))?t.base:'keep'; condRules=t.rules.map(x=>({...x})); curTplIdx=i; copySrc=null; condOverride={...(t.override||{})}; condNew=false; copyMode=false; markCondClean(); renderCondset(); toast('「'+t.name+'」を読み込みました'); }
 function onTplSelect(v){ const i=+v; if(i<0){ curTplIdx=-1; renderCondset(); return; } loadCondTplSel(String(i)); }
 /* 統合テンプレートプルダウン：base:推奨 / tpl:保存 / new:新規作成 */
 function onTemplatePick(v){
-  if(v==='new'){ condNew=true; copyMode=false; condBase='new'; condRules=[]; condOverride={}; curTplIdx=-1; copySrc=null; condAdvOpen=true; renderCondset(); toast('新規テンプレート（まっさら＝全指標が非表示）：表示する指標をクリック／条件で足し、右上「名前をつけて保存」'); return; }
+  if(v==='new'){ condNew=true; copyMode=false; condBase='new'; condRules=[]; condOverride={}; curTplIdx=-1; copySrc=null; condAdvOpen=true; markCondClean(); renderCondset(); toast('新規テンプレート（まっさら＝全指標が非表示）：表示する指標をクリック／条件で足し、右上「名前をつけて保存」'); return; }
   condNew=false; copyMode=false;
   if(v.startsWith('base:')){ setCondBase(v.slice(5)); return; }
   if(v.startsWith('tpl:')){ loadCondTplSel(v.slice(4)); return; }
 }
 /* 他ロールからコピー：選択した元ロールの現在のカタログ（指標/タグ）を土台にする */
 let copySrc=null, condNew=false, copyMode=false;
-function toggleCopyMode(){ copyMode=!copyMode; if(!copyMode){ copySrc=null; condOverride={}; } renderCondset(); }
-function onCopySrc(v){ copySrc=v||null; if(copySrc){ curTplIdx=-1; } condOverride={}; renderCondset(); if(copySrc) toast('「'+roleLabel(copySrc)+'」の設定を土台にしました（適用で現在のロールにコピー）'); }
+let tplDdOpen=false;
+function toggleTplDd(){ tplDdOpen=!tplDdOpen; renderCondset(); }
+function pickTpl(v){ tplDdOpen=false; onTemplatePick(v); }
+function toggleCopyMode(){ copyMode=!copyMode; if(!copyMode){ copySrc=null; condOverride={}; } markCondClean(); renderCondset(); }
+function onCopySrc(v){ copySrc=v||null; if(copySrc){ curTplIdx=-1; } condOverride={}; markCondClean(); renderCondset(); if(copySrc) toast('「'+roleLabel(copySrc)+'」の設定を土台にしました（適用で現在のロールにコピー）'); }
 function renderCondset(){
   document.getElementById('csRole').textContent=roleLabel(catalogRole);
   const bases=[
@@ -689,13 +706,16 @@ function renderCondset(){
   if(condBase!=='new' && !shownBases.some(([b])=>b===condBase)) condBase=du;   // 'new'(新規=まっさら)はリセットしない
   const BLAB={floor:'現場スタッフ向け',manager:'店長向け',admin:'管理者・経理向け',keep:'現状から（触らない）'};
   let h=`<div class="csec"><div class="csec-h">① テンプレートから開始</div>`;
-  // 1段目：テンプレート選択（推奨＋保存＋新規作成 を1プルダウンに統合）
+  // 1段目：テンプレート選択（独自ハードプルダウン：推奨／保存／新規作成）
+  const curLabel = condNew ? '＋ 新規テンプレートを作成' : (curTplIdx>=0 ? '★ '+CONDTPL[curTplIdx].name : (copySrc ? 'コピー：'+roleLabel(copySrc) : (BLAB[condBase]||condBase)+(condBase===du?'（推奨）':'')));
+  let dd=`<button class="hdd-btn" onclick="event.stopPropagation();toggleTplDd()">${curLabel}<span class="hdd-ar">▾</span></button>`;
+  dd+=`<div class="hdd-panel${tplDdOpen?'':' hide'}">`
+    +`<div class="hdd-grp">推奨テンプレート</div>`+shownBases.map(([b])=>`<div class="hdd-opt ${(condBase===b&&curTplIdx<0&&!copySrc&&!condNew)?'on':''}" onclick="pickTpl('base:${b}')">${BLAB[b]}${b===du?' <span class="recpill">推奨</span>':''}</div>`).join('')
+    +`<div class="hdd-grp">保存テンプレート</div>`+(CONDTPL.length?CONDTPL.map((t,i)=>`<div class="hdd-opt ${curTplIdx===i?'on':''}" onclick="pickTpl('tpl:${i}')">★ ${t.name}</div>`).join(''):`<div class="hdd-empty">（保存済みなし）</div>`)
+    +`<div class="hdd-grp">新規テンプレート作成</div><div class="hdd-opt ${condNew?'on':''}" onclick="pickTpl('new')">＋ 新規テンプレートを作成</div>`
+    +`</div>`;
   h+=`<div class="tplrow"><span class="tplrl">テンプレート</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">`
-    +`<select class="condsel" style="min-width:240px;" onchange="onTemplatePick(this.value)">`
-      +`<optgroup label="推奨テンプレート">`+shownBases.map(([b])=>`<option value="base:${b}" ${(condBase===b&&curTplIdx<0&&!copySrc&&!condNew)?'selected':''}>${BLAB[b]}${b===du?'（推奨）':''}</option>`).join('')+`</optgroup>`
-      +`<optgroup label="保存テンプレート">`+(CONDTPL.length?CONDTPL.map((t,i)=>`<option value="tpl:${i}" ${curTplIdx===i?'selected':''}>★ ${t.name}</option>`).join(''):`<option disabled>（保存済みなし）</option>`)+`</optgroup>`
-      +`<optgroup label="新規テンプレート作成"><option value="new" ${condNew?'selected':''}>＋ 新規テンプレートを作成</option></optgroup>`
-    +`</select>`
+    +`<div class="hdd" style="min-width:260px;">${dd}</div>`
     +(curTplIdx>=0?`<span style="color:#0f7d49;font-size:12px;font-weight:700;">選択中（条件を直して右上「更新」）</span><button class="mini" style="background:#c0573a;" onclick="delCondTplCur()">このテンプレを削除</button>`:'')
     +`<span style="flex:1"></span><button class="mini" onclick="show('tpllist')">一覧 ＞</button></div></div>`;
   // 新規作成モードのときだけ：コピーで作成（チェック→コピー元ロールのプルダウン）
@@ -716,7 +736,7 @@ function renderCondset(){
     +`<div class="prevbar"><span class="prevon">◯ 表示 ${on}</span><span class="prevoff">✕ 非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
   CATALOG.transactions.forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
     h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}） <button class="mini" onclick="setGroupOverride('${g.cat}',true)">全表示</button><button class="mini" onclick="setGroupOverride('${g.cat}',false)">全非表示</button></div><div class="prevlist">`+items.map(x=> x.locked
-      ? `<span class="prevchip locked" title="このロールの機密レベルを超えるため表示できません（クリアランス制限）">🔒 ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`
+      ? `<span class="prevchip locked" title="全社集計のため、このロール（自店舗スコープ）では表示できません。会社ロール/オーナーで閲覧可">🔒 ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`
       : `<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
   const tres=computeCondTags();
   if(tres.length) h+=`<div class="prevgrp">カスタムタグ（表示 ${tres.filter(x=>x.on).length}／${tres.length}） <button class="mini" onclick="setTagsOverride(true)">全表示</button><button class="mini" onclick="setTagsOverride(false)">全非表示</button></div><div class="prevlist">`+tres.map(x=>`<span class="prevchip clk ${x.on?'on':'off'}${(x.t.n in condOverride)?' ov':''}" onclick="toggleCondTag('${x.t.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.t.n}</span>`).join('')+`</div>`;
@@ -863,6 +883,7 @@ const PRESET = {
   manager:f => ({base:1,view:1,edit:2,action:2,admin:0}[f.k]),   // 店長
   company:f => ({base:1,view:1,edit:2,action:2,admin:2}[f.k]),   // 経理/人事の非fixed（全社・操作可）
   full:   f => maxV(f.k),                                         // オーナー
+  blank:  f => minV(f.k),                                         // 新規作成＝まっさら（常時のみ閲覧、他はすべて「なし」）
 };
 function buildPerm(presetFn,scope,roleKey){
   const owner = roleKey==='owner'||roleKey==='full';
@@ -920,8 +941,8 @@ function createRole(){ rmTier='shop'; document.getElementById('rmName').value=''
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   rmSetScope(t==='company'?'all':'self');   // 区分に応じた既定スコープ
   document.getElementById('rmNote').textContent = t==='shop'
-    ? '店舗ロール：店舗現場向け。最小権限から開始し、「カタログ作成」で見せる指標/タグを選びます。'
-    : '会社ロール：本部レベル。本部専用機能も可否設定でき、カタログは全件を閲覧できます。'; }
+    ? '店舗ロール：店舗現場向け。新規はまっさら（全機能なし・カタログ空）から、必要な権限/指標を付与します。'
+    : '会社ロール：本部レベル。本部専用機能も可否設定可。新規はまっさら（全機能なし・カタログ空）から付与します。'; }
 function rmSetScope(s){ rmScope=s; document.querySelectorAll('#rmScope button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
   const box=document.getElementById('rmShops'); box.style.display = s==='shops'?'flex':'none';   // インラインdisplayを直接切替（.hideだとインラインに負ける）
   if(s==='shops'&&!box.dataset.built){ box.innerHTML=SHOPS.map((sh,i)=>`<label class="ro"><input type="checkbox" class="rmShopCb" value="${sh}" ${i<3?'checked':''}> ${sh}</label>`).join(''); box.dataset.built='1'; } }
@@ -931,8 +952,8 @@ function submitRoleModal(){
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
   const company=rmTier==='company'; _roleSeq++; const key='role'+_roleSeq, tier=rmTier, scope=tier;
   const shops = rmScope==='shops' ? [...document.querySelectorAll('.rmShopCb:checked')].map(c=>c.value) : undefined;
-  _allCat().forEach(it=>it.roles[key]=company);   // 会社ロール=全件で開始／店舗ロール=空から作る（カタログ管理で調整）
-  ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm:buildPerm(company?PRESET.company:PRESET.staff, scope, key)});
+  _allCat().forEach(it=>it.roles[key]=false);   // 新規＝カタログも空（まっさら）。後で付与
+  ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm:buildPerm(PRESET.blank, scope, key)});   // まっさら＝全機能「なし」（常時のみ閲覧固定）から付与
   closeRoleModal(); editRole(ROLES.length-1);
 }
 
