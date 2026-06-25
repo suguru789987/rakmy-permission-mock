@@ -606,7 +606,7 @@ function renderCondset(){
 }
 /* ===== 機能アクセス条件設定（画面ごとの 閲覧/操作可否を 条件文で一括） ===== */
 const KINDLABEL={base:'常時',view:'分析閲覧',edit:'設定',action:'実行',admin:'管理'};
-const ACC_GRP=['すべて','閲覧系（分析・レポート）','操作・設定系'], ACC_KIND=['すべて','常時','分析閲覧','設定','実行','管理'], ACC_FIXED=['すべて','本部専用のみ','本部専用を除く'], ACC_ACT=['なし','閲覧','操作'];
+const ACC_GRP=['すべて','閲覧系（分析・レポート）','操作・設定系','──個別カテゴリ──',...CATEGORIES.map(c=>c.name)], ACC_KIND=['すべて','常時','分析閲覧','設定','実行','管理'], ACC_FIXED=['すべて','本部専用のみ','本部専用を除く'], ACC_ACT=['なし','閲覧','操作'];
 let accBase='keep', accRules=[];
 function openAccessCond(){ accBase='keep'; accRules=[]; show('acccond'); }
 function setAccBase(b){ accBase=b; renderAccessCond(); }
@@ -616,7 +616,7 @@ function delAccRule(i){ accRules.splice(i,1); renderAccessCond(); }
 function computeAccess(){ const res=[];
   CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ const shown=f.fixed?cur.tier==='company':true; if(!shown) return;
     let v = accBase==='keep' ? featVal(cur.perm,c.id,fi,f) : PRESET[accBase](f);
-    accRules.forEach(r=>{ const mg=r.grp.startsWith('すべて')||(r.grp.startsWith('閲覧')?c.group==='view':c.group==='ops'),
+    accRules.forEach(r=>{ const mg = r.grp.startsWith('すべて')?true : r.grp.startsWith('閲覧系')?c.group==='view' : r.grp==='操作・設定系'?c.group==='ops' : c.name===r.grp,
         mk=r.kind.startsWith('すべて')||KINDLABEL[f.k]===r.kind,
         mf=r.fixed.startsWith('すべて')||(r.fixed.includes('のみ')?!!f.fixed:!f.fixed);
       if(mg&&mk&&mf) v={'なし':0,'閲覧':1,'操作':2}[r.act]; });
@@ -635,7 +635,7 @@ function renderAccessCond(){
     +bases.map(([b,l,d])=>`<label class="baseopt ${accBase===b?'on':''}"><input type="radio" name="abase" ${accBase===b?'checked':''} onclick="setAccBase('${b}')"> ${l}${b==='keep'?' <span class="recpill">推奨</span>':''}<span class="tip">${d}</span></label>`).join('')+`</div></div>`;
   h+=`<div class="csec"><div class="csec-h">② 条件ルール（上から順＝後の行が優先）</div>`;
   if(!accRules.length) h+=`<p style="color:#9aa0a6;font-size:12.5px;padding:4px 2px;">条件ルールなし（ベースのみ）。「＋条件を追加」で「操作・設定系を操作にする」「本部専用をなしにする」等を指定。</p>`;
-  accRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setAccRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  accRules.forEach((r,i)=>{ const sel=(arr,val,f)=>`<select class="condsel" onchange="setAccRule(${i},'${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''} ${o.startsWith('──')?'disabled':''}>${o}</option>`).join('')}</select>`;
     h+=`<div class="crow">${sel(ACC_GRP,r.grp,'grp')}<span class="condw">の 性質</span>${sel(ACC_KIND,r.kind,'kind')}<span class="condw">（</span>${sel(ACC_FIXED,r.fixed,'fixed')}<span class="condw">）を</span>${sel(ACC_ACT,r.act,'act')}<span class="condw">にする</span><button class="mini" onclick="delAccRule(${i})">削除</button></div>`; });
   h+=`<button class="btn ghost" style="margin-top:8px;" onclick="addAccRule()">＋ 条件を追加</button></div>`;
   const res=computeAccess(), cnt={0:0,1:0,2:0}; res.forEach(x=>cnt[x.v]++);
