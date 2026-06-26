@@ -336,8 +336,8 @@
     <div class="panel">
       <p class="hint">2層の役割：<b>店舗ロール</b>（店長/従業員＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加（各群の下段に追加されます）。</p>
       <div class="listtabs">
-        <button class="ltab" data-tab="view" onclick="setListTab('view')">一覧・分析画面</button>
-        <button class="ltab" data-tab="ops" onclick="setListTab('ops')">設定画面</button>
+        <button class="ltab" data-tab="view" onclick="setListTab('view')">一覧画面権限</button>
+        <button class="ltab" data-tab="ops" onclick="setListTab('ops')">設定画面権限</button>
       </div>
       <div style="overflow:auto;" id="listScroll"><table class="list" id="listTable"></table></div>
     </div>
@@ -1159,7 +1159,7 @@ function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; renderList(); } 
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return g.cats.filter(c=>listPick[g.key].includes(c.id)).map(c=>({c})); return [{tally:true}]; }
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
-  const ALL=[{key:'view',cls:'grpview',label:'一覧・分析カテゴリ',cats:vc},{key:'ops',cls:'grpops',label:'設定カテゴリ',cats:oc}];
+  const ALL=[{key:'view',cls:'grpview',label:'一覧画面名',cats:vc},{key:'ops',cls:'grpops',label:'設定画面名',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   document.querySelectorAll('.listtabs .ltab').forEach(b=>b.classList.toggle('on', b.dataset.tab===listTab));
   document.getElementById('listLegend').innerHTML = listTab==='view'
