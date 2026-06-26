@@ -351,7 +351,6 @@
       <button class="snbtn" onclick="openCatalogAll()">指標カタログ</button>
     </div>
     <div class="panel">
-      <p class="hint">2層の役割：<b>店舗ロール</b>（店長/従業員＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加（各群の下段に追加されます）。</p>
       <div class="listtabs">
         <button class="ltab" data-tab="view" onclick="setListTab('view')">一覧画面権限</button>
         <button class="ltab" data-tab="ops" onclick="setListTab('ops')">設定画面権限</button>
@@ -370,12 +369,8 @@
     </div>
     <div class="panel">
       <div class="roleline"><span class="rn" id="roleName"></span><span class="scopechip" id="scopeChip"></span></div>
-      <div class="legend" style="margin-bottom:6px;">
+      <div class="legend" style="margin-bottom:14px;">
         <span><b style="background:#c33">なし</b></span><span><b style="background:#3b82f6">閲覧</b></span><span><b style="background:#1bbf73">操作/可</b></span>
-        <span style="color:#9aa0a6;">本部専用機能はこの権限では付与されないため非表示</span>
-      </div>
-      <div class="legend" style="margin-bottom:14px; color:#0a7a55;">
-        DnD編集：会社画面＝本部のみ／店舗画面＝店長まで／従業員は不可。 指標の閲覧範囲は入れ子 <b style="background:#21262b">本部(全指標)</b> ⊇ <b style="background:#1bbf73">店長(本部が許可)</b> ⊇ <b style="background:#3b82f6">従業員(閲覧許可)</b>。
       </div>
       <div id="editBody"></div>
       <div id="excludedNote" class="hint" style="margin-top:16px;"></div>
@@ -392,7 +387,6 @@
       <button class="btn ghost" onclick="show('list')">← 権限設定へ</button>
     </div>
     <div class="panel">
-      <p class="hint"><b>UIカスタマイズ（DnD／自由集計ダッシュボード）専用</b>の画面。大量・動的な<b>指標／タグ／ディメンション</b>の母集合を、本部が<b>役割別</b>に絞ります。新規タグはここで作成。<br>※ 画面・機能・項目の操作/閲覧可否は <b>各権限の「権限編集」</b>で設定します（この画面は機能アクセスではなく、UIカスタマイズに出す指標の母集合のみ）。</p>
       <div id="catalogBody"></div>
     </div>
   </main>
@@ -409,7 +403,6 @@
       <button class="btn primary" onclick="applyCondset()">カタログへ戻る</button>
     </div>
     <div class="panel">
-      <p class="hint">① <b>テンプレート</b>を選ぶ（推奨／保存／＋新規作成。新規は「コピーで作成」可）。→ ② <b>編集画面</b>で<b>条件ルールの一括</b>と<b>指標のクリック個別ON/OFF</b>を行い結果を確認。保存・更新・カタログへ戻るは右上。</p>
       <div id="condsetBody"></div>
     </div>
   </main>
@@ -422,7 +415,6 @@
       <button class="btn ghost" onclick="show('catalog')">← 指標カタログへ</button>
     </div>
     <div class="panel">
-      <p class="hint">指標条件設定で「名前をつけて保存」したテンプレート（①ベース＋②条件ルール一式）の一覧。<b>編集</b>＝条件設定画面で開いて直す（対象ロールは指標カタログの選択ロール）。<b>削除</b>でテンプレを破棄。<br>※ 現状はセッション内保持（モック）。本番はDB保存で全社共有・恒久化。</p>
       <table class="list" id="tplListBody"></table>
     </div>
   </main>
@@ -431,7 +423,6 @@
   <main id="view-summary" class="hide">
     <div class="titlebar"><h1>役割サマリ</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
     <div class="panel">
-      <p class="hint">役割ごとに「使える全数」を俯瞰（読み取り）。<b>画面アクセス</b>は権限編集、<b>UIカスタマイズの指標/タグ</b>はカタログで設定。ここはその集約ビューです。</p>
       <div style="overflow:auto;"><table class="list" id="summaryTable"></table></div>
     </div>
   </main>
@@ -440,7 +431,6 @@
   <main id="view-users" class="hide">
     <div class="titlebar"><h1>ユーザー割当</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
     <div class="panel">
-      <p class="hint"><b>従業員一覧／アカウントmaster と連動</b>：ユーザー・<b>所属店舗</b>・<b>役職</b>はmasterから取得（ここでは追加・改名しない）。本画面では<b>権限ロールの割当のみ</b>を行い、<b>所属店舗ごとにグループ表示</b>。<br><b>1人に複数ロール可（兼務）</b>＝有効権限は<b>許可の合算（union）</b>。<b>未割当はdeny-all</b>（安全側の既定）。スコープはロール側設定が効く。<br>※ 役職（店長/スタッフ/経理…）に応じた<b>推奨ロールの初期提示</b>も可能（masterの役職→既定ロールのマッピング）。</p>
       <table class="list" id="usersTable"></table>
     </div>
   </main>
@@ -971,7 +961,7 @@ function metricsCatalogHTML(){
         +roleCells(it.roles, rk=>`toggleTxRole(${gi},${ii},'${rk}')`, it)+`</tr>`;
     });
   });
-  h+=`</table><p class="hint">※ 各指標を店長／従業員のカタログに入れるか選びます。入れた指標だけが、その権限の役割画面に出ます（読み取り表示）。系統別＋検索＋件数で数百指標を整頓・全体把握。</p>`;
+  h+=`</table>`;
   return h;
 }
 function dimsCatalogHTML(){
@@ -979,7 +969,7 @@ function dimsCatalogHTML(){
   let h=`<div class="statbar"><span class="stat"><b>${total}</b> ディメンション</span>${roleStats(CATALOG.dimensions)}<span class="stat" style="color:#9aa0a6;">本番13〜15種</span></div>`;
   h+=`<table class="list"><tr><th class="name">ディメンション（軸）</th>${roleHeaders()}</tr>`;
   CATALOG.dimensions.forEach((d,i)=>{ h+=`<tr><td class="name">${d.n}</td>`+roleCells(d.roles, rk=>`toggleDimRole(${i},'${rk}')`)+`</tr>`; });
-  h+=`</table><p class="hint">※ 店長／従業員のカタログに入れたディメンションだけが、その権限の役割画面に出ます。</p>`;
+  h+=`</table>`;
   return h;
 }
 function filterCatalogT(tableId,q){
@@ -1006,7 +996,7 @@ function featureCatalogHTML(){
     const status=f.new?'<span class="badge-review">★★新規</span>':'<span style="color:#9aa0a6;font-size:11px;">既存</span>';
     h+=`<tr data-name="${(c.name+' '+f.n).toLowerCase()}"><td class="name"><span class="ccat">${c.name}</span> ${f.n}</td><td style="font-size:11.5px;color:#666;">${KIND[f.k].tag}</td><td style="font-size:11px;color:#555;">${ops}</td><td>${roleCell}</td><td>${status}</td></tr>`;
   });
-  h+=`</table><p class="hint">※ これが「権限対象の母集合（カタログ）」。役割画面はこのカタログに対して可否を設定。本部専用は役割画面に出ない。★★新規＝登録直後・要確認。検索＋集計で全件をもれなく把握できます。</p>`;
+  h+=`</table>`;
   return h;
 }
 function filterCatalog(q){
@@ -1023,7 +1013,6 @@ function tagCatalogHTML(){
       +roleCells(t.roles, rk=>`toggleTagRole(${i},'${rk}')`)+`</tr>`;
   });
   h+=`</table>`;
-  h+=`<p class="hint" style="margin-top:14px;">※ 店長／従業員のカタログに入れたタグだけが、その権限の役割画面に出ます。作成直後はどちらも未追加（要確認）。タグが多数でも件数＋（今後）検索で全件把握。</p>`;
   return h;
 }
 function catVal(perm,cid){                 // L1集計値（非fixedのみ）
@@ -1360,7 +1349,6 @@ function renderCatList(){
     <button class="ltab ${editTab==='view'?'on':''}" data-tab="view" onclick="setEditTab('view')">一覧画面権限</button>
     <button class="ltab ${editTab==='ops'?'on':''}" data-tab="ops" onclick="setEditTab('ops')">設定画面権限</button>
   </div>`;
-  h+=`<p class="hint">${editTab==='view'?'一覧・分析画面の<b>閲覧</b>可否をカテゴリ単位で一括（閲覧／なし）':'設定画面の<b>操作</b>可否をカテゴリ単位で一括（操作／閲覧／なし）'}。細かく設定するには「詳細 ＞」へ。混在は「一部」表示。</p>`;
   const bulkVals = editTab==='view' ? [1,0] : [3,2,1,0];
   h+=`<div class="bulkrow allbulk"><span class="bl">⭐ 全カテゴリを一括設定（初期値）：</span>${bulkVals.map(s=>`<button class="bulkbtn" title="${VTIP[s]}" onclick="setAllCats(${s})">${VLAB[s]}</button>`).join('')}</div>`;
   catsByGroup().filter(c=>c.group===editTab).filter(c=>c.features.some(f=>featShown(f))).forEach(c=>{
@@ -1496,10 +1484,7 @@ function toggleExp(ek){ cur.expanded[ek]=!cur.expanded[ek]; renderBody(); }
 function setFeat(cid,fi,s){ const f=CATEGORIES.find(c=>c.id===cid).features[fi]; setFeatVal(cur.perm,cid,fi,f,s); renderBody(); }
 function toggleOp(cid,fi,opid){ const k=opKey(cid,fi,opid); cur.perm[k]=!cur.perm[k]; renderBody(); }
 function renderExcluded(){
-  const el=document.getElementById('excludedNote');
-  if(cur.tier==='company'){ el.innerHTML='※ 本部ロール（経理／人事）は本部専用機能も含め職務分掌で可否を設定します（既定：経理＝財務系／人事＝人事系）。オーナーは全権。'; return; }
-  const names=[]; CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(f.fixed) names.push(f.n); }));
-  el.innerHTML='※ 本部専用機能（'+names.join(' ／ ')+'）は、店舗ロール（店長/従業員）には付与されません（本部ロールのみ）。';
+  const el=document.getElementById('excludedNote'); if(el) el.innerHTML='';
 }
 function saveRole(){ ROLES[cur.idx]={...ROLES[cur.idx],perm:cur.perm}; const nm=ROLES[cur.idx].name; show('list'); toast('「'+nm+'」の権限を保存しました'); }
 function toast(msg){ const t=document.getElementById('toast'); t.innerHTML='<span class="tk">✓</span>'+msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
