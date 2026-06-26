@@ -1317,12 +1317,16 @@ function renderBody(){
   else renderCatList();
   renderExcluded();
 }
-/* メイン：カテゴリ一覧（全体設定） */
+/* メイン：カテゴリ一覧（全体設定）。一覧画面権限／設定画面権限のタブで出し分け */
+let editTab='view';
+function setEditTab(t){ editTab=t; renderBody(); }
 function renderCatList(){
-  let h='<p class="hint">全体設定：カテゴリ単位で一括（なし／閲覧／操作）。機能・操作・指標を細かく設定するには「詳細 ＞」で各カテゴリの設定画面へ。混在は「一部」表示。</p>';
-  let lastGroup=null;
-  catsByGroup().filter(c=>c.features.some(f=>featShown(f))).forEach(c=>{
-    if(c.group!==lastGroup){ h+=`<div class="catsection cs-${c.group}">${GROUP_LABEL[c.group]}</div>`; lastGroup=c.group; }
+  let h=`<div class="listtabs">
+    <button class="ltab ${editTab==='view'?'on':''}" data-tab="view" onclick="setEditTab('view')">一覧画面権限</button>
+    <button class="ltab ${editTab==='ops'?'on':''}" data-tab="ops" onclick="setEditTab('ops')">設定画面権限</button>
+  </div>`;
+  h+=`<p class="hint">${editTab==='view'?'一覧・分析画面の<b>閲覧</b>可否をカテゴリ単位で一括（閲覧／なし）':'設定画面の<b>操作</b>可否をカテゴリ単位で一括（操作／閲覧／なし）'}。細かく設定するには「詳細 ＞」へ。混在は「一部」表示。</p>`;
+  catsByGroup().filter(c=>c.group===editTab).filter(c=>c.features.some(f=>featShown(f))).forEach(c=>{
     const feats=c.features.filter(f=>featShown(f));
     const sel=catSel(cur.perm,c.id);
     const seg=catVals(c).slice().reverse().map(s=>`<button data-v="${s}" title="${VTIP[s]}" class="${sel===s?'on':''}" onclick="setCatVal('${c.id}',${s})">${VLAB[s]}</button>`).join('');
