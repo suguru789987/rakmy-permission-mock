@@ -1222,7 +1222,7 @@ function renderList(){
     if(firstOfG && lastG!==null) h+=`<tr class="spacerrow"><td class="grpcol"></td><td class="name"></td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`;   // 群の間に余白
     const gcell = firstOfG ? `<td class="grpcol gc-${GCLS[g]}" rowspan="${gcount[g]}">${SHORT[g]}</td>` : '';
     if(firstOfG) lastG=g;
-    h+=`<tr class="${r.system?'ownerrow':''}">${gcell}<td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
+    h+=`<tr class="${r.system?'ownerrow':''}">${gcell}<td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
     grps.forEach(g=>groupLeaves(g).forEach(lf=>{ h+= lf.tally?`<td class="sumcell">${groupTallyHTML(r,g.cats,g.key)}</td>`:`<td>${listSummary(r,lf.c.id)}</td>`; }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
