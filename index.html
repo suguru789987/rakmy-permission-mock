@@ -44,6 +44,10 @@
   .rowedit{ display:block; width:100%; box-sizing:border-box; text-align:center; white-space:normal; line-height:1.2; background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 6px; cursor:pointer; font-weight:700; font-size:12px; }
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
+  .listtabs{ display:flex; gap:6px; margin:0 0 12px; }
+  .listtabs .ltab{ font-size:13.5px; font-weight:800; color:#5a6675; padding:9px 22px; border:1px solid var(--line); border-bottom:none; border-radius:9px 9px 0 0; background:#f1f3f5; cursor:pointer; }
+  .listtabs .ltab.on{ color:#15452e; background:#fff; box-shadow:0 -2px 0 #1bbf73 inset; }
+  .listtabs .ltab[data-tab="view"].on{ box-shadow:0 -2px 0 #2c5d9e inset; color:#1f3b5e; }
   #listTable{ table-layout:fixed; }
   #listTable th.catcol{ min-width:120px; width:120px; max-width:120px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
   #listTable th.catcol .catsub{ display:block; font-size:11px; font-weight:600; color:#6b7480; }
@@ -319,11 +323,7 @@
   <main id="view-list">
     <div class="titlebar">
       <h1>権限一覧</h1>
-      <div class="legend">
-        <span><b style="background:#1bbf73">◯</b> 全許可</span>
-        <span><b style="background:#3b82f6">△</b> 一部</span>
-        <span><b style="background:#c33">✕</b> なし</span>
-      </div>
+      <div class="legend" id="listLegend"></div>
       <div class="sp"></div>
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
@@ -335,6 +335,10 @@
     </div>
     <div class="panel">
       <p class="hint">2層の役割：<b>店舗ロール</b>（店長/従業員＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加（各群の下段に追加されます）。</p>
+      <div class="listtabs">
+        <button class="ltab" data-tab="view" onclick="setListTab('view')">表示権限</button>
+        <button class="ltab" data-tab="ops" onclick="setListTab('ops')">設定権限</button>
+      </div>
       <div style="overflow:auto;" id="listScroll"><table class="list" id="listTable"></table></div>
     </div>
   </main>
@@ -1124,7 +1128,7 @@ function catStatus(role,cid){
 const statusMk = (s,grp) => {
   if(s==='no') return '<span class="pill pno">—</span>';
   if(grp==='view') return s==='op'?'<span class="pill pop">閲覧</span>':'<span class="pill pvw">一部</span>';
-  return s==='op'?'<span class="pill pop">操作</span>':'<span class="pill pvw">閲覧</span>';
+  return s==='op'?'<span class="pill pop">操作</span>':'<span class="pill pvw">閲覧のみ</span>';
 };
 function listSummary(role,cid){ const cat=CATEGORIES.find(c=>c.id===cid); return statusMk(catStatus(role,cid), cat?cat.group:'ops'); }
 // グループ（閲覧/操作）の要約：該当カテゴリだけ集約。全◯→◯、全✕→✕、混在→△
@@ -1142,6 +1146,8 @@ function groupTallyHTML(role,cats,gkey){
   const cls = gkey==='ops' ? 'op' : 'vw';
   return `<span class="tally"><span class="tline"><span class="tlab">${lab}</span><span class="tnum ${cls}">${n}<span class="tot">/${tot}</span></span></span></span>`;
 }
+let listTab='view';   // 一覧のタブ：view=表示権限／ops=設定権限。各タブはその群のみを二値で表示
+function setListTab(t){ listTab=t; listPickOpen.view=false; listPickOpen.ops=false; renderList(); }
 let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
 let listPickOpen={view:false,ops:false}; // カテゴリ選択チェックパネルの開閉
@@ -1153,7 +1159,12 @@ function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; renderList(); } 
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return g.cats.filter(c=>listPick[g.key].includes(c.id)).map(c=>({c})); return [{tally:true}]; }
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
-  const grps=[{key:'view',cls:'grpview',label:'閲覧権限',cats:vc},{key:'ops',cls:'grpops',label:'操作権限',cats:oc}];
+  const ALL=[{key:'view',cls:'grpview',label:'表示カテゴリ',cats:vc},{key:'ops',cls:'grpops',label:'設定カテゴリ',cats:oc}];
+  const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
+  document.querySelectorAll('.listtabs .ltab').forEach(b=>b.classList.toggle('on', b.dataset.tab===listTab));
+  document.getElementById('listLegend').innerHTML = listTab==='view'
+    ? '<span><b style="background:#1bbf73">閲覧</b> 見られる</span><span><b style="background:#3b82f6">一部</b> 一部のみ</span><span><b style="background:#9aa0a6">—</b> なし</span>'
+    : '<span><b style="background:#1bbf73">操作</b> 操作できる</span><span><b style="background:#3b82f6">閲覧のみ</b> 見るだけ</span><span><b style="background:#9aa0a6">—</b> なし</span>';
   const leaf=grps.reduce((s,g)=>s+groupLeaves(g).length,0);   // 現在の葉列数
   // ヘッダ1段目：群バンド（クリックで展開／折りたたみ＋折りたたみ時はチェックで表示カテゴリを複数選択）
   let h=`<tr><th class="name" rowspan="2">権限名</th>`;
