@@ -1098,7 +1098,7 @@ function groupSummary(role,cats){
   const ss=ap.map(c=>catStatus(role,c.id));
   if(ss.every(s=>s==='op')) return 'op'; if(ss.every(s=>s==='no')) return 'no'; return 'vw';
 }
-let listExpand={view:false,ops:false};   // 既定は群を折りたたんで要約1列。クリックで展開
+let listExpand={view:true,ops:false};   // 既定：最もよく見る「閲覧権限（分析・レポート）」は展開、項目の多い操作・設定は要約1列に折りたたみ（クリックで展開）
 function toggleListGroup(g){ listExpand[g]=!listExpand[g]; renderList(); }
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
