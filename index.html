@@ -258,7 +258,8 @@
   .pickopt{ display:flex; align-items:center; gap:7px; padding:7px 11px; border-radius:7px; font-size:12.5px; font-weight:600; color:#333; cursor:pointer; white-space:nowrap;}
   .pickopt:hover{ background:#eef6fb;} .pickopt.on{ background:#eef9f2; color:#0f7d49;} .pickopt .pchk{ font-size:14px;}
   .pickfoot{ display:flex; gap:6px; padding:6px 5px 3px; border-top:1px solid #f0f2f4; margin-top:4px;}
-  .pickfoot button{ font-size:11px; padding:5px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9fb; cursor:pointer; font-weight:700;}
+  .pickfoot button{ flex:1; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9fb; cursor:pointer; font-weight:700; white-space:nowrap;}
+  .pickfoot button.pf-main{ background:#159b5d; color:#fff; border-color:#159b5d;}
   #listTable td.sumcell{ background:#fbfcfd; }
   .tally{ font-size:12.5px; white-space:nowrap; font-weight:700; color:#333;} .tally b{ font-weight:700;} .tally b.op{ color:#1bbf73;} .tally b.vw{ color:#3b82f6;} .tally b.no{ color:#c33;} .tally .tot{ color:#9aa0a6; font-weight:400; font-size:11px;}
   .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
@@ -1168,7 +1169,7 @@ function renderListToolbar(){
   let h='<div class="ltoolbar"><span class="ltlabel">📌 折りたたみ群に表示する列：</span>';
   let any=false;
   grps.forEach(g=>{ if(listExpand[g.key]) return; any=true; const sel=listPick[g.key];
-    const panel=listPickOpen[g.key]?`<div class="pickpanel">${g.cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="toggleListPickItem('${g.key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('')}<div class="pickfoot"><button onclick="clearListPick('${g.key}')">クリア（内訳に戻す）</button><button onclick="toggleListPickDD('${g.key}')">閉じる</button></div></div>`:'';
+    const panel=listPickOpen[g.key]?`<div class="pickpanel">${g.cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="toggleListPickItem('${g.key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('')}<div class="pickfoot"><button onclick="clearListPick('${g.key}')">クリア</button><button class="pf-main" onclick="toggleListPickDD('${g.key}')">選択</button></div></div>`:'';
     h+=`<div class="pickwrap"><button class="pickbtn" onclick="toggleListPickDD('${g.key}')">${g.label} ▾ ${sel.length?'（'+sel.length+'列）':'（内訳）'}</button>${panel}</div>`;
   });
   if(!any) h+='<span class="ltnote">両群とも展開中（列選択は折りたたみ時に有効）</span>';
