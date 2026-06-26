@@ -37,14 +37,17 @@
   table.list th{ background:#f5f7f9; font-weight:700; }
   table.list td.name{ text-align:left; font-weight:700; white-space:nowrap; }
   .mk{ font-weight:700; } .mk.op{ color:var(--green-d);} .mk.vw{ color:var(--blue);} .mk.no{ color:#c33;}
-  .rowedit{ display:inline-block; width:160px; box-sizing:border-box; text-align:center; white-space:nowrap; background:var(--green); color:#fff; border:none; border-radius:6px; padding:8px 10px; cursor:pointer; font-weight:700; font-size:12.5px; }
+  .rowedit{ display:block; width:100%; box-sizing:border-box; text-align:center; white-space:normal; line-height:1.2; background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 6px; cursor:pointer; font-weight:700; font-size:12px; }
   table.list td:last-child{ text-align:right; white-space:nowrap; }
-  /* 権限一覧：列が増えるので横スクロール＋権限名列を固定 */
-  #listTable th, #listTable td{ min-width:80px; }
+  /* 権限一覧：権限名・操作列を固定幅にし、内訳（カテゴリ）列に幅を集中＝列表示をメインに */
+  #listTable{ table-layout:fixed; }
+  #listTable th, #listTable td{ min-width:0; }
   #listTable th.catcol{ white-space:nowrap; font-size:12px; padding:8px 12px; line-height:1.25; vertical-align:middle; }
-  #listTable th.name, #listTable td.name{ min-width:170px; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
+  #listTable th.name, #listTable td.name{ width:150px; white-space:normal; word-break:break-word; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
   #listTable th.name{ background:#f5f7f9; z-index:3; }
-  #listTable th.actcol, #listTable td.actcol{ min-width:184px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
+  #listTable th.actcol, #listTable td.actcol{ width:146px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
+  #listTable td.actcol{ white-space:normal; }
+  #listTable td.actcol br{ display:none; }
   #listTable th.actcol{ background:#f5f7f9; z-index:3; }
   /* 群見出し・余白行：固定セル(名前/操作)の背景を群色に合わせる（白で浮かない） */
   #listTable tr.grouprow.view td.name, #listTable tr.grouprow.view td.actcol{ background:#eaf2fb; }
@@ -1165,7 +1168,7 @@ function renderList(){
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
     grps.forEach(g=>groupLeaves(g).forEach(lf=>{ h+= lf.tally?`<td class="sumcell">${groupTallyHTML(r,g.cats,g.key)}</td>`:`<td>${listSummary(r,lf.c.id)}</td>`; }));
     let act;
-    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
+    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
     else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標カタログ ＞</button>`;
     h+=`<td class="actcol">${act}</td></tr>`;
