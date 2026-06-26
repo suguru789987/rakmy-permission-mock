@@ -252,8 +252,12 @@
   .ltoolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; padding:10px 12px; background:#f5f7f9; border-radius:8px;}
   .ltlabel{ font-size:12.5px; font-weight:700; color:#445;} .ltnote{ font-size:11.5px; color:#9aa0a6;}
   .pickwrap{ position:relative; display:inline-block;}
-  .pickbtn{ font-size:12px; font-weight:700; color:#1f3b5e; padding:6px 12px; border:1px solid var(--line); border-radius:7px; background:#fff; cursor:pointer;}
-  .pickbtn:hover{ border-color:#159b5d;}
+  .pickbtn{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:800; color:#1f3b5e; padding:6px 7px 6px 13px; border:1.5px solid #b9c6d6; border-radius:8px; background:linear-gradient(#fff,#eef3f8); cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .pickbtn:hover{ border-color:#159b5d; background:#f0fbf5;}
+  .pickbtn .ddcaret{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; background:#1f3b5e; color:#fff; font-size:10px; line-height:1; transition:transform .15s, background .15s;}
+  .pickbtn:hover .ddcaret{ background:#159b5d;}
+  .pickbtn.open{ border-color:#159b5d; box-shadow:0 0 0 3px rgba(21,155,93,.18);}
+  .pickbtn.open .ddcaret{ transform:rotate(180deg); background:#159b5d;}
   .pickpanel{ position:absolute; top:calc(100% + 4px); left:0; min-width:200px; max-height:320px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:9px; box-shadow:0 12px 30px rgba(0,0,0,.2); z-index:80; padding:5px;}
   .pickpanel.floating{ position:fixed; top:0; left:0;}
   .pickopt{ display:flex; align-items:center; gap:7px; padding:7px 11px; border-radius:7px; font-size:12.5px; font-weight:600; color:#333; cursor:pointer; white-space:nowrap;}
@@ -1167,7 +1171,7 @@ function pickDD(key,label,cats){
   const allItem=`<label class="pickopt pickall ${all?'on':''}" onclick="event.stopPropagation();toggleListAll('${key}')"><span class="pchk">${all?'☑':'☐'}</span> 全て</label>`;
   const items=cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="event.stopPropagation();toggleListPickItem('${key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('');
   const panel=listPickOpen[key]?`<div class="pickpanel floating" id="pkpanel-${key}"><div class="pickfoot pickhead"><button onclick="event.stopPropagation();clearListPick('${key}')">クリア</button><button class="pf-main" onclick="event.stopPropagation();toggleListPickDD('${key}')">閉じる</button></div>${allItem}${items}</div>`:'';
-  return `<div class="pickwrap"><button class="pickbtn" id="pkbtn-${key}" onclick="event.stopPropagation();toggleListPickDD('${key}')">${label} ▾</button>${panel}</div>`;
+  return `<div class="pickwrap"><button class="pickbtn${listPickOpen[key]?' open':''}" id="pkbtn-${key}" onclick="event.stopPropagation();toggleListPickDD('${key}')">${label}<span class="ddcaret">▼</span></button>${panel}</div>`;
 }
 function positionPickPanels(){
   ['view','ops'].forEach(k=>{ if(!listPickOpen[k]) return; const b=document.getElementById('pkbtn-'+k), p=document.getElementById('pkpanel-'+k); if(!b||!p) return;
