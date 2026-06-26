@@ -242,6 +242,10 @@
   .bulkrow .bl{ font-weight:700; font-size:13px; color:#444;}
   .bulkbtn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 16px; cursor:pointer; font-size:12.5px; font-weight:700; color:#555;}
   .bulkbtn:hover{ background:#eef0f3;}
+  .allbulk{ background:#eef6ff; border:1.5px solid #bcd6f5; }
+  .allbulk .bl{ color:#1f3b5e; font-size:13.5px; }
+  .allbulk .bulkbtn{ font-size:13.5px; padding:8px 20px; border-color:#bcd6f5; }
+  .allbulk .bulkbtn:hover{ background:#1f3b5e; color:#fff; border-color:#1f3b5e; }
   .caret{ cursor:pointer; color:#9aa0a6; margin-right:8px; user-select:none; font-size:12px; width:14px; display:inline-block;}
   .l3{ display:block; padding:6px 0 8px; background:#fafbfc; border-bottom:1px solid #f0f2f4;}
   .l3 .lv1 label, .l3grid label.lv1{ color:#9aa0a6;}
@@ -1039,6 +1043,17 @@ function setCatVal(cid,val){               // L1一括→各L2→L3
   });
   renderBody();
 }
+/* このタブ（一覧画面/設定画面）の全カテゴリを一括設定（初期値/デフォルト一括） */
+function setAllCats(val){
+  catsByGroup().filter(c=>c.group===editTab && c.features.some(f=>featShown(f))).forEach(c=>{
+    c.features.forEach((f,fi)=>{
+      if(!featShown(f)||f.inheritFrom) return;
+      if(f.noStaff && ROLES[cur.idx].key==='staff') return;
+      setFeatVal(cur.perm,c.id,fi,f,val);
+    });
+  });
+  renderBody();
+}
 
 /* ===== プリセット ===== */
 const PRESET = {
@@ -1337,6 +1352,8 @@ function renderCatList(){
     <button class="ltab ${editTab==='ops'?'on':''}" data-tab="ops" onclick="setEditTab('ops')">設定画面権限</button>
   </div>`;
   h+=`<p class="hint">${editTab==='view'?'一覧・分析画面の<b>閲覧</b>可否をカテゴリ単位で一括（閲覧／なし）':'設定画面の<b>操作</b>可否をカテゴリ単位で一括（操作／閲覧／なし）'}。細かく設定するには「詳細 ＞」へ。混在は「一部」表示。</p>`;
+  const bulkVals = editTab==='view' ? [1,0] : [3,2,1,0];
+  h+=`<div class="bulkrow allbulk"><span class="bl">⭐ 全カテゴリを一括設定（初期値）：</span>${bulkVals.map(s=>`<button class="bulkbtn" title="${VTIP[s]}" onclick="setAllCats(${s})">${VLAB[s]}</button>`).join('')}</div>`;
   catsByGroup().filter(c=>c.group===editTab).filter(c=>c.features.some(f=>featShown(f))).forEach(c=>{
     const feats=c.features.filter(f=>featShown(f));
     const sel=catSel(cur.perm,c.id);
