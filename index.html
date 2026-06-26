@@ -42,16 +42,19 @@
   .pill.pvw{ background:#e7f0fd; color:#2563c4; border:1px solid #c8ddf7; }
   .pill.pno{ background:#f1f3f5; color:#9aa0a6; border:1px solid #e3e6e9; }
   .pill{ white-space:nowrap; }
-  .pill .psub{ display:inline-block; margin-left:7px; padding-left:7px; border-left:1px solid #bfe8d2; font-size:10.5px; font-weight:700; color:#0f7d49; opacity:.9; }
+  .cellpills{ display:inline-flex; gap:5px; align-items:center; justify-content:center; white-space:nowrap; }
+  .cellpills .pill{ min-width:36px; padding:3px 8px; }
   .rowedit{ display:block; width:100%; box-sizing:border-box; text-align:center; white-space:normal; line-height:1.2; background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 6px; cursor:pointer; font-weight:700; font-size:12px; }
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
+  .listpickbar{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px; background:#f5f7f9; border-radius:8px; }
+  .listpickbar .lpb-label{ font-size:12.5px; font-weight:700; color:#445; }
   .listtabs{ display:flex; gap:6px; margin:0 0 12px; }
   .listtabs .ltab{ font-size:13.5px; font-weight:800; color:#5a6675; padding:9px 22px; border:1px solid var(--line); border-bottom:none; border-radius:9px 9px 0 0; background:#f1f3f5; cursor:pointer; }
   .listtabs .ltab.on{ color:#15452e; background:#fff; box-shadow:0 -2px 0 #1bbf73 inset; }
   .listtabs .ltab[data-tab="view"].on{ box-shadow:0 -2px 0 #2c5d9e inset; color:#1f3b5e; }
   #listTable{ table-layout:fixed; }
-  #listTable th.catcol{ min-width:120px; width:120px; max-width:120px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
+  #listTable th.catcol{ min-width:132px; width:132px; max-width:132px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
   #listTable th.catcol .catsub{ display:block; font-size:11px; font-weight:600; color:#6b7480; }
   #listTable th.name, #listTable td.name{ width:148px; min-width:148px; max-width:148px; white-space:normal; word-break:break-word; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
   #listTable th.name{ background:#f5f7f9; z-index:3; }
@@ -280,7 +283,7 @@
   .pickhead{ position:sticky; top:0; z-index:2; background:#fff; border-top:none; border-bottom:1px solid #eef0f2; margin:-5px -5px 5px; padding:8px; border-radius:9px 9px 0 0;}
   .pickfoot button{ flex:1; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9fb; cursor:pointer; font-weight:700; white-space:nowrap;}
   .pickfoot button.pf-main{ background:#159b5d; color:#fff; border-color:#159b5d;}
-  #listTable td.sumcell{ background:#fbfcfd; min-width:120px; }
+  #listTable td.sumcell{ background:#fbfcfd; min-width:132px; }
   .tally{ display:inline-flex; flex-direction:column; gap:3px; font-size:12px; font-weight:700; color:#333; white-space:nowrap; text-align:left;}
   .tally .tline{ display:flex; justify-content:space-between; gap:14px; min-width:84px;}
   .tally .tlab{ color:#6b7480; font-weight:700;}
@@ -341,6 +344,7 @@
         <button class="ltab" data-tab="view" onclick="setListTab('view')">一覧画面権限</button>
         <button class="ltab" data-tab="ops" onclick="setListTab('ops')">設定画面権限</button>
       </div>
+      <div class="listpickbar" id="listPickBar"></div>
       <div style="overflow:auto;" id="listScroll"><table class="list" id="listTable"></table></div>
     </div>
   </main>
@@ -1130,7 +1134,7 @@ function catStatus(role,cid){
 const statusMk = (s,grp) => {
   if(s==='no') return '<span class="pill pno">—</span>';
   if(grp==='view') return s==='op'?'<span class="pill pop">閲覧</span>':'<span class="pill pvw">一部</span>';
-  return s==='op'?'<span class="pill pop">操作<small class="psub">閲覧可</small></span>':'<span class="pill pvw">閲覧のみ</span>';
+  return s==='op'?'<span class="cellpills"><span class="pill pop">操作</span><span class="pill pvw">閲覧可</span></span>':'<span class="pill pvw">閲覧可</span>';
 };
 function listSummary(role,cid){ const cat=CATEGORIES.find(c=>c.id===cid); return statusMk(catStatus(role,cid), cat?cat.group:'ops'); }
 // グループ（閲覧/操作）の要約：該当カテゴリだけ集約。全◯→◯、全✕→✕、混在→△
@@ -1166,12 +1170,12 @@ function renderList(){
   document.querySelectorAll('.listtabs .ltab').forEach(b=>b.classList.toggle('on', b.dataset.tab===listTab));
   document.getElementById('listLegend').innerHTML = listTab==='view'
     ? '<span><b style="background:#1bbf73">閲覧</b> 見られる</span><span><b style="background:#3b82f6">一部</b> 一部のみ</span><span><b style="background:#9aa0a6">—</b> なし</span>'
-    : '<span><b style="background:#1bbf73">操作</b> 操作できる（閲覧も可）</span><span><b style="background:#3b82f6">閲覧のみ</b> 見るだけ</span><span><b style="background:#9aa0a6">—</b> なし</span>';
+    : '<span><b style="background:#1bbf73">操作</b>＋<b style="background:#3b82f6">閲覧可</b> 操作できる</span><span><b style="background:#3b82f6">閲覧可</b> 見るだけ</span><span><b style="background:#9aa0a6">—</b> なし</span>';
   const leaf=grps.reduce((s,g)=>s+groupLeaves(g).length,0);   // 現在の葉列数
   // ヘッダ1段目：群バンド（クリックで展開／折りたたみ＋折りたたみ時はチェックで表示カテゴリを複数選択）
   let h=`<tr><th class="name" rowspan="2">権限名</th>`;
   grps.forEach(g=>{ const lvs=groupLeaves(g);
-    h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${pickDD(g.key,g.label,g.cats)}</th>`;
+    h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${g.label}</th>`;
   });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
   // ヘッダ2段目：各群の葉ヘッダ（カテゴリ名／内訳）
@@ -1198,12 +1202,13 @@ function renderList(){
   });
   const tbl=document.getElementById('listTable');
   tbl.innerHTML=h;
+  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 列の表示：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('');   // プルダウンは表外の固定ツールバーに（横スクロールで動かない）
   lastListLeaf=leaf; fitListWidth();
   positionPickPanels();
 }
 // 権限名148/操作150は固定。カテゴリ列は120/列。合計が枠より狭ければ100%でカテゴリ列を広げて余白を埋め、広ければpx幅で横スクロール
 let lastListLeaf=0;
-function fitListWidth(){ const tbl=document.getElementById('listTable'); if(!tbl) return; const natural=148+150+lastListLeaf*120; const sc=document.getElementById('listScroll'); const avail=sc?sc.clientWidth:0; tbl.style.width=(avail&&natural<=avail)?'100%':natural+'px'; }
+function fitListWidth(){ const tbl=document.getElementById('listTable'); if(!tbl) return; const natural=148+150+lastListLeaf*132; const sc=document.getElementById('listScroll'); const avail=sc?sc.clientWidth:0; tbl.style.width=(avail&&natural<=avail)?'100%':natural+'px'; }
 // 列頭に置くプルダウン（ボタン＋パネル）。パネルは overflow:auto の表内でクリップされないよう position:fixed で後から座標指定
 function pickDD(key,label,cats){
   const sel=listPick[key], all=listExpand[key];
