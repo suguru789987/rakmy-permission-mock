@@ -1094,6 +1094,12 @@ let ROLES = [
   {name:'人事担当',   key:'jinji',   tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.company,'company','jinji')},
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner'), system:true},
 ];
+/* デモ用：カテゴリ内で設定がバラつく「一部」状態を意図的に作る（1機能だけ下げる→混在＝一部表示の確認用） */
+function seedPartial(roleKey,cid,val){ const r=ROLES.find(x=>x.key===roleKey), c=CATEGORIES.find(x=>x.id===cid); if(!r||!c) return; const idx=c.features.findIndex(f=>!f.fixed&&!f.inheritFrom&&!(f.noStaff&&roleKey==='staff')); if(idx>=0) setFeatVal(r.perm,cid,idx,c.features[idx],val); }
+seedPartial('keiri','dashboard',0);   // 経理：ダッシュボードの一部機能を非表示＝一覧画面で「一部」
+seedPartial('jinji','sales',0);       // 人事：売上分析の一部を非表示
+seedPartial('manager','detail',0);    // 店長：詳細分析の一部を非表示
+seedPartial('keiri','inventory',1);   // 経理：棚卸の一部を閲覧どまり＝設定画面で「一部」
 function scopeLabel(r){ if(r.scopeType==='shops') return '指定店舗群（'+((r.shops||[]).length)+'店舗）'; if(r.scopeType==='all'||r.scope==='company') return r.tier==='company'?'会社（全社・本部）':'全社'; return '店舗（自店舗）'; }
 const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
 /* 全権の付与（オーナーが会社ロールへ移譲）：全機能max＋adminOnly操作も付与 */
