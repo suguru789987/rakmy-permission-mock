@@ -1275,7 +1275,7 @@ let USERS=[
 let _assignUi=-1;
 function roleByKey(k){ return ROLES.find(r=>r.key===k); }
 function renderUsers(){
-  let h=`<tr><th class="name">ユーザー</th><th>役職（master連動）</th><th>割当ロール（複数可＝合算）</th><th>有効権限</th><th></th></tr>`;
+  let h=`<tr><th class="name">ユーザー</th><th>役職（master連動）</th><th>割当ロール（複数可＝合算）</th><th>有効範囲</th><th></th></tr>`;
   const shops=[...new Set(USERS.map(u=>u.shop))];   // 所属店舗ごとにグループ
   shops.forEach(sh=>{
     h+=`<tr class="grouprow view"><td colspan="5">🏬 ${sh}（${USERS.filter(u=>u.shop===sh).length}名）</td></tr>`;
