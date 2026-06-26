@@ -250,6 +250,7 @@
   table.list th.grpclick{ cursor:pointer; user-select:none; } table.list th.grpclick:hover{ filter:brightness(.97); }
   table.list th.grpsum{ min-width:120px; } .grpsub{ font-weight:400; font-size:10px; color:#9aa0a6; }
   #listTable td.sumcell{ background:#fbfcfd; }
+  .tally{ font-size:12.5px; white-space:nowrap; font-weight:700; color:#333;} .tally b{ font-weight:700;} .tally b.op{ color:#1bbf73;} .tally b.vw{ color:#3b82f6;} .tally b.no{ color:#c33;} .tally .tot{ color:#9aa0a6; font-weight:400; font-size:11px;}
   .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
   .mixedchip{ font-size:10.5px; background:#f59e0b; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
   .detailbtn{ border:1px solid var(--line); background:#fff; color:var(--green-d); border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px; margin-left:14px; white-space:nowrap;}
@@ -1098,6 +1099,11 @@ function groupSummary(role,cats){
   const ss=ap.map(c=>catStatus(role,c.id));
   if(ss.every(s=>s==='op')) return 'op'; if(ss.every(s=>s==='no')) return 'no'; return 'vw';
 }
+// 折りたたみ時のセル＝該当カテゴリ数の内訳（◯全許可/△一部/✕なし）＝群の◯△✕は常に△で無意味なため
+function groupTallyHTML(role,cats){
+  const ap=cats.filter(c=>catApplies(role,c.id)); const t={op:0,vw:0,no:0}; ap.forEach(c=>t[catStatus(role,c.id)]++);
+  return `<span class="tally"><b class="op">◯</b>${t.op} <b class="vw">△</b>${t.vw} <b class="no">✕</b>${t.no} <span class="tot">/ ${ap.length}</span></span>`;
+}
 let listExpand={view:true,ops:false};   // 既定：最もよく見る「閲覧権限（分析・レポート）」は展開、項目の多い操作・設定は要約1列に折りたたみ（クリックで展開）
 function toggleListGroup(g){ listExpand[g]=!listExpand[g]; renderList(); }
 function renderList(){
@@ -1124,7 +1130,7 @@ function renderList(){
       h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`; lastG=g;
     }
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
-    grps.forEach(g=>{ if(listExpand[g.key]) g.cats.forEach(c=>h+=`<td>${listSummary(r,c.id)}</td>`); else h+=`<td class="sumcell">${statusMk(groupSummary(r,g.cats))}</td>`; });
+    grps.forEach(g=>{ if(listExpand[g.key]) g.cats.forEach(c=>h+=`<td>${listSummary(r,c.id)}</td>`); else h+=`<td class="sumcell">${groupTallyHTML(r,g.cats)}</td>`; });
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
