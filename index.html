@@ -268,7 +268,11 @@
   .pickfoot button{ flex:1; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9fb; cursor:pointer; font-weight:700; white-space:nowrap;}
   .pickfoot button.pf-main{ background:#159b5d; color:#fff; border-color:#159b5d;}
   #listTable td.sumcell{ background:#fbfcfd; }
-  .tally{ font-size:12.5px; white-space:nowrap; font-weight:700; color:#333;} .tally b{ font-weight:700;} .tally b.op{ color:#1bbf73;} .tally b.vw{ color:#3b82f6;} .tally b.no{ color:#c33;} .tally .tot{ color:#9aa0a6; font-weight:400; font-size:11px;}
+  .tally{ display:inline-flex; flex-direction:column; gap:3px; font-size:12px; font-weight:700; color:#333; white-space:nowrap; text-align:left;}
+  .tally .tline{ display:flex; justify-content:space-between; gap:14px; min-width:84px;}
+  .tally .tlab{ color:#6b7480; font-weight:700;}
+  .tally .tnum{ font-weight:800;} .tally .tnum.all{ color:#1f3b5e;} .tally .tnum.vw{ color:#3b82f6;} .tally .tnum.op{ color:#1bbf73;}
+  .tally .tot{ color:#9aa0a6; font-weight:400; font-size:11px;}
   .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
   .mixedchip{ font-size:10.5px; background:#f59e0b; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
   .detailbtn{ border:1px solid var(--line); background:#fff; color:var(--green-d); border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px; margin-left:14px; white-space:nowrap;}
@@ -1117,10 +1121,12 @@ function groupSummary(role,cats){
   const ss=ap.map(c=>catStatus(role,c.id));
   if(ss.every(s=>s==='op')) return 'op'; if(ss.every(s=>s==='no')) return 'no'; return 'vw';
 }
-// 折りたたみ時のセル＝該当カテゴリ数の内訳（◯全許可/△一部/✕なし）＝群の◯△✕は常に△で無意味なため
+// 折りたたみ時のセル＝権限の強さの内訳を3行で表示。許可=操作可+閲覧のみ／閲覧=閲覧のみ／操作=操作可。各「N/総数」
 function groupTallyHTML(role,cats){
   const ap=cats.filter(c=>catApplies(role,c.id)); const t={op:0,vw:0,no:0}; ap.forEach(c=>t[catStatus(role,c.id)]++);
-  return `<span class="tally"><b class="op">◯</b>${t.op} <b class="vw">△</b>${t.vw} <b class="no">✕</b>${t.no} <span class="tot">/ ${ap.length}</span></span>`;
+  const tot=ap.length, grant=t.op+t.vw;
+  const line=(lab,n,cls)=>`<span class="tline"><span class="tlab">${lab}</span><span class="tnum ${cls}">${n}<span class="tot">/${tot}</span></span></span>`;
+  return `<span class="tally">${line('許可',grant,'all')}${line('閲覧',t.vw,'vw')}${line('操作',t.op,'op')}</span>`;
 }
 let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
