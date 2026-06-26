@@ -257,6 +257,7 @@
   .pickpanel{ position:absolute; top:calc(100% + 4px); left:0; min-width:200px; max-height:320px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:9px; box-shadow:0 12px 30px rgba(0,0,0,.2); z-index:80; padding:5px;}
   .pickopt{ display:flex; align-items:center; gap:7px; padding:7px 11px; border-radius:7px; font-size:12.5px; font-weight:600; color:#333; cursor:pointer; white-space:nowrap;}
   .pickopt:hover{ background:#eef6fb;} .pickopt.on{ background:#eef9f2; color:#0f7d49;} .pickopt .pchk{ font-size:14px;}
+  .pickall{ font-weight:800; border-bottom:1px solid #eef0f2; border-radius:7px 7px 0 0; margin-bottom:3px;}
   .pickfoot{ display:flex; gap:6px; padding:6px 5px 3px; border-top:1px solid #f0f2f4; margin-top:4px;}
   .pickhead{ position:sticky; top:0; z-index:2; background:#fff; border-top:none; border-bottom:1px solid #eef0f2; margin:-5px -5px 5px; padding:8px; border-radius:9px 9px 0 0;}
   .pickfoot button{ flex:1; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9fb; cursor:pointer; font-weight:700; white-space:nowrap;}
@@ -1120,10 +1121,10 @@ function groupTallyHTML(role,cats){
 let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
 let listPickOpen={view:false,ops:false}; // カテゴリ選択チェックパネルの開閉
-function toggleListGroup(g){ listExpand[g]=!listExpand[g]; listPickOpen[g]=false; renderList(); }
+function toggleListAll(g){ listExpand[g]=!listExpand[g]; if(listExpand[g]) listPick[g]=[]; renderList(); }   // プルダウン内「全て」＝全カテゴリ列を展開
 function toggleListPickDD(g){ listPickOpen[g]=!listPickOpen[g]; const o=g==='view'?'ops':'view'; listPickOpen[o]=false; renderList(); }
-function toggleListPickItem(g,cid){ const a=listPick[g], i=a.indexOf(cid); i>=0?a.splice(i,1):a.push(cid); renderList(); }
-function clearListPick(g){ listPick[g]=[]; renderList(); }
+function toggleListPickItem(g,cid){ listExpand[g]=false; const a=listPick[g], i=a.indexOf(cid); i>=0?a.splice(i,1):a.push(cid); renderList(); }   // 個別選択時は「全て」を解除
+function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; renderList(); }   // クリア＝全解除（内訳に戻る）
 // 群の表示列（葉）：展開=全カテゴリ／折りたたみ＋選択あり=選択カテゴリ／折りたたみ＋未選択=内訳1列
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return g.cats.filter(c=>listPick[g.key].includes(c.id)).map(c=>({c})); return [{tally:true}]; }
 function renderList(){
@@ -1133,11 +1134,8 @@ function renderList(){
   // ヘッダ1段目：群バンド（クリックで展開／折りたたみ＋折りたたみ時はチェックで表示カテゴリを複数選択）
   let h=`<tr><th class="name" rowspan="2">権限名</th>`;
   grps.forEach(g=>{ const lvs=groupLeaves(g);
-    if(listExpand[g.key]){
-      h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpclick" onclick="toggleListGroup('${g.key}')">▼ ${g.label}</th>`;
-    } else {
-      h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum grpclick" onclick="toggleListGroup('${g.key}')">▶ ${g.label}</th>`;
-    }
+    const sub=listExpand[g.key]?'全て':(listPick[g.key].length?`${listPick[g.key].length}列`:'内訳');
+    h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${g.label} <span class="grpsub">（${sub}）</span></th>`;
   });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
   // ヘッダ2段目：各群の葉ヘッダ（カテゴリ名／内訳）
@@ -1167,13 +1165,14 @@ function renderList(){
 // 表の外（上）のツールバー：折りたたみ群に表示する列を複数チェックで選択（ハードプルダウン・列内に置かない）
 function renderListToolbar(){
   const grps=[{key:'view',label:'閲覧権限',cats:CATEGORIES.filter(c=>c.group==='view')},{key:'ops',label:'操作・設定権限',cats:CATEGORIES.filter(c=>c.group==='ops')}];
-  let h='<div class="ltoolbar"><span class="ltlabel">📌 折りたたみ群に表示する列：</span>';
-  let any=false;
-  grps.forEach(g=>{ if(listExpand[g.key]) return; any=true; const sel=listPick[g.key];
-    const panel=listPickOpen[g.key]?`<div class="pickpanel"><div class="pickfoot pickhead"><button onclick="clearListPick('${g.key}')">クリア</button><button class="pf-main" onclick="toggleListPickDD('${g.key}')">選択</button></div>${g.cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="toggleListPickItem('${g.key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('')}</div>`:'';
-    h+=`<div class="pickwrap"><button class="pickbtn" onclick="toggleListPickDD('${g.key}')">${g.label} ▾ ${sel.length?'（'+sel.length+'列）':'（内訳）'}</button>${panel}</div>`;
+  let h='<div class="ltoolbar"><span class="ltlabel">📌 列の表示：</span>';
+  grps.forEach(g=>{ const sel=listPick[g.key], all=listExpand[g.key];
+    const allItem=`<label class="pickopt pickall ${all?'on':''}" onclick="toggleListAll('${g.key}')"><span class="pchk">${all?'☑':'☐'}</span> 全て</label>`;
+    const items=g.cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="toggleListPickItem('${g.key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('');
+    const panel=listPickOpen[g.key]?`<div class="pickpanel"><div class="pickfoot pickhead"><button onclick="clearListPick('${g.key}')">クリア</button><button class="pf-main" onclick="toggleListPickDD('${g.key}')">閉じる</button></div>${allItem}${items}</div>`:'';
+    const sub=all?'（全て）':(sel.length?'（'+sel.length+'列）':'（内訳）');
+    h+=`<div class="pickwrap"><button class="pickbtn" onclick="toggleListPickDD('${g.key}')">${g.label} ▾ ${sub}</button>${panel}</div>`;
   });
-  if(!any) h+='<span class="ltnote">両群とも展開中（列選択は折りたたみ時に有効）</span>';
   h+='</div>';
   document.getElementById('listToolbar').innerHTML=h;
 }
