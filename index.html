@@ -1120,8 +1120,13 @@ function catStatus(role,cid){
   if(vals.every(x=>x.v===minV(x.k))) return 'no';
   return 'vw';
 }
-const statusMk = s => s==='op'?'<span class="pill pop">操作</span>':s==='vw'?'<span class="pill pvw">閲覧</span>':'<span class="pill pno">—</span>';
-function listSummary(role,cid){ return statusMk(catStatus(role,cid)); }
+// 群に応じてラベルを切替：閲覧群=閲覧(全)/一部、操作群=操作(可)/閲覧(のみ)。なしは—
+const statusMk = (s,grp) => {
+  if(s==='no') return '<span class="pill pno">—</span>';
+  if(grp==='view') return s==='op'?'<span class="pill pop">閲覧</span>':'<span class="pill pvw">一部</span>';
+  return s==='op'?'<span class="pill pop">操作</span>':'<span class="pill pvw">閲覧</span>';
+};
+function listSummary(role,cid){ const cat=CATEGORIES.find(c=>c.id===cid); return statusMk(catStatus(role,cid), cat?cat.group:'ops'); }
 // グループ（閲覧/操作）の要約：該当カテゴリだけ集約。全◯→◯、全✕→✕、混在→△
 function groupSummary(role,cats){
   const ap=cats.filter(c=>catApplies(role,c.id)); if(!ap.length) return 'no';
