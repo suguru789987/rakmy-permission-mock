@@ -247,6 +247,9 @@
   table.list th.grp{ font-size:12px; }
   table.list th.grpview{ background:#eaf2fb; color:#2c5d9e; }
   table.list th.grpops{ background:#eef7f0; color:#1f7a4d; }
+  table.list th.grpclick{ cursor:pointer; user-select:none; } table.list th.grpclick:hover{ filter:brightness(.97); }
+  table.list th.grpsum{ min-width:120px; } .grpsub{ font-weight:400; font-size:10px; color:#9aa0a6; }
+  #listTable td.sumcell{ background:#fbfcfd; }
   .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
   .mixedchip{ font-size:10.5px; background:#f59e0b; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
   .detailbtn{ border:1px solid var(--line); background:#fff; color:var(--green-d); border-radius:7px; padding:8px 14px; cursor:pointer; font-weight:700; font-size:13px; margin-left:14px; white-space:nowrap;}
@@ -1075,20 +1078,40 @@ function submitRoleModal(){
 let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
 
 /* ===== 一覧 ===== */
-function listSummary(role,cid){
+// そのロールにこのカテゴリが該当するか（編集対象の機能が1つでもあるか）
+function catApplies(role,cid){ const cat=CATEGORIES.find(c=>c.id===cid); return cat.features.some(f=> (f.fixed?role.tier==='company':true) && !(f.noStaff&&role.key==='staff')); }
+// カテゴリの状態：op(◯)/vw(△)/no(✕)
+function catStatus(role,cid){
   const cat=CATEGORIES.find(c=>c.id===cid);
-  // そのロールで編集対象になる機能だけで集計（店舗ロールは本部専用fixedを除外＝非表示分を勘定しない）
   const shown=cat.features.map((f,fi)=>({f,fi})).filter(({f})=> (f.fixed ? role.tier==='company' : true) && !(f.noStaff && role.key==='staff'));
-  if(!shown.length) return '<span class="mk no">✕</span>';   // 全て非該当（なし）
+  if(!shown.length) return 'no';
   const vals=shown.map(({f,fi})=>({v:featVal(role.perm,cid,fi,f),k:f.k}));
-  if(vals.every(x=>x.v===maxV(x.k))) return '<span class="mk op">◯</span>';
-  if(vals.every(x=>x.v===minV(x.k))) return '<span class="mk no">✕</span>';
-  return '<span class="mk vw">△</span>';
+  if(vals.every(x=>x.v===maxV(x.k))) return 'op';
+  if(vals.every(x=>x.v===minV(x.k))) return 'no';
+  return 'vw';
 }
+const statusMk = s => s==='op'?'<span class="mk op">◯</span>':s==='vw'?'<span class="mk vw">△</span>':'<span class="mk no">✕</span>';
+function listSummary(role,cid){ return statusMk(catStatus(role,cid)); }
+// グループ（閲覧/操作）の要約：該当カテゴリだけ集約。全◯→◯、全✕→✕、混在→△
+function groupSummary(role,cats){
+  const ap=cats.filter(c=>catApplies(role,c.id)); if(!ap.length) return 'no';
+  const ss=ap.map(c=>catStatus(role,c.id));
+  if(ss.every(s=>s==='op')) return 'op'; if(ss.every(s=>s==='no')) return 'no'; return 'vw';
+}
+let listExpand={view:false,ops:false};   // 既定は群を折りたたんで要約1列。クリックで展開
+function toggleListGroup(g){ listExpand[g]=!listExpand[g]; renderList(); }
 function renderList(){
-  const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops'), cols=vc.concat(oc);
-  let h=`<tr><th class="name" rowspan="2">権限名</th><th colspan="${vc.length}" class="grp grpview">閲覧権限（分析・レポート）</th><th colspan="${oc.length}" class="grp grpops">操作・設定権限</th><th class="actcol" rowspan="2">操作</th></tr>`;
-  h+='<tr>'+cols.map(c=>`<th class="catcol">${c.name}${c.hasNew?' ●':''}</th>`).join('')+'</tr>';
+  const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
+  const grps=[{key:'view',cls:'grpview',label:'閲覧権限',cats:vc},{key:'ops',cls:'grpops',label:'操作・設定権限',cats:oc}];
+  const leaf=grps.reduce((s,g)=>s+(listExpand[g.key]?g.cats.length:1),0);   // 現在の葉列数
+  // ヘッダ1段目：群バンド（クリックで展開/折りたたみ）
+  let h=`<tr><th class="name" rowspan="2">権限名</th>`;
+  grps.forEach(g=>{ const exp=listExpand[g.key];
+    h+= exp ? `<th colspan="${g.cats.length}" class="grp ${g.cls} grpclick" onclick="toggleListGroup('${g.key}')">▼ ${g.label}（クリックで折りたたみ）</th>`
+            : `<th rowspan="2" class="grp ${g.cls} grpclick grpsum" onclick="toggleListGroup('${g.key}')">▶ ${g.label}<br><span class="grpsub">クリックで各カテゴリを展開</span></th>`; });
+  h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
+  // ヘッダ2段目：展開中の群のカテゴリ名のみ
+  h+='<tr>'+grps.filter(g=>listExpand[g.key]).map(g=>g.cats.map(c=>`<th class="catcol">${c.name}${c.hasNew?' ●':''}</th>`).join('')).join('')+'</tr>';
   const grp=r=>r.system?'owner':r.tier, GORDER={owner:0,company:1,shop:2};
   const GLAB={shop:'店舗ロール（店舗現場）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
   const GCLS={shop:'view',owner:'owner',company:'ops'};
@@ -1097,11 +1120,11 @@ function renderList(){
   rows.forEach(({r,ri})=>{
     const g=grp(r);
     if(g!==lastG){
-      if(lastG!==null) h+=`<tr class="spacerrow"><td class="name"></td><td colspan="${cols.length}"></td><td class="actcol"></td></tr>`;   // 群の間に余白＝独立分離
-      h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${cols.length}"></td><td class="actcol"></td></tr>`; lastG=g;
+      if(lastG!==null) h+=`<tr class="spacerrow"><td class="name"></td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`;   // 群の間に余白＝独立分離
+      h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`; lastG=g;
     }
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
-    cols.forEach(c=>h+=`<td>${listSummary(r,c.id)}</td>`);
+    grps.forEach(g=>{ if(listExpand[g.key]) g.cats.forEach(c=>h+=`<td>${listSummary(r,c.id)}</td>`); else h+=`<td class="sumcell">${statusMk(groupSummary(r,g.cats))}</td>`; });
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
