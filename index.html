@@ -1284,7 +1284,7 @@ function renderUsers(){
       let eff;
       if(!u.roleKeys.length) eff=`<span style="color:#c33;font-weight:700;">権限なし</span>`;
       else { const scopes=[...new Set(u.roleKeys.map(k=>{const r=roleByKey(k);return r?scopeLabel(r):'';}))].join(' ＋ ');
-        eff=`${u.roleKeys.length>1?`<b>${u.roleKeys.length}ロールを合算</b>`:'割当ロールの権限'}<br><span style="color:#9aa0a6;font-size:11px;">範囲：${scopes}</span>`; }
+        eff=`<b>${scopes}</b>${u.roleKeys.length>1?`<br><span style="color:#9aa0a6;font-size:11px;">${u.roleKeys.length}ロールを合算</span>`:''}`; }
       h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.title}</td><td>${chips}</td><td style="font-size:12px;">${eff}</td>`
         +`<td style="text-align:right;"><button class="rowedit" onclick="openAssign(${ui})">割当を編集</button></td></tr>`;
     });
