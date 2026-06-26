@@ -1121,12 +1121,14 @@ function groupSummary(role,cats){
   const ss=ap.map(c=>catStatus(role,c.id));
   if(ss.every(s=>s==='op')) return 'op'; if(ss.every(s=>s==='no')) return 'no'; return 'vw';
 }
-// 折りたたみ時のセル＝権限の強さの内訳を3行で表示。許可=操作可+閲覧のみ／閲覧=閲覧のみ／操作=操作可。各「N/総数」
-function groupTallyHTML(role,cats){
+// 折りたたみ時のセル＝列名に沿った許可数「N/総数」。閲覧列=閲覧できる数(op+vw)／操作列=操作できる数(op)
+function groupTallyHTML(role,cats,gkey){
   const ap=cats.filter(c=>catApplies(role,c.id)); const t={op:0,vw:0,no:0}; ap.forEach(c=>t[catStatus(role,c.id)]++);
-  const tot=ap.length, grant=t.op+t.vw;
-  const line=(lab,n,cls)=>`<span class="tline"><span class="tlab">${lab}</span><span class="tnum ${cls}">${n}<span class="tot">/${tot}</span></span></span>`;
-  return `<span class="tally">${line('許可',grant,'all')}${line('閲覧',t.vw,'vw')}${line('操作',t.op,'op')}</span>`;
+  const tot=ap.length;
+  const n = gkey==='ops' ? t.op : (t.op+t.vw);
+  const lab = gkey==='ops' ? '操作' : '閲覧';
+  const cls = gkey==='ops' ? 'op' : 'vw';
+  return `<span class="tally"><span class="tline"><span class="tlab">${lab}</span><span class="tnum ${cls}">${n}<span class="tot">/${tot}</span></span></span></span>`;
 }
 let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
@@ -1161,7 +1163,7 @@ function renderList(){
       h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`; lastG=g;
     }
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
-    grps.forEach(g=>groupLeaves(g).forEach(lf=>{ h+= lf.tally?`<td class="sumcell">${groupTallyHTML(r,g.cats)}</td>`:`<td>${listSummary(r,lf.c.id)}</td>`; }));
+    grps.forEach(g=>groupLeaves(g).forEach(lf=>{ h+= lf.tally?`<td class="sumcell">${groupTallyHTML(r,g.cats,g.key)}</td>`:`<td>${listSummary(r,lf.c.id)}</td>`; }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
