@@ -1241,7 +1241,8 @@ function featRowHTML(cid,f,fi,group){
     return `<div class="featcard acc-${group} nested"><div class="feat"><span class="caret"></span><div class="fn"><span class="featchip">機能</span>${f.n}${cc}<span class="nestchip">↳「${f.inheritFrom}」に連動（自動）</span></div><div class="ctrl"><span class="fixedpill">「${f.inheritFrom}」に連動：${plab}</span></div></div></div>`;
   }
   const kd=KIND[f.k], v=featVal(cur.perm,cid,fi,f), rng=featRange(f);
-  const opsShow = f.subitems ? [] : (hasItems(f) ? opsOf(f).filter(o=>o.id!=='view') : opsOf(f));
+  // 常時（閲覧固定）機能は選べる操作が無い（閲覧のみ固定）→操作詳細は出さない。指標を持つ常時(ダッシュボード)は閲覧詳細のみ
+  const opsShow = kd.lock ? [] : (f.subitems ? [] : (hasItems(f) ? opsOf(f).filter(o=>o.id!=='view') : opsOf(f)));
   const hasL3 = !!f.subitems || opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
   let itemTag='';
