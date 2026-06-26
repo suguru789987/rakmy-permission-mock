@@ -69,6 +69,8 @@
   .featcard.acc-view{ border-left-color:#3b82f6;}
   .featcard.acc-ops{ border-left-color:#1f9d57;}
   .featcard.locked{ opacity:.85;}
+  .featcard.nested{ margin-left:34px; border-left-style:dashed;}
+  .nestchip{ font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:10px; background:#fff4e6; color:#b3701a; margin-right:2px;}
   .featcard > .feat{ background:#f7f9fb; border-bottom:1px solid var(--line); padding:13px 14px; margin:0;}
   .featcard > .feat .fn{ font-weight:700; font-size:14.5px;}
   .featchip{ font-size:10px; font-weight:700; color:#6b7280; background:#eef0f3; border-radius:5px; padding:2px 7px; margin-right:9px; vertical-align:middle;}
@@ -591,14 +593,13 @@ const CATEGORIES = [
       {n:'スマレジ(Smaregi) POS連携'},{n:'スマレジタイムカード連携'},{n:'インフォマート仕入取込'},
       {n:'東芝テックPOS取込'},{n:'ASPIT連携（売上/仕入/棚卸/労務）'},{n:'KingOfTime連携'}]}]},
   {id:'cost', name:'費用設定', ctx:'shop', features:[
-    {n:'年間デフォルト費用設定',k:'edit'},
-    {n:'単月費用設定',k:'edit'},
-    {n:'費用一覧（年間表示）',k:'view'},
-    {n:'固定費の費目設定',k:'edit'}]},
+    {n:'費用設定（費目別の費用予算・費目の追加/編集/削除）',k:'edit'},
+    {n:'費用一覧（費目別・年間表示）',k:'view'}]},
   {id:'holiday', name:'休業日設定', ctx:'shop', features:[{n:'休業日設定',k:'edit'}]},
   {id:'budget', name:'予算設定', ctx:'shop', features:[
     {n:'予算一覧',k:'view'},
     {n:'月次予算設定（ウィザード）',k:'edit'},
+    {n:'単月費用設定',k:'edit', nestedUnder:'月次予算設定'},
     {n:'年間予算一覧',k:'view'},
     {n:'予実管理カレンダー（日次）',k:'view'}]},
 ];
@@ -1216,12 +1217,13 @@ function featRowHTML(cid,f,fi,group){
   if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(CATALOG.dimensions.length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>catItemAllowed(i,rk)).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
   else if(hasItems(f)){ const ks=itemKeys(f), on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length; itemTag=`<span class="kindtag">指標 ${on}/${ks.length} 表示</span>`; }
   const ctxChip = f.ctx==='company'?'<span class="ctxchip cc">会社画面</span>':f.ctx==='shop'?'<span class="ctxchip cs">店舗画面</span>':'<span class="ctxchip ck">共通</span>';
-  const badges=`${ctxChip}${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
+  const nestChip = f.nestedUnder?`<span class="nestchip">↳「${f.nestedUnder}」に内包（モーダル）</span>`:'';
+  const badges=`${ctxChip}${nestChip}${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
   // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
   const ctrl = kd.lock
     ? `<span class="fixedpill">閲覧・固定</span>`
     : `<div class="seg">${featVals(f).slice().reverse().map(s=>`<button data-v="${s}" title="${valTip(f,s)}" class="${v===s?'on':''}" onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('')}</div>`;
-  let html=`<div class="featcard acc-${group}"><div class="feat">${caret}<div class="fn"><span class="featchip">機能</span>${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
+  let html=`<div class="featcard acc-${group}${f.nestedUnder?' nested':''}"><div class="feat">${caret}<div class="fn"><span class="featchip">機能</span>${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
   if(hasL3 && exp){
     let inner='';
     if(f.subitems){   // 画面項目ごとの 閲覧可否＋操作可否（2軸）
