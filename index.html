@@ -1153,7 +1153,7 @@ function renderList(){
   });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
   // ヘッダ2段目：各群の葉ヘッダ（カテゴリ名／内訳）
-  const catName=nm=>{ const m=nm.match(/^(.*?)（(.+?)）\s*$/); return m?`${m[1]}<span class="catsub">（${m[2]}）</span>`:nm; };
+  const catName=nm=>{ nm=nm.replace(/（閲覧）\s*$/,''); const m=nm.match(/^(.*?)（(.+?)）\s*$/); return m?`${m[1]}<span class="catsub">（${m[2]}）</span>`:nm; };
   h+='<tr>'+grps.map(g=>groupLeaves(g).map(lf=> lf.tally?`<th class="catcol">内訳</th>`:`<th class="catcol">${catName(lf.c.name)}${lf.c.hasNew?' ●':''}</th>`).join('')).join('')+'</tr>';
   const grp=r=>r.system?'owner':r.tier, GORDER={owner:0,company:1,shop:2};
   const GLAB={shop:'店舗ロール（店舗現場）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
