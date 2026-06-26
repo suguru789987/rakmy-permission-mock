@@ -1134,9 +1134,9 @@ function renderList(){
   let h=`<tr><th class="name" rowspan="2">権限名</th>`;
   grps.forEach(g=>{ const lvs=groupLeaves(g);
     if(listExpand[g.key]){
-      h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpclick" onclick="toggleListGroup('${g.key}')">▼ ${g.label}（クリックで折りたたみ）</th>`;
+      h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpclick" onclick="toggleListGroup('${g.key}')">▼ ${g.label}</th>`;
     } else {
-      h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum grpclick" onclick="toggleListGroup('${g.key}')">▶ ${g.label} <span class="grpsub">（クリックで全展開／上の選択で列を絞る）</span></th>`;
+      h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum grpclick" onclick="toggleListGroup('${g.key}')">▶ ${g.label}</th>`;
     }
   });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
