@@ -546,6 +546,7 @@ const CATEGORIES = [
     {n:'流入分析',k:'view',ctx:'shop'},
     {n:'テーブル稼働分析',k:'view',ctx:'shop'}]},
   {id:'report', name:'集計', ctx:'common', features:[
+    {n:'年間予実対比',k:'view', items:[{n:'年間予算'},{n:'年間実績'},{n:'達成率'}]},
     {n:'予実対比',k:'view', items:[{n:'予算'},{n:'実績'},{n:'差異'},{n:'達成率'}]},
     {n:'月次集計',k:'view',ctx:'shop'},
     {n:'月次レポート',k:'view', items:[{n:'売上'},{n:'原価'},{n:'粗利'},{n:'人件費'},{n:'営業利益'},{n:'各種率'}]},
@@ -559,7 +560,10 @@ const CATEGORIES = [
   {id:'vendor', name:'発注先&仕入商品', ctx:'shop', features:[
     {n:'発注先&仕入商品（一覧・登録・編集）',k:'edit'}]},
   {id:'delivery', name:'納品書', ctx:'common', features:[{n:'納品書管理（一覧・編集）',k:'edit'}]},
-  {id:'inventory', name:'棚卸', ctx:'common', features:[{n:'棚卸（一覧・実施）',k:'edit'}]},
+  {id:'saleslog', name:'売上', ctx:'common', features:[{n:'売上（売上ログ入力・実績）',k:'edit'}]},
+  {id:'inventory', name:'棚卸', ctx:'common', features:[
+    {n:'棚卸実施（棚卸履歴・実施）',k:'edit'},
+    {n:'棚卸商品管理',k:'edit'}]},
   {id:'pettycash', name:'小口現金', ctx:'common', features:[
     {n:'小口現金管理（一覧・登録・締め）',k:'edit'},
     {n:'経費項目設定',k:'admin',fixed:true}]},
