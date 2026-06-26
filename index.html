@@ -1283,8 +1283,7 @@ function renderUsers(){
       const chips=u.roleKeys.length? u.roleKeys.map(k=>{const r=roleByKey(k);return `<span class="rolechip">${r?r.name:k}</span>`;}).join('') : '<span style="color:#c33;font-size:12px;font-weight:700;">未割当</span>';
       let eff;
       if(!u.roleKeys.length) eff=`<span style="color:#c33;font-weight:700;">なし</span>`;
-      else { const scopes=[...new Set(u.roleKeys.map(k=>{const r=roleByKey(k);return r?scopeLabel(r):'';}))].join(' ＋ ');
-        eff=`<b>${scopes}</b>${u.roleKeys.length>1?`<br><span style="color:#9aa0a6;font-size:11px;">${u.roleKeys.length}ロールを合算</span>`:''}`; }
+      else { const scopes=[...new Set(u.roleKeys.map(k=>{const r=roleByKey(k);return r?scopeLabel(r):'';}))].join(' ＋ '); eff=`<b>${scopes}</b>`; }
       h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.title}</td><td>${chips}</td><td style="font-size:12px;">${eff}</td>`
         +`<td style="text-align:right;"><button class="rowedit" onclick="openAssign(${ui})">割当を編集</button></td></tr>`;
     });
