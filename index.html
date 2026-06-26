@@ -248,7 +248,8 @@
   table.list th.grpview{ background:#eaf2fb; color:#2c5d9e; }
   table.list th.grpops{ background:#eef7f0; color:#1f7a4d; }
   table.list th.grpclick{ cursor:pointer; user-select:none; } table.list th.grpclick:hover{ filter:brightness(.97); }
-  table.list th.grpsum{ min-width:120px; } .grpsub{ font-weight:400; font-size:10px; color:#9aa0a6; }
+  table.list th.grpsum{ min-width:150px; } .grpsub{ font-weight:400; font-size:10px; color:#9aa0a6; }
+  .catpick{ margin-top:6px; max-width:140px; font-size:11px; padding:3px 6px; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer; }
   #listTable td.sumcell{ background:#fbfcfd; }
   .tally{ font-size:12.5px; white-space:nowrap; font-weight:700; color:#333;} .tally b{ font-weight:700;} .tally b.op{ color:#1bbf73;} .tally b.vw{ color:#3b82f6;} .tally b.no{ color:#c33;} .tally .tot{ color:#9aa0a6; font-weight:400; font-size:11px;}
   .l2wrap{ margin:0 0 8px 12px; border-left:2px solid #eef0f3; padding-left:10px;}
@@ -1105,7 +1106,9 @@ function groupTallyHTML(role,cats){
   return `<span class="tally"><b class="op">◯</b>${t.op} <b class="vw">△</b>${t.vw} <b class="no">✕</b>${t.no} <span class="tot">/ ${ap.length}</span></span>`;
 }
 let listExpand={view:true,ops:false};   // 既定：最もよく見る「閲覧権限（分析・レポート）」は展開、項目の多い操作・設定は要約1列に折りたたみ（クリックで展開）
+let listPick={view:'',ops:''};   // 折りたたみ時に1カテゴリだけスポット表示（''=内訳カウント）
 function toggleListGroup(g){ listExpand[g]=!listExpand[g]; renderList(); }
+function setListPick(g,v){ listPick[g]=v; renderList(); }
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
   const grps=[{key:'view',cls:'grpview',label:'閲覧権限',cats:vc},{key:'ops',cls:'grpops',label:'操作・設定権限',cats:oc}];
@@ -1114,7 +1117,7 @@ function renderList(){
   let h=`<tr><th class="name" rowspan="2">権限名</th>`;
   grps.forEach(g=>{ const exp=listExpand[g.key];
     h+= exp ? `<th colspan="${g.cats.length}" class="grp ${g.cls} grpclick" onclick="toggleListGroup('${g.key}')">▼ ${g.label}（クリックで折りたたみ）</th>`
-            : `<th rowspan="2" class="grp ${g.cls} grpclick grpsum" onclick="toggleListGroup('${g.key}')">▶ ${g.label}<br><span class="grpsub">クリックで各カテゴリを展開</span></th>`; });
+            : `<th rowspan="2" class="grp ${g.cls} grpsum"><div class="grpclick" onclick="toggleListGroup('${g.key}')">▶ ${g.label} <span class="grpsub">（クリックで全展開）</span></div><select class="catpick" onclick="event.stopPropagation()" onchange="setListPick('${g.key}',this.value)"><option value="">— 内訳を表示 —</option>${g.cats.map(c=>`<option value="${c.id}" ${listPick[g.key]===c.id?'selected':''}>${c.name}</option>`).join('')}</select></th>`; });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
   // ヘッダ2段目：展開中の群のカテゴリ名のみ
   h+='<tr>'+grps.filter(g=>listExpand[g.key]).map(g=>g.cats.map(c=>`<th class="catcol">${c.name}${c.hasNew?' ●':''}</th>`).join('')).join('')+'</tr>';
@@ -1130,7 +1133,7 @@ function renderList(){
       h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`; lastG=g;
     }
     h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
-    grps.forEach(g=>{ if(listExpand[g.key]) g.cats.forEach(c=>h+=`<td>${listSummary(r,c.id)}</td>`); else h+=`<td class="sumcell">${groupTallyHTML(r,g.cats)}</td>`; });
+    grps.forEach(g=>{ if(listExpand[g.key]) g.cats.forEach(c=>h+=`<td>${listSummary(r,c.id)}</td>`); else { const pk=listPick[g.key]; h+=`<td class="sumcell">${pk?listSummary(r,pk):groupTallyHTML(r,g.cats)}</td>`; } });
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">全権の付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
