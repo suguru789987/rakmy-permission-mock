@@ -345,7 +345,7 @@
   <main id="view-condset" class="hide">
     <div class="titlebar">
       <h1>指標条件設定</h1>
-      <span class="scopechip" id="csRole" style="background:#159b5d;">店長</span>
+      <span class="scopechip" id="csRole" style="background:#159b5d;">対象：店長</span>
       <button class="btn ghost" style="margin-left:10px;" onclick="show('tpllist')">マイテンプレート一覧 ＞</button>
       <div class="sp"></div>
       <button class="btn ghost" onclick="show('catalog')">キャンセル</button>
@@ -796,7 +796,7 @@ function pickTpl(v){ tplDdOpen=false; onTemplatePick(v); }
 function toggleCopyMode(){ copyMode=!copyMode; if(!copyMode){ copySrc=null; condOverride={}; } markCondClean(); renderCondset(); }
 function onCopySrc(v){ copySrc=v||null; if(copySrc){ curTplIdx=-1; } condOverride={}; markCondClean(); renderCondset(); if(copySrc) toast('「'+roleLabel(copySrc)+'」の設定を土台にしました（適用で現在のロールにコピー）'); }
 function renderCondset(){
-  document.getElementById('csRole').textContent=roleLabel(catalogRole);
+  document.getElementById('csRole').textContent='対象：'+roleLabel(catalogRole);   // 指標カタログのチップと表記統一（編集対象ロール）
   const bases=[
     ['floor','現場スタッフ向け','🔓現場OKの指標のみ表示。利益・原価・人件費（金額）は隠す。'],
     ['manager','店長向け','🔓現場OK＋🔸店長まで表示。🔒経営機密（純利益・粗利）は隠す。'],
