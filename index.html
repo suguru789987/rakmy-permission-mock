@@ -255,6 +255,7 @@
   .pickbtn{ font-size:12px; font-weight:700; color:#1f3b5e; padding:6px 12px; border:1px solid var(--line); border-radius:7px; background:#fff; cursor:pointer;}
   .pickbtn:hover{ border-color:#159b5d;}
   .pickpanel{ position:absolute; top:calc(100% + 4px); left:0; min-width:200px; max-height:320px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:9px; box-shadow:0 12px 30px rgba(0,0,0,.2); z-index:80; padding:5px;}
+  .pickpanel.floating{ position:fixed; top:0; left:0;}
   .pickopt{ display:flex; align-items:center; gap:7px; padding:7px 11px; border-radius:7px; font-size:12.5px; font-weight:600; color:#333; cursor:pointer; white-space:nowrap;}
   .pickopt:hover{ background:#eef6fb;} .pickopt.on{ background:#eef9f2; color:#0f7d49;} .pickopt .pchk{ font-size:14px;}
   .pickall{ font-weight:800; border-bottom:1px solid #eef0f2; border-radius:7px 7px 0 0; margin-bottom:3px;}
@@ -319,8 +320,7 @@
     </div>
     <div class="panel">
       <p class="hint">2層の役割：<b>店舗ロール</b>（店長/従業員＝自店舗）と<b>会社ロール</b>（経理/人事/オーナー＝全社・本部）。「権限編集」で設定、店舗ロールは「カタログ作成」で見せる項目を選定。オーナーは全権固定。<b>＋権限を新規作成</b>で名前を付けて追加（各群の下段に追加されます）。</p>
-      <div id="listToolbar"></div>
-      <div style="overflow:auto;"><table class="list" id="listTable"></table></div>
+      <div style="overflow:auto;" id="listScroll"><table class="list" id="listTable"></table></div>
     </div>
   </main>
 
@@ -1134,8 +1134,7 @@ function renderList(){
   // ヘッダ1段目：群バンド（クリックで展開／折りたたみ＋折りたたみ時はチェックで表示カテゴリを複数選択）
   let h=`<tr><th class="name" rowspan="2">権限名</th>`;
   grps.forEach(g=>{ const lvs=groupLeaves(g);
-    const sub=listExpand[g.key]?'全て':(listPick[g.key].length?`${listPick[g.key].length}列`:'内訳');
-    h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${g.label} <span class="grpsub">（${sub}）</span></th>`;
+    h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${pickDD(g.key,g.label,g.cats)}</th>`;
   });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
   // ヘッダ2段目：各群の葉ヘッダ（カテゴリ名／内訳）
@@ -1160,22 +1159,22 @@ function renderList(){
     h+=`<td class="actcol">${act}</td></tr>`;
   });
   document.getElementById('listTable').innerHTML=h;
-  renderListToolbar();
+  positionPickPanels();
 }
-// 表の外（上）のツールバー：折りたたみ群に表示する列を複数チェックで選択（ハードプルダウン・列内に置かない）
-function renderListToolbar(){
-  const grps=[{key:'view',label:'閲覧権限',cats:CATEGORIES.filter(c=>c.group==='view')},{key:'ops',label:'操作・設定権限',cats:CATEGORIES.filter(c=>c.group==='ops')}];
-  let h='<div class="ltoolbar"><span class="ltlabel">📌 列の表示：</span>';
-  grps.forEach(g=>{ const sel=listPick[g.key], all=listExpand[g.key];
-    const allItem=`<label class="pickopt pickall ${all?'on':''}" onclick="toggleListAll('${g.key}')"><span class="pchk">${all?'☑':'☐'}</span> 全て</label>`;
-    const items=g.cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="toggleListPickItem('${g.key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('');
-    const panel=listPickOpen[g.key]?`<div class="pickpanel"><div class="pickfoot pickhead"><button onclick="clearListPick('${g.key}')">クリア</button><button class="pf-main" onclick="toggleListPickDD('${g.key}')">閉じる</button></div>${allItem}${items}</div>`:'';
-    const sub=all?'（全て）':(sel.length?'（'+sel.length+'列）':'（内訳）');
-    h+=`<div class="pickwrap"><button class="pickbtn" onclick="toggleListPickDD('${g.key}')">${g.label} ▾ ${sub}</button>${panel}</div>`;
-  });
-  h+='</div>';
-  document.getElementById('listToolbar').innerHTML=h;
+// 列頭に置くプルダウン（ボタン＋パネル）。パネルは overflow:auto の表内でクリップされないよう position:fixed で後から座標指定
+function pickDD(key,label,cats){
+  const sel=listPick[key], all=listExpand[key];
+  const allItem=`<label class="pickopt pickall ${all?'on':''}" onclick="event.stopPropagation();toggleListAll('${key}')"><span class="pchk">${all?'☑':'☐'}</span> 全て</label>`;
+  const items=cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="event.stopPropagation();toggleListPickItem('${key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('');
+  const panel=listPickOpen[key]?`<div class="pickpanel floating" id="pkpanel-${key}"><div class="pickfoot pickhead"><button onclick="event.stopPropagation();clearListPick('${key}')">クリア</button><button class="pf-main" onclick="event.stopPropagation();toggleListPickDD('${key}')">閉じる</button></div>${allItem}${items}</div>`:'';
+  const sub=all?'（全て）':(sel.length?'（'+sel.length+'列）':'（内訳）');
+  return `<div class="pickwrap"><button class="pickbtn" id="pkbtn-${key}" onclick="event.stopPropagation();toggleListPickDD('${key}')">${label} ▾ ${sub}</button>${panel}</div>`;
 }
+function positionPickPanels(){
+  ['view','ops'].forEach(k=>{ if(!listPickOpen[k]) return; const b=document.getElementById('pkbtn-'+k), p=document.getElementById('pkpanel-'+k); if(!b||!p) return;
+    const r=b.getBoundingClientRect(); p.style.top=(r.bottom+4)+'px'; let l=r.left; if(l+220>window.innerWidth) l=window.innerWidth-228; p.style.left=Math.max(8,l)+'px'; });
+}
+window.addEventListener('scroll',positionPickPanels,true); window.addEventListener('resize',positionPickPanels);
 
 /* ===== 切替 ===== */
 function show(v){
