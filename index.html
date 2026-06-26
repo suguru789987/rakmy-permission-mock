@@ -506,6 +506,20 @@
   </div>
 </div>
 
+<!-- 表示列の保存モーダル -->
+<div id="saveViewModal" class="modal-overlay hide">
+  <div class="modal">
+    <h3>表示列を保存</h3>
+    <p class="modal-note" style="min-height:auto;">現在表示している列の組み合わせに名前を付けて保存します。後で「保存ビュー」から1クリックで呼び出せます。</p>
+    <label class="ml">ビュー名</label>
+    <input id="saveViewInput" class="modal-input" placeholder="例：経理ビュー / 分析のみ" onkeydown="if(event.key==='Enter')submitSaveView();">
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeSaveViewModal()">キャンセル</button>
+      <button class="btn primary" onclick="submitSaveView()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- 全権の付与先指定モーダル（オーナー） -->
 <div id="delegateModal" class="modal-overlay hide">
   <div class="modal" style="width:540px;">
@@ -1200,7 +1214,10 @@ function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 function persistColState(){ lsSet('rakmy_col_state',{expand:listExpand,pick:listPick}); }
 function loadColState(){ const s=lsGet('rakmy_col_state',null); if(s&&s.expand&&s.pick){ listExpand=s.expand; listPick=s.pick; } savedViews=lsGet('rakmy_saved_views',[]); }
-function saveCurrentView(g){ const name=(prompt('この表示列に名前を付けて保存：',''))||''; if(!name.trim()) return; savedViews.push({name:name.trim(),tab:g,expand:listExpand[g],pick:[...listPick[g]]}); lsSet('rakmy_saved_views',savedViews); renderList(); }
+let _saveViewTab=null;
+function saveCurrentView(g){ _saveViewTab=g; const m=document.getElementById('saveViewModal'); const inp=document.getElementById('saveViewInput'); inp.value=''; m.classList.remove('hide'); setTimeout(()=>inp.focus(),0); }
+function closeSaveViewModal(){ document.getElementById('saveViewModal').classList.add('hide'); }
+function submitSaveView(){ const g=_saveViewTab, name=(document.getElementById('saveViewInput').value||'').trim(); if(!name){ document.getElementById('saveViewInput').style.borderColor='#c33'; return; } savedViews.push({name,tab:g,expand:listExpand[g],pick:[...listPick[g]]}); lsSet('rakmy_saved_views',savedViews); closeSaveViewModal(); renderList(); toast('表示列「'+name+'」を保存しました'); }
 function applyView(i){ const v=savedViews[i]; if(!v) return; listTab=v.tab; listExpand[v.tab]=!!v.expand; listPick[v.tab]=[...(v.pick||[])]; persistColState(); renderList(); }
 function deleteView(i,ev){ if(ev) ev.stopPropagation(); savedViews.splice(i,1); lsSet('rakmy_saved_views',savedViews); renderList(); }
 function toggleListAll(g){ listExpand[g]=!listExpand[g]; if(listExpand[g]) listPick[g]=[]; persistColState(); renderList(); }   // プルダウン内「全て」＝全カテゴリ列を展開
