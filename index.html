@@ -48,7 +48,8 @@
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
   .listpickbar{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px; background:#f5f7f9; border-radius:8px; }
-  .listpickbar .lpb-label{ font-size:12.5px; font-weight:700; color:#445; }
+  .listpickbar .lpb-label{ font-size:14.5px; font-weight:800; color:#334; }
+  .btn.big{ font-size:16px; padding:14px 28px; border-radius:9px; box-shadow:0 2px 6px rgba(0,0,0,.12); }
   .listtabs{ display:flex; gap:6px; margin:0 0 12px; }
   .listtabs .ltab{ font-size:13.5px; font-weight:800; color:#5a6675; padding:9px 22px; border:1px solid var(--line); border-bottom:none; border-radius:9px 9px 0 0; background:#f1f3f5; cursor:pointer; }
   .listtabs .ltab.on{ color:#15452e; background:#fff; box-shadow:0 -2px 0 #1bbf73 inset; }
@@ -273,9 +274,9 @@
   .ltoolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; padding:10px 12px; background:#f5f7f9; border-radius:8px;}
   .ltlabel{ font-size:12.5px; font-weight:700; color:#445;} .ltnote{ font-size:11.5px; color:#9aa0a6;}
   .pickwrap{ position:relative; display:inline-block;}
-  .pickbtn{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:800; color:#1f3b5e; padding:6px 7px 6px 13px; border:1.5px solid #b9c6d6; border-radius:8px; background:linear-gradient(#fff,#eef3f8); cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .pickbtn{ display:inline-flex; align-items:center; gap:10px; font-size:15px; font-weight:800; color:#1f3b5e; padding:11px 12px 11px 20px; border:2px solid #b9c6d6; border-radius:10px; background:linear-gradient(#fff,#eef3f8); cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,.1);}
   .pickbtn:hover{ border-color:#159b5d; background:#f0fbf5;}
-  .pickbtn .ddcaret{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; background:#1f3b5e; color:#fff; font-size:10px; line-height:1; transition:transform .15s, background .15s;}
+  .pickbtn .ddcaret{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:6px; background:#1f3b5e; color:#fff; font-size:13px; line-height:1; transition:transform .15s, background .15s;}
   .pickbtn:hover .ddcaret{ background:#159b5d;}
   .pickbtn.open{ border-color:#159b5d; box-shadow:0 0 0 3px rgba(21,155,93,.18);}
   .pickbtn.open .ddcaret{ transform:rotate(180deg); background:#159b5d;}
@@ -944,7 +945,7 @@ function renderCatalog(){
       +`<select class="roleselect" onchange="setCatalogRole(this.value)">${opts.map(([v,nm])=>`<option value="${v}" ${catalogRole===v?'selected':''}>${nm}</option>`).join('')}</select>`
       +` <span style="margin-left:10px;font-size:12px;color:#555;">他ロールからコピー：</span><select class="roleselect" id="copySrc">${shopRoleKeys().filter(k=>k!==catalogRole).map(k=>`<option value="${k}">${roleLabel(k)}</option>`).join('')}</select><button class="mini" onclick="copyFromRole()">コピー</button><button class="mini" onclick="setAllRole(true)">このタブ全ON</button><button class="mini" onclick="setAllRole(false)">全OFF</button>`
       +`<span style="flex:1"></span>${nestShown?`<span style="font-size:11.5px;color:#0a7a55;">🔒 入れ子：店長 ⊇ 従業員</span>`:''}</div>`;
-    h+=`<div class="condentry"><div><span class="ce-tit">⚙ 推奨テンプレート・条件ルールで一括設定</span><span class="ce-sub">「${roleLabel(catalogRole)}」の土台を推奨＋条件文（系統×種別×機微度）でまとめて作成。下の表は個別の微調整用。</span></div><button class="btn primary" onclick="openCondset()">指標条件設定 ＞</button></div>`;
+    h+=`<div class="condentry"><div><span class="ce-tit">⚙ 推奨テンプレート・条件ルールで一括設定</span><span class="ce-sub">「${roleLabel(catalogRole)}」の土台を推奨＋条件文（系統×種別×機微度）でまとめて作成。下の表は個別の微調整用。</span></div><button class="btn primary big" onclick="openCondset()">指標条件設定 ＞</button></div>`;
   }
   if(catalogTab==='tags') h+=tagCatalogHTML();
   else h+=metricsCatalogHTML();
