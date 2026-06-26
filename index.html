@@ -1344,7 +1344,7 @@ function renderCatDetail(cid){
 function featRowHTML(cid,f,fi,group){
   if(f.noStaff && ROLES[cur.idx].key==='staff'){      // 従業員：DnD編集は構造的に不可
     setFeatVal(cur.perm,cid,fi,f,minV(f.k));
-    return `<div class="featcard locked acc-${group}"><div class="feat"><span class="caret"></span><div class="fn"><span class="featchip">機能</span>${f.n}${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<small>${f.n.includes('DnD')?'従業員はDnD編集不可（許可された指標の閲覧のみ）':'従業員（店舗スタッフ）ロールには付与されません（店長以上）'}</small></div><div class="ctrl"><span class="nopill">🔒 不可</span></div></div></div>`;
+    return `<div class="featcard locked acc-${group}"><div class="feat"><span class="caret"></span><div class="fn"><span class="featchip">機能</span>${f.n}${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}</div><div class="ctrl"><span class="nopill">🔒 不可</span></div></div></div>`;
   }
   if(f.inheritFrom){   // 親機能（例：月次予算設定）の権限に自動連動（埋め込みモーダルのため独立設定しない）
     const cat=CATEGORIES.find(c=>c.id===cid), pfi=cat.features.findIndex(x=>x.n===f.inheritFrom), pf=cat.features[pfi];
