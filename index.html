@@ -531,95 +531,76 @@ const CATEGORIES = [
     {n:'商品別分析',k:'view', items:[{n:'商品別売上'},{n:'数量'},{n:'粗利'},{n:'粗利率'},{n:'構成比'}]},
     {n:'時間帯別分析',k:'view', items:[{n:'時間帯別売上'},{n:'客数'},{n:'客単価'}]},
     {n:'曜日別分析',k:'view', items:[{n:'曜日別売上'},{n:'客数'},{n:'客単価'}]},
-    {n:'支払い種別分析',k:'view', items:[{n:'支払種別別売上'},{n:'構成比'},{n:'件数'}]},
-    {n:'商品比率分析',k:'view', items:[{n:'商品構成比'},{n:'売上比率'}]}]},
+    {n:'支払種別分析',k:'view', items:[{n:'支払種別別売上'},{n:'構成比'},{n:'件数'}]}]},
   {id:'purchase', name:'仕入分析', ctx:'common', features:[
     {n:'仕入先別分析',k:'view', items:[{n:'取引先別仕入額'},{n:'構成比'},{n:'件数'}]},
-    {n:'商品別分析（仕入）',k:'view', items:[{n:'商品別仕入額'},{n:'数量'},{n:'仕入単価'}]},
+    {n:'商品別分析',k:'view', items:[{n:'商品別仕入額'},{n:'数量'},{n:'仕入単価'}]},
     {n:'費目別分析',k:'view', items:[{n:'費目別仕入額'},{n:'構成比'}]},
     {n:'商品仕入単価',k:'view', items:[{n:'仕入単価'},{n:'前回比'}]},
     {n:'平均単価推移',k:'view', items:[{n:'平均単価'},{n:'推移グラフ'}]}]},
   {id:'detail', name:'詳細分析', ctx:'common', features:[
     {n:'進捗分析',k:'view', items:[{n:'売上進捗'},{n:'予算比'},{n:'着地予測'}]},
-    {n:'FD分析',k:'view',ctx:'shop', items:[{n:'フロー'},{n:'ディストリビューション'}]},
-    {n:'流入分析（β）',k:'view',ctx:'shop',new:true},
-    {n:'テーブル稼働分析（β）',k:'view',ctx:'shop',new:true}]},
-  {id:'report', name:'集計・レポート', ctx:'common', features:[
+    {n:'感度分析',k:'view',ctx:'shop'},
+    {n:'流入分析',k:'view',ctx:'shop'},
+    {n:'テーブル稼働分析',k:'view',ctx:'shop'}]},
+  {id:'report', name:'集計', ctx:'common', features:[
     {n:'予実対比',k:'view', items:[{n:'予算'},{n:'実績'},{n:'差異'},{n:'達成率'}]},
+    {n:'月次集計',k:'view',ctx:'shop'},
     {n:'月次レポート',k:'view', items:[{n:'売上'},{n:'原価'},{n:'粗利'},{n:'人件費'},{n:'営業利益'},{n:'各種率'}]},
     {n:'日次レポート',k:'view', items:[{n:'日次売上'},{n:'客数'},{n:'客単価'}]},
-    {n:'発注分析レポート',k:'view',ctx:'shop'},
-    {n:'日次レポート送信先設定',k:'admin',fixed:true},{n:'ダウンロード（売上/仕入/移動等）',k:'action'}]},
-  // ===== 店舗画面（店舗ロール＋本部・オーナー）=====
-  {id:'budget', name:'予算管理', ctx:'shop', features:[
-    {n:'予算一覧',k:'view'},
-    {n:'月次予算設定',k:'edit'},
-    {n:'年間予算一覧',k:'view'},
-    {n:'日次予算・偏差設定',k:'edit',new:true}]},
-  {id:'monthlycost', name:'費用設定（月次）', ctx:'shop', features:[
-    {n:'月次費用',k:'edit'},
-    {n:'月次費用履歴',k:'view'},
-    {n:'費用項目設定',k:'edit'}]},
-  {id:'calendar', name:'営業日・休業日設定', ctx:'shop', features:[
-    {n:'営業日・定休日設定',k:'edit'},
-    {n:'休業日設定',k:'edit'}]},
+    {n:'発注分析レポート',k:'view',ctx:'shop'}]},
+  {id:'data', name:'ダウンロード・データ抽出', ctx:'company', features:[
+    {n:'ダウンロード',k:'action',fixed:true},
+    {n:'売上・仕入データ抽出',k:'view',fixed:true}]},
+  // ===== 登録・管理（サイドメニュー「登録・管理」セクション準拠）=====
+  {id:'label', name:'ラベル', ctx:'common', features:[{n:'ラベル（登録・一覧）',k:'edit'}]},
+  {id:'vendor', name:'発注先&仕入商品', ctx:'shop', features:[
+    {n:'発注先&仕入商品（一覧・登録・編集）',k:'edit'}]},
+  {id:'delivery', name:'納品書', ctx:'common', features:[{n:'納品書管理（一覧・編集）',k:'edit'}]},
+  {id:'inventory', name:'棚卸', ctx:'common', features:[{n:'棚卸（一覧・実施）',k:'edit'}]},
+  {id:'pettycash', name:'小口現金', ctx:'common', features:[
+    {n:'小口現金管理（一覧・登録・締め）',k:'edit'},
+    {n:'経費項目設定',k:'admin',fixed:true}]},
+  {id:'employees', name:'従業員（企業向け）', features:[
+    {n:'従業員一覧（閲覧）',k:'view',ctx:'common'},
+    {n:'従業員台帳（登録・編集）',k:'edit',ctx:'company'},
+    {n:'給与設定・履歴',k:'edit',ctx:'company'},
+    {n:'勤怠データ取込（CSV/API）',k:'action',ctx:'company'},
+    {n:'時間記録・レイアウト設定',k:'edit',ctx:'company'},
+    {n:'人件費管理（ヘルプ/概算/PA）',k:'edit',ctx:'company'},
+    {n:'従業員履歴・アーカイブ',k:'edit',ctx:'company'},
+    {n:'打刻ステータス（漏れアラート）',k:'edit',ctx:'company'}]},
+  {id:'closing', name:'締め管理', features:[
+    {n:'締め状況（閲覧）',k:'view',ctx:'common'},
+    {n:'締め処理（仮締め・本締め・一括）',k:'edit',ctx:'company'},
+    {n:'会計年度設定',k:'admin',ctx:'company'}]},
+  {id:'users', name:'ユーザー', ctx:'common', features:[{n:'ユーザー（アカウント・招待）',k:'admin'}]},
+  {id:'transfer', name:'店舗間商品移動', ctx:'common', features:[{n:'店舗間商品移動',k:'edit'}]},
+  {id:'shop', name:'店舗（管理）', ctx:'company', features:[
+    {n:'店舗管理（一覧・登録・編集・削除）',k:'edit',fixed:true}]},
+  // ===== 設定（サイドメニュー「設定」セクション準拠）=====
+  {id:'company', name:'会社情報', ctx:'company', features:[
+    {n:'会社情報',k:'admin',fixed:true},
+    {n:'初期設定（アカウント登録）',k:'admin',fixed:true}]},
+  {id:'billing', name:'お支払い', ctx:'company', features:[
+    {n:'お支払い（請求・契約・プラン）',k:'admin',fixed:true}]},
+  {id:'shopinfo', name:'店舗情報', ctx:'shop', features:[
+    {n:'店舗情報',k:'edit',range:'shop-self', subitems:[{n:'基本情報'},{n:'営業時間'},{n:'席数・坪数'},{n:'通知・連絡先'}]}]},
   {id:'integration', name:'連携設定', ctx:'shop', features:[
     {n:'連携設定（POS／仕入／勤怠の連携先）',k:'admin', items:[
       {n:'スマレジ(Smaregi) POS連携'},{n:'スマレジタイムカード連携'},{n:'インフォマート仕入取込'},
       {n:'東芝テックPOS取込'},{n:'ASPIT連携（売上/仕入/棚卸/労務）'},{n:'KingOfTime連携'}]}]},
-  {id:'shopinfo', name:'店舗情報', ctx:'shop', features:[
-    {n:'店舗情報',k:'edit',range:'shop-self', subitems:[{n:'基本情報'},{n:'営業時間'},{n:'席数・坪数'},{n:'通知・連絡先'}]}]},
-  {id:'mq', name:'MQ分析・月次集計', ctx:'shop', features:[
-    {n:'感度分析（MQ）',k:'view'},
-    {n:'月次集計',k:'view'}]},
-  {id:'vendor', name:'発注先・仕入商品', ctx:'shop', features:[
-    {n:'発注先管理',k:'edit'},
-    {n:'仕入商品管理',k:'edit'},
-    {n:'発注依頼',k:'edit'}]},
-  // ===== 共通：登録・管理 =====
-  {id:'label', name:'ラベル', ctx:'common', features:[{n:'ラベル（一覧・登録）',k:'edit'}]},
-  {id:'inventory', name:'棚卸', ctx:'common', features:[
-    {n:'棚卸（一覧・実施）',k:'edit'},
-    {n:'棚卸商品管理',k:'edit',new:true, subitems:[{n:'商品マスタ'},{n:'棚卸ステータス'},{n:'単位・税区分'},{n:'履歴'}]}]},
-  {id:'delivery', name:'納品書', ctx:'common', features:[{n:'納品書（一覧・編集）',k:'edit'}]},
-  {id:'pettycash', name:'小口現金', ctx:'common', features:[
-    {n:'小口現金（一覧・登録）',k:'edit'},
-    {n:'小口現金 月次締め',k:'action'},
-    {n:'勘定科目（経費項目）設定',k:'admin',fixed:true}]},
-  {id:'transfer', name:'店舗間商品移動', ctx:'common', features:[{n:'店舗間商品移動',k:'edit'}]},
-  {id:'items', name:'商品管理', ctx:'common', features:[
-    {n:'商品（一覧・詳細）',k:'view'},
-    {n:'商品ラベル割当',k:'edit'}]},
-  // ===== 会社画面（本部＝会社ロールのみ・fixed）=====
-  {id:'shopmaster', name:'店舗マスタ', ctx:'company', features:[
-    {n:'店舗管理（一覧・登録・編集・削除）',k:'edit',fixed:true}]},
-  {id:'users', name:'ユーザー管理', ctx:'company', features:[
-    {n:'ユーザー（ログインアカウント・招待）',k:'admin',fixed:true}]},
-  {id:'employees', name:'従業員管理', ctx:'company', features:[
-    {n:'従業員台帳（一覧・登録・編集）',k:'edit',fixed:true},
-    {n:'給与設定・履歴',k:'edit',fixed:true},
-    {n:'勤怠データ取込（CSV/API）',k:'action',fixed:true},
-    {n:'時間記録・レイアウト設定',k:'edit',fixed:true},
-    {n:'交通費設定',k:'edit',fixed:true}]},
-  {id:'laborcost', name:'人件費管理', ctx:'company', features:[
-    {n:'ヘルプ人件費',k:'edit',fixed:true},
-    {n:'概算人件費',k:'edit',fixed:true},
-    {n:'PA人件費',k:'edit',fixed:true},
-    {n:'正社員ヘルプ人件費',k:'view',fixed:true}]},
-  {id:'closing', name:'締め管理（月次決算）', ctx:'company', features:[
-    {n:'締め一覧・仮締め・本締め',k:'edit',fixed:true},
-    {n:'会計年度設定',k:'admin',fixed:true},
-    {n:'一括操作・ログ履歴',k:'action',fixed:true}]},
-  {id:'emphistory', name:'従業員履歴管理', ctx:'company', features:[
-    {n:'従業員履歴（統合管理・アーカイブ）',k:'edit',fixed:true},
-    {n:'履歴アーカイブ設定',k:'admin',fixed:true}]},
-  {id:'punchalert', name:'打刻ステータス（漏れアラート）', ctx:'company', features:[
-    {n:'打刻アラート（解決/除外/CSV）',k:'edit',fixed:true}]},
-  {id:'company', name:'会社情報・請求', ctx:'company', features:[
-    {n:'会社情報',k:'admin',fixed:true},
-    {n:'初期設定（アカウント登録）',k:'admin',fixed:true},
-    {n:'請求・契約・お支払い',k:'admin',fixed:true},
-    {n:'会社指標カスタマイズ・権限設定',k:'admin',new:true,fixed:true}]},
+  {id:'cost', name:'費用設定', ctx:'shop', features:[
+    {n:'年間デフォルト費用設定',k:'edit'},
+    {n:'単月費用設定',k:'edit'},
+    {n:'費用一覧（年間表示）',k:'view'},
+    {n:'固定費の費目設定',k:'edit'}]},
+  {id:'holiday', name:'休業日設定', ctx:'shop', features:[{n:'休業日設定',k:'edit'}]},
+  {id:'budget', name:'予算設定', ctx:'shop', features:[
+    {n:'予算一覧',k:'view'},
+    {n:'月次予算設定（ウィザード）',k:'edit'},
+    {n:'年間予算一覧',k:'view'},
+    {n:'予実管理カレンダー（日次）',k:'view'}]},
 ];
 /* ctxを各機能へ継承（機能側ctxが優先）。会社画面ctxは安全側でfixed扱い */
 CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(!f.ctx) f.ctx=c.ctx; if(f.ctx==='company') f.fixed=true; }));
