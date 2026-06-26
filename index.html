@@ -41,6 +41,7 @@
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：列が増えるので横スクロール＋権限名列を固定 */
   #listTable th, #listTable td{ min-width:80px; }
+  #listTable th.catcol{ white-space:nowrap; font-size:12px; padding:8px 12px; line-height:1.25; vertical-align:middle; }
   #listTable th.name, #listTable td.name{ min-width:170px; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
   #listTable th.name{ background:#f5f7f9; z-index:3; }
   #listTable th.actcol, #listTable td.actcol{ min-width:184px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
@@ -1084,7 +1085,7 @@ function listSummary(role,cid){
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops'), cols=vc.concat(oc);
   let h=`<tr><th class="name" rowspan="2">権限名</th><th colspan="${vc.length}" class="grp grpview">閲覧権限（分析・レポート）</th><th colspan="${oc.length}" class="grp grpops">操作・設定権限</th><th class="actcol" rowspan="2">操作</th></tr>`;
-  h+='<tr>'+cols.map(c=>`<th>${c.name}${c.hasNew?' ●':''}</th>`).join('')+'</tr>';
+  h+='<tr>'+cols.map(c=>`<th class="catcol">${c.name}${c.hasNew?' ●':''}</th>`).join('')+'</tr>';
   const grp=r=>r.system?'owner':r.tier, GORDER={owner:0,company:1,shop:2};
   const GLAB={shop:'店舗ロール（店舗現場）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
   const GCLS={shop:'view',owner:'owner',company:'ops'};
