@@ -563,11 +563,11 @@ const CATEGORIES = [
     {n:'月次レポート',k:'view', items:[{n:'売上'},{n:'原価'},{n:'粗利'},{n:'人件費'},{n:'営業利益'},{n:'各種率'}]},
     {n:'日次レポート',k:'view', items:[{n:'日次売上'},{n:'客数'},{n:'客単価'}]},
     {n:'発注分析レポート',k:'view',ctx:'shop'}]},
-  {id:'data', name:'ダウンロード・データ抽出', ctx:'company', features:[
+  {id:'data', name:'ダウンロード', ctx:'company', features:[
     {n:'ダウンロード',k:'action',fixed:true},
     {n:'売上・仕入データ抽出',k:'view',fixed:true}]},
   // ===== ダッシュボードの「操作」系（カスタマイズ/DnD編集）は操作・設定権限グループへ分離 =====
-  {id:'uicustom', name:'UIカスタマイズ（ダッシュボード編集）', ctx:'common', features:[
+  {id:'uicustom', name:'UIカスタマイズ編集', ctx:'common', features:[
     {n:'ダッシュボードカスタマイズ（ウィジェット/プリセット）',k:'edit',new:true, ops:[{id:'view',n:'閲覧'},{id:'create',n:'登録'},{id:'update',n:'編集'}]},
     {n:'カスタムタグ作成・管理（本部のみ）',k:'edit',new:true,fixed:true},
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
