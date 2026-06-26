@@ -1190,6 +1190,8 @@ function positionPickPanels(){
     const r=b.getBoundingClientRect(); p.style.top=(r.bottom+4)+'px'; let l=r.left; if(l+220>window.innerWidth) l=window.innerWidth-228; p.style.left=Math.max(8,l)+'px'; });
 }
 window.addEventListener('scroll',positionPickPanels,true); window.addEventListener('resize',positionPickPanels);
+// プルダウン外をクリックしたら閉じる
+document.addEventListener('click',e=>{ if(!(listPickOpen.view||listPickOpen.ops)) return; if(e.target.closest('.pickwrap')) return; listPickOpen.view=false; listPickOpen.ops=false; renderList(); });
 
 /* ===== 切替 ===== */
 function show(v){
