@@ -538,8 +538,7 @@ const CATEGORIES = [
       {n:'坪月商'},{n:'繁盛店指数'},{n:'ROI（投資回収）'},{n:'予実進捗'}]},
     {n:'お知らせ（ニュース）',k:'base'},
     {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'view',new:true,future:true, catalog:'display'},
-    {n:'UIカスタマイズ：カスタムタグ',k:'view',new:true,future:true, catalog:'tags',
-      ops:[{id:'view',n:'閲覧'},{id:'create',n:'作成',adminOnly:true}]}]},
+    {n:'UIカスタマイズ：カスタムタグ（閲覧）',k:'view',new:true,future:true, catalog:'tags', ops:[{id:'view',n:'閲覧'}]}]},
   {id:'sales', name:'売上分析', ctx:'common', features:[
     {n:'ABC分析',k:'view', items:[{n:'売上構成比'},{n:'累計構成比'},{n:'ABCランク'},{n:'売上額'},{n:'数量'}]},
     {n:'商品別分析',k:'view', items:[{n:'商品別売上'},{n:'数量'},{n:'粗利'},{n:'粗利率'},{n:'構成比'}]},
@@ -570,6 +569,7 @@ const CATEGORIES = [
   // ===== ダッシュボードの「操作」系（カスタマイズ/DnD編集）は操作・設定権限グループへ分離 =====
   {id:'uicustom', name:'UIカスタマイズ（ダッシュボード編集）', ctx:'common', features:[
     {n:'ダッシュボードカスタマイズ（ウィジェット/プリセット）',k:'edit',new:true, ops:[{id:'view',n:'閲覧'},{id:'create',n:'登録'},{id:'update',n:'編集'}]},
+    {n:'カスタムタグ作成・管理（本部のみ）',k:'edit',new:true,fixed:true},
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
     {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true}]},
   // ===== 登録・管理（サイドメニュー「登録・管理」セクション準拠）=====
