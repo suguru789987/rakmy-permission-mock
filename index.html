@@ -41,7 +41,8 @@
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：権限名・操作列は固定幅、カテゴリ列は最小幅を確保。列が少なければ幅を満たし、多ければ横スクロール */
   #listTable{ width:auto; min-width:100%; }
-  #listTable th.catcol{ min-width:112px; width:112px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
+  #listTable th.catcol{ min-width:120px; width:120px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
+  #listTable th.catcol .catsub{ display:block; font-size:11px; font-weight:600; color:#6b7480; }
   #listTable th.name, #listTable td.name{ width:150px; min-width:150px; max-width:172px; white-space:normal; word-break:break-word; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
   #listTable th.name{ background:#f5f7f9; z-index:3; }
   #listTable th.actcol, #listTable td.actcol{ width:150px; min-width:150px; max-width:160px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
@@ -1152,7 +1153,8 @@ function renderList(){
   });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
   // ヘッダ2段目：各群の葉ヘッダ（カテゴリ名／内訳）
-  h+='<tr>'+grps.map(g=>groupLeaves(g).map(lf=> lf.tally?`<th class="catcol">内訳</th>`:`<th class="catcol">${lf.c.name}${lf.c.hasNew?' ●':''}</th>`).join('')).join('')+'</tr>';
+  const catName=nm=>{ const m=nm.match(/^(.*?)（(.+?)）\s*$/); return m?`${m[1]}<span class="catsub">（${m[2]}）</span>`:nm; };
+  h+='<tr>'+grps.map(g=>groupLeaves(g).map(lf=> lf.tally?`<th class="catcol">内訳</th>`:`<th class="catcol">${catName(lf.c.name)}${lf.c.hasNew?' ●':''}</th>`).join('')).join('')+'</tr>';
   const grp=r=>r.system?'owner':r.tier, GORDER={owner:0,company:1,shop:2};
   const GLAB={shop:'店舗ロール（店舗現場）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
   const GCLS={shop:'view',owner:'owner',company:'ops'};
