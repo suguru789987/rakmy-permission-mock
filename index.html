@@ -89,6 +89,8 @@
   .subrow{ display:grid; grid-template-columns:1fr 110px 110px; align-items:center; padding:7px 8px; border-bottom:1px solid #f0f2f4;}
   .subrow .sn{ font-size:12.5px; color:#444;} .subrow .sx{ text-align:center;}
   .subrow.subhead{ font-size:11px; font-weight:700; color:#6b7280; background:#f5f7f9; border-radius:6px;}
+  .ctxchip{ font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:10px; margin-right:2px;}
+  .ctxchip.cc{ background:#fdeaea; color:#b23b32;} .ctxchip.cs{ background:#eef6ff; color:#2c5d9e;} .ctxchip.ck{ background:#eef2f4; color:#5b6670;}
   .switch.sm{ width:38px; height:20px;} .switch.sm .track:before{ width:14px; height:14px;} .switch.sm input:checked + .track:before{ transform:translateX(18px);}
   .badge-review{ font-size:9.5px; font-weight:700; color:#fff; background:#f59e0b; border-radius:8px; padding:1px 6px; margin-left:6px;}
   .switch{ position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;}
@@ -507,55 +509,120 @@ const tagsFor = rk => CATALOG.tags.filter(t=>t.roles[rk]);
 const dimsFor = rk => CATALOG.dimensions.filter(d=>d.roles[rk]);
 
 /* 第一階層(L1) × 第二階層(L2)。fixed=本部専用, range, new=★★ */
+/* ctx＝画面コンテキスト：'common'（会社/店舗どちらでも）/'shop'（店舗画面）/'company'（会社画面=本部=会社ロールのみ）。
+   会社画面の機能は fixed:true（本部=会社ロールのみ。店舗ロールには非表示）。本部・オーナーは会社画面＋店舗画面の両方を持つ。
+   ※ rakmy_server（manager側ルート/コントローラ）を網羅監査して画面粒度で再構築（route粒度のCRUD/実行は操作詳細に畳む）。 */
 const CATEGORIES = [
-  {id:'dashboard', name:'ダッシュボード', features:[
+  // ===== 共通（会社/店舗どちらでも）：ダッシュボード・分析・レポート =====
+  {id:'dashboard', name:'ダッシュボード', ctx:'common', features:[
     {n:'ダッシュボード',k:'base', items:[
       {n:'今月売上（MTD）'},{n:'前年同期間比'},{n:'当月日平均'},{n:'客数'},{n:'客単価'},
       {n:'仕入率（原価率）'},{n:'人件費率'},{n:'FL率'},{n:'固定費率'},{n:'営業利益率'},
       {n:'坪月商'},{n:'繁盛店指数'},{n:'ROI（投資回収）'},{n:'予実進捗'}]},
-    {n:'お知らせ',k:'base'},
+    {n:'お知らせ（ニュース）',k:'base'},
+    {n:'ダッシュボードカスタマイズ（ウィジェット/プリセット）',k:'edit',new:true},
     {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'view',new:true,future:true, catalog:'display'},
     {n:'UIカスタマイズ：カスタムタグ',k:'view',new:true,future:true, catalog:'tags',
       ops:[{id:'view',n:'閲覧'},{id:'create',n:'作成',adminOnly:true}]},
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
     {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true}]},
-  {id:'sales', name:'売上分析', features:[
+  {id:'sales', name:'売上分析', ctx:'common', features:[
     {n:'ABC分析',k:'view', items:[{n:'売上構成比'},{n:'累計構成比'},{n:'ABCランク'},{n:'売上額'},{n:'数量'}]},
     {n:'商品別分析',k:'view', items:[{n:'商品別売上'},{n:'数量'},{n:'粗利'},{n:'粗利率'},{n:'構成比'}]},
     {n:'時間帯別分析',k:'view', items:[{n:'時間帯別売上'},{n:'客数'},{n:'客単価'}]},
     {n:'曜日別分析',k:'view', items:[{n:'曜日別売上'},{n:'客数'},{n:'客単価'}]},
-    {n:'支払い種別分析',k:'view', items:[{n:'支払種別別売上'},{n:'構成比'},{n:'件数'}]}]},
-  {id:'purchase', name:'仕入分析', features:[
-    {n:'取引先別分析',k:'view', items:[{n:'取引先別仕入額'},{n:'構成比'},{n:'件数'}]},
-    {n:'商品別分析',k:'view', items:[{n:'商品別仕入額'},{n:'数量'},{n:'仕入単価'}]},
+    {n:'支払い種別分析',k:'view', items:[{n:'支払種別別売上'},{n:'構成比'},{n:'件数'}]},
+    {n:'商品比率分析',k:'view', items:[{n:'商品構成比'},{n:'売上比率'}]}]},
+  {id:'purchase', name:'仕入分析', ctx:'common', features:[
+    {n:'仕入先別分析',k:'view', items:[{n:'取引先別仕入額'},{n:'構成比'},{n:'件数'}]},
+    {n:'商品別分析（仕入）',k:'view', items:[{n:'商品別仕入額'},{n:'数量'},{n:'仕入単価'}]},
     {n:'費目別分析',k:'view', items:[{n:'費目別仕入額'},{n:'構成比'}]},
     {n:'商品仕入単価',k:'view', items:[{n:'仕入単価'},{n:'前回比'}]},
     {n:'平均単価推移',k:'view', items:[{n:'平均単価'},{n:'推移グラフ'}]}]},
-  {id:'detail', name:'詳細分析', features:[
-    {n:'進捗分析',k:'view', items:[{n:'売上進捗'},{n:'予算比'},{n:'着地予測'}]}]},
-  {id:'report', name:'集計・レポート', features:[
+  {id:'detail', name:'詳細分析', ctx:'common', features:[
+    {n:'進捗分析',k:'view', items:[{n:'売上進捗'},{n:'予算比'},{n:'着地予測'}]},
+    {n:'FD分析',k:'view',ctx:'shop', items:[{n:'フロー'},{n:'ディストリビューション'}]},
+    {n:'流入分析（β）',k:'view',ctx:'shop',new:true},
+    {n:'テーブル稼働分析（β）',k:'view',ctx:'shop',new:true}]},
+  {id:'report', name:'集計・レポート', ctx:'common', features:[
     {n:'予実対比',k:'view', items:[{n:'予算'},{n:'実績'},{n:'差異'},{n:'達成率'}]},
-    {n:'年間予実対比',k:'view',new:true, items:[{n:'年間予算'},{n:'年間実績'},{n:'達成率'}]},
     {n:'月次レポート',k:'view', items:[{n:'売上'},{n:'原価'},{n:'粗利'},{n:'人件費'},{n:'営業利益'},{n:'各種率'}]},
     {n:'日次レポート',k:'view', items:[{n:'日次売上'},{n:'客数'},{n:'客単価'}]},
-    {n:'日次レポート送信先設定',k:'admin',new:true,fixed:true},{n:'ダウンロード',k:'action'}]},
-  {id:'budget', name:'予算管理', features:[
-    {n:'予算設定',k:'edit', subitems:[{n:'月次予算'},{n:'費目別予算'},{n:'予算ロック'}]},{n:'予算開始月設定',k:'admin',new:true,fixed:true},{n:'日次予算設定',k:'edit',new:true}]},
-  {id:'inventory', name:'棚卸', features:[{n:'棚卸（実施）',k:'action'},{n:'棚卸商品管理',k:'edit',new:true, subitems:[{n:'商品マスタ'},{n:'棚卸ステータス'},{n:'単位・税区分'},{n:'履歴'}]}]},
-  {id:'integration', name:'連携設定', features:[
-    {n:'連携設定（POS／仕入／勤怠の連携先）',k:'admin',fixed:true, items:[
-      {n:'スマレジ(Smaregi) POS連携'},{n:'インフォマート仕入取込'},{n:'東芝テックPOS取込'},
-      {n:'ASPIT連携（売上/仕入/棚卸/労務）'},{n:'KingOfTime連携'},{n:'スマレジタイムカード連携'}]}]},
-  {id:'label', name:'ラベル', features:[{n:'ラベル（一覧・登録）',k:'edit'}]},
-  {id:'org', name:'店舗・組織', features:[
-    {n:'店舗情報',k:'edit',range:'shop-self', subitems:[{n:'基本情報'},{n:'営業時間・休業日'},{n:'席数・坪数'},{n:'通知・連絡先'}]},{n:'店舗間商品移動',k:'action'},
-    {n:'会社情報',k:'admin',fixed:true},{n:'初期設定（アカウント登録）',k:'admin',new:true,fixed:true}]},
-  {id:'user', name:'ユーザー・従業員', features:[
-    {n:'ユーザー（ログインアカウント）',k:'admin',fixed:true},
-    {n:'従業員（店舗スタッフ台帳）',k:'edit',range:'shop-self'},
-    {n:'本部従業員管理',k:'admin',new:true,fixed:true}]},
-  {id:'order', name:'発注・支払', features:[{n:'納品書',k:'edit'},{n:'小口現金',k:'edit'},{n:'お支払い',k:'admin',fixed:true}]},
+    {n:'発注分析レポート',k:'view',ctx:'shop'},
+    {n:'日次レポート送信先設定',k:'admin',fixed:true},{n:'ダウンロード（売上/仕入/移動等）',k:'action'}]},
+  // ===== 店舗画面（店舗ロール＋本部・オーナー）=====
+  {id:'budget', name:'予算管理', ctx:'shop', features:[
+    {n:'予算一覧',k:'view'},
+    {n:'月次予算設定',k:'edit'},
+    {n:'年間予算一覧',k:'view'},
+    {n:'日次予算・偏差設定',k:'edit',new:true}]},
+  {id:'monthlycost', name:'費用設定（月次）', ctx:'shop', features:[
+    {n:'月次費用',k:'edit'},
+    {n:'月次費用履歴',k:'view'},
+    {n:'費用項目設定',k:'edit'}]},
+  {id:'calendar', name:'営業日・休業日設定', ctx:'shop', features:[
+    {n:'営業日・定休日設定',k:'edit'},
+    {n:'休業日設定',k:'edit'}]},
+  {id:'integration', name:'連携設定', ctx:'shop', features:[
+    {n:'連携設定（POS／仕入／勤怠の連携先）',k:'admin', items:[
+      {n:'スマレジ(Smaregi) POS連携'},{n:'スマレジタイムカード連携'},{n:'インフォマート仕入取込'},
+      {n:'東芝テックPOS取込'},{n:'ASPIT連携（売上/仕入/棚卸/労務）'},{n:'KingOfTime連携'}]}]},
+  {id:'shopinfo', name:'店舗情報', ctx:'shop', features:[
+    {n:'店舗情報',k:'edit',range:'shop-self', subitems:[{n:'基本情報'},{n:'営業時間'},{n:'席数・坪数'},{n:'通知・連絡先'}]}]},
+  {id:'mq', name:'MQ分析・月次集計', ctx:'shop', features:[
+    {n:'感度分析（MQ）',k:'view'},
+    {n:'月次集計',k:'view'}]},
+  {id:'vendor', name:'発注先・仕入商品', ctx:'shop', features:[
+    {n:'発注先管理',k:'edit'},
+    {n:'仕入商品管理',k:'edit'},
+    {n:'発注依頼',k:'edit'}]},
+  // ===== 共通：登録・管理 =====
+  {id:'label', name:'ラベル', ctx:'common', features:[{n:'ラベル（一覧・登録）',k:'edit'}]},
+  {id:'inventory', name:'棚卸', ctx:'common', features:[
+    {n:'棚卸（一覧・実施）',k:'edit'},
+    {n:'棚卸商品管理',k:'edit',new:true, subitems:[{n:'商品マスタ'},{n:'棚卸ステータス'},{n:'単位・税区分'},{n:'履歴'}]}]},
+  {id:'delivery', name:'納品書', ctx:'common', features:[{n:'納品書（一覧・編集）',k:'edit'}]},
+  {id:'pettycash', name:'小口現金', ctx:'common', features:[
+    {n:'小口現金（一覧・登録）',k:'edit'},
+    {n:'小口現金 月次締め',k:'action'},
+    {n:'勘定科目（経費項目）設定',k:'admin',fixed:true}]},
+  {id:'transfer', name:'店舗間商品移動', ctx:'common', features:[{n:'店舗間商品移動',k:'edit'}]},
+  {id:'items', name:'商品管理', ctx:'common', features:[
+    {n:'商品（一覧・詳細）',k:'view'},
+    {n:'商品ラベル割当',k:'edit'}]},
+  // ===== 会社画面（本部＝会社ロールのみ・fixed）=====
+  {id:'shopmaster', name:'店舗マスタ', ctx:'company', features:[
+    {n:'店舗管理（一覧・登録・編集・削除）',k:'edit',fixed:true}]},
+  {id:'users', name:'ユーザー管理', ctx:'company', features:[
+    {n:'ユーザー（ログインアカウント・招待）',k:'admin',fixed:true}]},
+  {id:'employees', name:'従業員管理', ctx:'company', features:[
+    {n:'従業員台帳（一覧・登録・編集）',k:'edit',fixed:true},
+    {n:'給与設定・履歴',k:'edit',fixed:true},
+    {n:'勤怠データ取込（CSV/API）',k:'action',fixed:true},
+    {n:'時間記録・レイアウト設定',k:'edit',fixed:true},
+    {n:'交通費設定',k:'edit',fixed:true}]},
+  {id:'laborcost', name:'人件費管理', ctx:'company', features:[
+    {n:'ヘルプ人件費',k:'edit',fixed:true},
+    {n:'概算人件費',k:'edit',fixed:true},
+    {n:'PA人件費',k:'edit',fixed:true},
+    {n:'正社員ヘルプ人件費',k:'view',fixed:true}]},
+  {id:'closing', name:'締め管理（月次決算）', ctx:'company', features:[
+    {n:'締め一覧・仮締め・本締め',k:'edit',fixed:true},
+    {n:'会計年度設定',k:'admin',fixed:true},
+    {n:'一括操作・ログ履歴',k:'action',fixed:true}]},
+  {id:'emphistory', name:'従業員履歴管理', ctx:'company', features:[
+    {n:'従業員履歴（統合管理・アーカイブ）',k:'edit',fixed:true},
+    {n:'履歴アーカイブ設定',k:'admin',fixed:true}]},
+  {id:'punchalert', name:'打刻ステータス（漏れアラート）', ctx:'company', features:[
+    {n:'打刻アラート（解決/除外/CSV）',k:'edit',fixed:true}]},
+  {id:'company', name:'会社情報・請求', ctx:'company', features:[
+    {n:'会社情報',k:'admin',fixed:true},
+    {n:'初期設定（アカウント登録）',k:'admin',fixed:true},
+    {n:'請求・契約・お支払い',k:'admin',fixed:true},
+    {n:'会社指標カスタマイズ・権限設定',k:'admin',new:true,fixed:true}]},
 ];
+/* ctxを各機能へ継承（機能側ctxが優先）。会社画面ctxは安全側でfixed扱い */
+CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(!f.ctx) f.ctx=c.ctx; if(f.ctx==='company') f.fixed=true; }));
 /* カテゴリを2群に分類：閲覧権限（分析・レポート）と操作・設定権限 */
 const VIEW_CATS=new Set(['dashboard','sales','purchase','detail','report']);
 CATEGORIES.forEach(c=> c.group = VIEW_CATS.has(c.id) ? 'view' : 'ops');
@@ -1167,7 +1234,8 @@ function featRowHTML(cid,f,fi,group){
   let itemTag='';
   if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(CATALOG.dimensions.length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>catItemAllowed(i,rk)).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
   else if(hasItems(f)){ const ks=itemKeys(f), on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length; itemTag=`<span class="kindtag">指標 ${on}/${ks.length} 表示</span>`; }
-  const badges=`${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
+  const ctxChip = f.ctx==='company'?'<span class="ctxchip cc">会社画面</span>':f.ctx==='shop'?'<span class="ctxchip cs">店舗画面</span>':'<span class="ctxchip ck">共通</span>';
+  const badges=`${ctxChip}${f.new?'<span class="badge-new">★★新規実装</span>':''}${f.future?'<span class="badge-future">将来対応</span>':''}<span class="kindtag">${kd.tag}</span>${rng?`<span class="range">範囲：${rng}</span>`:''}${itemTag}`;
   // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
   const ctrl = kd.lock
     ? `<span class="fixedpill">閲覧・固定</span>`
@@ -1180,8 +1248,8 @@ function featRowHTML(cid,f,fi,group){
       inner+=`<div class="subwrap"><div class="subrow subhead"><span class="sn">画面項目</span><span class="sx">閲覧可否</span><span class="sx">操作可否</span></div>`;
       f.subitems.forEach((si,ii)=>{ const sv=cur.perm[opKey(cid,fi,siKey(fi,ii,'v'))], so=cur.perm[opKey(cid,fi,siKey(fi,ii,'o'))];
         inner+=`<div class="subrow"><span class="sn">${si.n}</span>`
-          +`<span class="sx"><label class="switch sm"><input type="checkbox" ${sv?'checked':''} onclick="toggleSub('${cid}',${fi},${ii},'v')"><span class="track"></span></label></span>`
-          +`<span class="sx"><label class="switch sm"><input type="checkbox" ${so?'checked':''} onclick="toggleSub('${cid}',${fi},${ii},'o')"><span class="track"></span></label></span></div>`;});
+          +`<span class="sx"><input type="checkbox" ${sv?'checked':''} onclick="toggleSub('${cid}',${fi},${ii},'v')"></span>`
+          +`<span class="sx"><input type="checkbox" ${so?'checked':''} onclick="toggleSub('${cid}',${fi},${ii},'o')"></span></div>`;});
       inner+=`</div>`;
     }
     if(opsShow.length>0){
