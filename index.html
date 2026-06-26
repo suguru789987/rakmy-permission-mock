@@ -40,7 +40,7 @@
   .rowedit{ display:block; width:100%; box-sizing:border-box; text-align:center; white-space:normal; line-height:1.2; background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 6px; cursor:pointer; font-weight:700; font-size:12px; }
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
-  #listTable{ width:max-content; }
+  #listTable{ table-layout:fixed; }
   #listTable th.catcol{ min-width:120px; width:120px; max-width:120px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
   #listTable th.catcol .catsub{ display:block; font-size:11px; font-weight:600; color:#6b7480; }
   #listTable th.name, #listTable td.name{ width:148px; min-width:148px; max-width:148px; white-space:normal; word-break:break-word; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
@@ -1174,7 +1174,9 @@ function renderList(){
     else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標カタログ ＞</button>`;
     h+=`<td class="actcol">${act}</td></tr>`;
   });
-  document.getElementById('listTable').innerHTML=h;
+  const tbl=document.getElementById('listTable');
+  tbl.innerHTML=h;
+  tbl.style.width=(148+150+leaf*120)+'px';   // 権限名148+操作150+カテゴリ120×列数＝固定。列数が変わっても権限名/操作列は動かない
   positionPickPanels();
 }
 // 列頭に置くプルダウン（ボタン＋パネル）。パネルは overflow:auto の表内でクリップされないよう position:fixed で後から座標指定
