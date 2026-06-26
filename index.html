@@ -39,13 +39,13 @@
   .mk{ font-weight:700; } .mk.op{ color:var(--green-d);} .mk.vw{ color:var(--blue);} .mk.no{ color:#c33;}
   .rowedit{ display:block; width:100%; box-sizing:border-box; text-align:center; white-space:normal; line-height:1.2; background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 6px; cursor:pointer; font-weight:700; font-size:12px; }
   table.list td:last-child{ text-align:right; white-space:nowrap; }
-  /* 権限一覧：権限名・操作列は固定幅、カテゴリ列は最小幅を確保。列が少なければ幅を満たし、多ければ横スクロール */
-  #listTable{ width:auto; min-width:100%; }
-  #listTable th.catcol{ min-width:120px; width:120px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
+  /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
+  #listTable{ width:max-content; }
+  #listTable th.catcol{ min-width:120px; width:120px; max-width:120px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
   #listTable th.catcol .catsub{ display:block; font-size:11px; font-weight:600; color:#6b7480; }
-  #listTable th.name, #listTable td.name{ width:150px; min-width:150px; max-width:172px; white-space:normal; word-break:break-word; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
+  #listTable th.name, #listTable td.name{ width:148px; min-width:148px; max-width:148px; white-space:normal; word-break:break-word; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
   #listTable th.name{ background:#f5f7f9; z-index:3; }
-  #listTable th.actcol, #listTable td.actcol{ width:150px; min-width:150px; max-width:160px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
+  #listTable th.actcol, #listTable td.actcol{ width:150px; min-width:150px; max-width:150px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
   #listTable td.actcol{ white-space:normal; }
   #listTable td.actcol br{ display:none; }
   #listTable th.actcol{ background:#f5f7f9; z-index:3; }
