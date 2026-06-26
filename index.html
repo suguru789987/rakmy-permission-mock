@@ -56,7 +56,12 @@
   #listTable{ table-layout:fixed; }
   #listTable th.catcol{ min-width:132px; width:132px; max-width:132px; white-space:normal; word-break:normal; overflow-wrap:normal; font-size:12px; padding:8px 9px; line-height:1.35; vertical-align:middle; }
   #listTable th.catcol .catsub{ display:block; font-size:11px; font-weight:600; color:#6b7480; }
-  #listTable th.name, #listTable td.name{ width:148px; min-width:148px; max-width:148px; white-space:normal; word-break:break-word; position:sticky; left:0; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
+  #listTable th.grpcol, #listTable td.grpcol{ width:88px; min-width:88px; max-width:88px; position:sticky; left:0; z-index:2; text-align:center; vertical-align:middle; font-weight:800; font-size:12.5px; white-space:normal; word-break:break-word; background:#fff; box-shadow:1px 0 0 var(--line); }
+  #listTable th.grpcol{ background:#f5f7f9; z-index:3; }
+  #listTable td.grpcol.gc-view{ background:#eaf2fb; color:#2c5d9e; }
+  #listTable td.grpcol.gc-ops{ background:#eef7f0; color:#1f7a4d; }
+  #listTable td.grpcol.gc-owner{ background:#eef0f3; color:#374151; }
+  #listTable th.name, #listTable td.name{ width:148px; min-width:148px; max-width:148px; white-space:normal; word-break:break-word; position:sticky; left:88px; z-index:2; background:#fff; box-shadow:1px 0 0 var(--line); }
   #listTable th.name{ background:#f5f7f9; z-index:3; }
   #listTable th.actcol, #listTable td.actcol{ width:150px; min-width:150px; max-width:150px; position:sticky; right:0; z-index:2; background:#fff; box-shadow:-1px 0 0 var(--line); }
   #listTable td.actcol{ white-space:normal; }
@@ -68,7 +73,7 @@
   #listTable tr.grouprow.owner td.name, #listTable tr.grouprow.owner td.actcol{ background:#eef0f3; }
   #listTable tr.spacerrow td{ background:#eef0f3; }
   /* オーナー行・群見出しも明示的に左右固定（確実化） */
-  #listTable tr.ownerrow td.name, #listTable tr.grouprow td.name{ position:sticky; left:0; z-index:2; }
+  #listTable tr.ownerrow td.name, #listTable tr.grouprow td.name{ position:sticky; left:88px; z-index:2; }
   #listTable tr.ownerrow td.actcol, #listTable tr.grouprow td.actcol{ position:sticky; right:0; z-index:2; }
   .rowedit + br + .rowedit, .rowedit ~ .rowedit{ margin-top:6px; }
   .tabs{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 16px; border-bottom:2px solid var(--line);}
@@ -1173,7 +1178,7 @@ function renderList(){
     : '<span><b style="background:#1bbf73">操作</b>＋<b style="background:#3b82f6">閲覧可</b> 操作できる</span><span><b style="background:#3b82f6">閲覧可</b> 見るだけ</span><span><b style="background:#9aa0a6">—</b> なし</span>';
   const leaf=grps.reduce((s,g)=>s+groupLeaves(g).length,0);   // 現在の葉列数
   // ヘッダ1段目：群バンド（クリックで展開／折りたたみ＋折りたたみ時はチェックで表示カテゴリを複数選択）
-  let h=`<tr><th class="name" rowspan="2">権限名</th>`;
+  let h=`<tr><th class="grpcol" rowspan="2">区分</th><th class="name" rowspan="2">権限名</th>`;
   grps.forEach(g=>{ const lvs=groupLeaves(g);
     h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${g.label}</th>`;
   });
@@ -1184,15 +1189,16 @@ function renderList(){
   const grp=r=>r.system?'owner':r.tier, GORDER={owner:0,company:1,shop:2};
   const GLAB={shop:'店舗ロール（店舗現場）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
   const GCLS={shop:'view',owner:'owner',company:'ops'};
+  const SHORT={owner:'オーナー',company:'会社ロール',shop:'店舗ロール'};
   const rows=ROLES.map((r,ri)=>({r,ri})).sort((a,b)=>GORDER[grp(a.r)]-GORDER[grp(b.r)]||a.ri-b.ri);
+  const gcount={}; rows.forEach(({r})=>{ const g=grp(r); gcount[g]=(gcount[g]||0)+1; });
   let lastG=null;
   rows.forEach(({r,ri})=>{
-    const g=grp(r);
-    if(g!==lastG){
-      if(lastG!==null) h+=`<tr class="spacerrow"><td class="name"></td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`;   // 群の間に余白＝独立分離
-      h+=`<tr class="grouprow ${GCLS[g]}"><td class="name">${GLAB[g]}</td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`; lastG=g;
-    }
-    h+=`<tr class="${r.system?'ownerrow':''}"><td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
+    const g=grp(r), firstOfG=(g!==lastG);
+    if(firstOfG && lastG!==null) h+=`<tr class="spacerrow"><td class="grpcol"></td><td class="name"></td><td colspan="${leaf}"></td><td class="actcol"></td></tr>`;   // 群の間に余白
+    const gcell = firstOfG ? `<td class="grpcol gc-${GCLS[g]}" rowspan="${gcount[g]}">${SHORT[g]}</td>` : '';
+    if(firstOfG) lastG=g;
+    h+=`<tr class="${r.system?'ownerrow':''}">${gcell}<td class="name">${r.system?'<span class="crown">👑</span>':''}${r.name}${r.system?'<span class="ownerbadge">最上位・全権</span>':''}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
     grps.forEach(g=>groupLeaves(g).forEach(lf=>{ h+= lf.tally?`<td class="sumcell">${groupTallyHTML(r,g.cats,g.key)}</td>`:`<td>${listSummary(r,lf.c.id)}</td>`; }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
@@ -1208,7 +1214,7 @@ function renderList(){
 }
 // 権限名148/操作150は固定。カテゴリ列は120/列。合計が枠より狭ければ100%でカテゴリ列を広げて余白を埋め、広ければpx幅で横スクロール
 let lastListLeaf=0;
-function fitListWidth(){ const tbl=document.getElementById('listTable'); if(!tbl) return; const natural=148+150+lastListLeaf*132; const sc=document.getElementById('listScroll'); const avail=sc?sc.clientWidth:0; tbl.style.width=(avail&&natural<=avail)?'100%':natural+'px'; }
+function fitListWidth(){ const tbl=document.getElementById('listTable'); if(!tbl) return; const natural=88+148+150+lastListLeaf*132; const sc=document.getElementById('listScroll'); const avail=sc?sc.clientWidth:0; tbl.style.width=(avail&&natural<=avail)?'100%':natural+'px'; }
 // 列頭に置くプルダウン（ボタン＋パネル）。パネルは overflow:auto の表内でクリップされないよう position:fixed で後から座標指定
 function pickDD(key,label,cats){
   const sel=listPick[key], all=listExpand[key];
