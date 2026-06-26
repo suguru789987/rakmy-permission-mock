@@ -1167,8 +1167,7 @@ function pickDD(key,label,cats){
   const allItem=`<label class="pickopt pickall ${all?'on':''}" onclick="event.stopPropagation();toggleListAll('${key}')"><span class="pchk">${all?'☑':'☐'}</span> 全て</label>`;
   const items=cats.map(c=>`<label class="pickopt ${sel.includes(c.id)?'on':''}" onclick="event.stopPropagation();toggleListPickItem('${key}','${c.id}')"><span class="pchk">${sel.includes(c.id)?'☑':'☐'}</span> ${c.name}</label>`).join('');
   const panel=listPickOpen[key]?`<div class="pickpanel floating" id="pkpanel-${key}"><div class="pickfoot pickhead"><button onclick="event.stopPropagation();clearListPick('${key}')">クリア</button><button class="pf-main" onclick="event.stopPropagation();toggleListPickDD('${key}')">閉じる</button></div>${allItem}${items}</div>`:'';
-  const sub=all?'（全て）':(sel.length?'（'+sel.length+'列）':'（内訳）');
-  return `<div class="pickwrap"><button class="pickbtn" id="pkbtn-${key}" onclick="event.stopPropagation();toggleListPickDD('${key}')">${label} ▾ ${sub}</button>${panel}</div>`;
+  return `<div class="pickwrap"><button class="pickbtn" id="pkbtn-${key}" onclick="event.stopPropagation();toggleListPickDD('${key}')">${label} ▾</button>${panel}</div>`;
 }
 function positionPickPanels(){
   ['view','ops'].forEach(k=>{ if(!listPickOpen[k]) return; const b=document.getElementById('pkbtn-'+k), p=document.getElementById('pkpanel-'+k); if(!b||!p) return;
