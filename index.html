@@ -1115,7 +1115,7 @@ function groupTallyHTML(role,cats){
   const ap=cats.filter(c=>catApplies(role,c.id)); const t={op:0,vw:0,no:0}; ap.forEach(c=>t[catStatus(role,c.id)]++);
   return `<span class="tally"><b class="op">◯</b>${t.op} <b class="vw">△</b>${t.vw} <b class="no">✕</b>${t.no} <span class="tot">/ ${ap.length}</span></span>`;
 }
-let listExpand={view:true,ops:false};   // 既定：最もよく見る「閲覧権限（分析・レポート）」は展開、項目の多い操作・設定は要約に折りたたみ
+let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
 let listPickOpen={view:false,ops:false}; // カテゴリ選択チェックパネルの開閉
 function toggleListGroup(g){ listExpand[g]=!listExpand[g]; listPickOpen[g]=false; renderList(); }
