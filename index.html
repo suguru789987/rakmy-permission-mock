@@ -330,7 +330,7 @@
   <main id="view-catalog" class="hide">
     <div class="titlebar">
       <h1>指標カタログ</h1>
-      <span class="scopechip" style="background:#21262b;">本部／オーナー</span>
+      <span class="scopechip" id="catTitleChip" style="background:#21262b;">対象：従業員</span>
       <div class="sp"></div>
       <button class="btn ghost" onclick="show('tpllist')">マイテンプレート一覧 ＞</button>
       <button class="btn ghost" onclick="show('list')">← 権限設定へ</button>
@@ -897,6 +897,7 @@ function renderCatalog(){
   if(catalogTab==='tags') h+=tagCatalogHTML();
   else h+=metricsCatalogHTML();
   document.getElementById('catalogBody').innerHTML=h;
+  const chip=document.getElementById('catTitleChip'); if(chip) chip.textContent='対象：'+roleLabel(catalogRole);   // タイトルチップ＝編集対象ロール（操作者でなく対象に連動）
 }
 function metricsCatalogHTML(){
   const all=CATALOG.transactions.flatMap(g=>g.items), total=all.length;
