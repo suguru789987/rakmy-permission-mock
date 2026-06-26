@@ -1176,9 +1176,12 @@ function renderList(){
   });
   const tbl=document.getElementById('listTable');
   tbl.innerHTML=h;
-  tbl.style.width=(148+150+leaf*120)+'px';   // 権限名148+操作150+カテゴリ120×列数＝固定。列数が変わっても権限名/操作列は動かない
+  lastListLeaf=leaf; fitListWidth();
   positionPickPanels();
 }
+// 権限名148/操作150は固定。カテゴリ列は120/列。合計が枠より狭ければ100%でカテゴリ列を広げて余白を埋め、広ければpx幅で横スクロール
+let lastListLeaf=0;
+function fitListWidth(){ const tbl=document.getElementById('listTable'); if(!tbl) return; const natural=148+150+lastListLeaf*120; const sc=document.getElementById('listScroll'); const avail=sc?sc.clientWidth:0; tbl.style.width=(avail&&natural<=avail)?'100%':natural+'px'; }
 // 列頭に置くプルダウン（ボタン＋パネル）。パネルは overflow:auto の表内でクリップされないよう position:fixed で後から座標指定
 function pickDD(key,label,cats){
   const sel=listPick[key], all=listExpand[key];
@@ -1191,7 +1194,7 @@ function positionPickPanels(){
   ['view','ops'].forEach(k=>{ if(!listPickOpen[k]) return; const b=document.getElementById('pkbtn-'+k), p=document.getElementById('pkpanel-'+k); if(!b||!p) return;
     const r=b.getBoundingClientRect(); p.style.top=(r.bottom+4)+'px'; let l=r.left; if(l+220>window.innerWidth) l=window.innerWidth-228; p.style.left=Math.max(8,l)+'px'; });
 }
-window.addEventListener('scroll',positionPickPanels,true); window.addEventListener('resize',positionPickPanels);
+window.addEventListener('scroll',positionPickPanels,true); window.addEventListener('resize',()=>{ fitListWidth(); positionPickPanels(); });
 // プルダウン外をクリックしたら閉じる
 document.addEventListener('click',e=>{ if(!(listPickOpen.view||listPickOpen.ops)) return; if(e.target.closest('.pickwrap')) return; listPickOpen.view=false; listPickOpen.ops=false; renderList(); });
 
