@@ -296,6 +296,7 @@
   .pickfoot button{ flex:1; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9fb; cursor:pointer; font-weight:700; white-space:nowrap;}
   .pickfoot button.pf-main{ background:#159b5d; color:#fff; border-color:#159b5d;}
   #listTable td.sumcell{ background:#fbfcfd; min-width:132px; }
+  #listTable td.cellclick{ cursor:pointer; } #listTable td.cellclick:hover{ background:#eef6ff; }
   .tally{ display:inline-flex; flex-direction:column; gap:3px; font-size:12px; font-weight:700; color:#333; white-space:nowrap; text-align:left;}
   .tally .tline{ display:flex; justify-content:space-between; gap:14px; min-width:84px;}
   .tally .tlab{ color:#6b7480; font-weight:700;}
@@ -1212,7 +1213,10 @@ function renderList(){
     const gcell = firstOfG ? `<td class="grpcol gc-${GCLS[g]}" rowspan="${gcount[g]}">${SHORT[g]}</td>` : '';
     if(firstOfG) lastG=g;
     h+=`<tr class="${r.system?'ownerrow':''}">${gcell}<td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
-    grps.forEach(g=>groupLeaves(g).forEach(lf=>{ h+= lf.tally?`<td class="sumcell">${groupTallyHTML(r,g.cats,g.key)}</td>`:`<td>${listSummary(r,lf.c.id)}</td>`; }));
+    grps.forEach(g=>groupLeaves(g).forEach(lf=>{
+      if(lf.tally){ const clk=r.system?'':` cellclick" onclick="editRole(${ri})`; h+=`<td class="sumcell${clk}">${groupTallyHTML(r,g.cats,g.key)}</td>`; }
+      else { const clk=r.system?'':`class="cellclick" onclick="gotoCatEdit(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="${r.system?'':'クリックで設定へ'}">${listSummary(r,lf.c.id)}</td>`; }
+    }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
@@ -1455,6 +1459,8 @@ function featRowHTML(cid,f,fi,group){
   html+=`</div>`;   // /featcard
   return html;
 }
+// マトリクスのセルから、そのロール×カテゴリの設定詳細へ直接遷移
+function gotoCatEdit(ri,cid){ if(ROLES[ri].system){ toast('オーナー（全権）は全権固定のため編集できません'); return; } editRole(ri); const c=CATEGORIES.find(x=>x.id===cid); if(c) editTab=c.group; openCat(cid); }
 function openCat(cid){
   cur.view='detail'; cur.detailCat=cid; cur.expanded={}; cur.itemFilter={};
   // 詳細画面では既定で全機能の詳細（操作・指標）を開く＝トグル不要で見える
