@@ -564,6 +564,11 @@ const CATEGORIES = [
     {n:'月次レポート',k:'view', items:[{n:'売上'},{n:'原価'},{n:'粗利'},{n:'人件費'},{n:'営業利益'},{n:'各種率'}]},
     {n:'日次レポート',k:'view', items:[{n:'日次売上'},{n:'客数'},{n:'客単価'}]},
     {n:'発注分析レポート',k:'view',ctx:'shop'}]},
+  // ===== 管理画面の「閲覧」（店舗ロールも閲覧可。操作は操作・設定権限の別カテゴリ）=====
+  {id:'emp_view', name:'従業員（閲覧）', ctx:'common', features:[
+    {n:'従業員画面の閲覧（一覧）',k:'view',noStaff:true,range:'shop-self'}]},
+  {id:'closing_view', name:'締め状況（閲覧）', ctx:'common', features:[
+    {n:'締め状況の閲覧',k:'view'}]},
   {id:'data', name:'ダウンロード', ctx:'company', features:[
     {n:'ダウンロード',k:'action',fixed:true},
     {n:'売上・仕入データ抽出',k:'view',fixed:true}]},
@@ -585,8 +590,8 @@ const CATEGORIES = [
   {id:'pettycash', name:'小口現金', ctx:'common', features:[
     {n:'小口現金管理（一覧・登録・締め）',k:'edit'},
     {n:'経費項目設定',k:'admin',fixed:true}]},
-  {id:'employees', name:'従業員', features:[
-    {n:'従業員（一覧・登録・編集）',k:'edit',ctx:'common',noStaff:true,range:'shop-self'},   // 会社ロール=全社員／店長=管轄店分のみ（スコープで限定）／従業員スタッフは不可
+  {id:'employees', name:'従業員管理', features:[
+    {n:'従業員の登録・編集',k:'edit',ctx:'common',noStaff:true,range:'shop-self'},   // 会社ロール=全社員／店長=管轄店分のみ（スコープで限定）／従業員スタッフは不可。閲覧は「従業員（閲覧）」カテゴリ
     {n:'給与設定・履歴',k:'edit',ctx:'company'},
     {n:'勤怠データ取込（CSV/API）',k:'action',ctx:'company'},
     {n:'時間記録・レイアウト設定',k:'edit',ctx:'company'},
@@ -594,7 +599,6 @@ const CATEGORIES = [
     {n:'従業員履歴・アーカイブ',k:'edit',ctx:'company'},
     {n:'打刻ステータス（漏れアラート）',k:'edit',ctx:'company'}]},
   {id:'closing', name:'締め管理', features:[
-    {n:'締め状況（閲覧）',k:'view',ctx:'common'},
     {n:'締め処理（仮締め・本締め・一括）',k:'edit',ctx:'company'},
     {n:'会計年度設定',k:'admin',ctx:'company'}]},
   {id:'users', name:'ユーザー', ctx:'common', features:[{n:'ユーザー（アカウント・招待）',k:'admin'}]},
@@ -630,10 +634,10 @@ const CATEGORIES = [
 /* ctxを各機能へ継承（機能側ctxが優先）。会社画面ctxは安全側でfixed扱い */
 CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(!f.ctx) f.ctx=c.ctx; if(f.ctx==='company') f.fixed=true; }));
 /* カテゴリを2群に分類：閲覧権限（分析・レポート）と操作・設定権限 */
-const VIEW_CATS=new Set(['dashboard','sales','purchase','detail','report']);
+const VIEW_CATS=new Set(['dashboard','sales','purchase','detail','report','emp_view','closing_view']);
 CATEGORIES.forEach(c=> c.group = VIEW_CATS.has(c.id) ? 'view' : 'ops');
 const catsByGroup = () => CATEGORIES.filter(c=>c.group==='view').concat(CATEGORIES.filter(c=>c.group==='ops'));
-const GROUP_LABEL={view:'閲覧権限（分析・レポート）', ops:'操作・設定権限'};
+const GROUP_LABEL={view:'閲覧権限（分析・レポート・管理画面の閲覧）', ops:'操作・設定権限'};
 /* 本部専用機能の所管（会社ロールでの職務分掌）：fin=経理, hr=人事, both=共通, sys=オーナーのみ */
 const DEPT_MAP={'日次レポート送信先設定':'fin','予算開始月設定':'fin','お支払い':'fin','会社情報':'both',
   '初期設定（アカウント登録）':'hr','ユーザー（ログインアカウント）':'hr','本部従業員管理':'hr'};
