@@ -488,13 +488,28 @@ function catVals(c){ const s=new Set(); c.features.forEach(f=>{ if(!featShown(f)
 
 /* 本部が管理する共有カタログ。roles={manager,staff}=各役割のカタログに入れるか, isNew=要確認 */
 const ROLE_KEYS=['manager','staff']; const ROLE_LABEL={manager:'店長',staff:'従業員'};
+/* 指標カタログ＝代表サンプル。本番スキーマ正本(rakmy_redash_schemas.json)の実列に基づき論理指標名で構成（実テーブル/列名は公開モックに入れない）。
+   売上正本=head_office_connected_service_sales_logs(sales_excluded/customers/昼夜内訳) / 人件費=labor_costs_logs(labor_costs/help_costs) / 仕入=arrival_items(subtotal_tax_excluded) / 棚卸=inventories(total_cost) / 固定費=monthly_costs+monthly_cost_items(費目) / 地代家賃=shop_rents(fixed_rent/rate)。
+   ※本番全指標(metric_columns 486〜737種)はDB上のデータ＝§12-8のデータ駆動で反映。本カタログはその代表サンプル。 */
 const CATALOG = {
-  dimensions:[{n:'店舗'},{n:'業態'},{n:'商品カテゴリ'},{n:'曜日'},{n:'時間帯'}],
+  dimensions:[{n:'店舗'},{n:'業態'},{n:'商品カテゴリ'},{n:'費目'},{n:'曜日'},{n:'時間帯'}],
   transactions:[
-    {cat:'売上系', cscope:'store', items:[{n:'売上',sens:'open',g:'売上',t:'金額'},{n:'売上前年比',sens:'open',g:'売上',t:'前年比'},{n:'客数',sens:'open',g:'売上',t:'件数'},{n:'客単価',sens:'open',g:'売上',t:'金額'},{n:'来店組数',sens:'open',g:'売上',t:'件数'}]},
-    {cat:'仕入・原価系', cscope:'store', items:[{n:'仕入額',sens:'mgr',g:'コスト',t:'金額'},{n:'原価率',sens:'mgr',g:'コスト',t:'率'},{n:'廃棄ロス',sens:'open',g:'コスト',t:'金額'},{n:'在庫金額',sens:'mgr',g:'コスト',t:'金額'},{n:'棚卸差異',sens:'mgr',g:'コスト',t:'金額'}]},
-    {cat:'人件費系', cscope:'store', items:[{n:'人件費（自店舗）',sens:'mgr',g:'コスト',t:'金額'},{n:'人件費率',sens:'mgr',g:'コスト',t:'率'},{n:'総労働時間',sens:'open',g:'コスト',t:'時間'},{n:'人時売上高',sens:'mgr',g:'コスト',t:'金額'}]},
-    {cat:'利益系', cscope:'store', items:[{n:'粗利（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'粗利率',sens:'mgr',g:'利益',t:'率'},{n:'FL率',sens:'mgr',g:'利益',t:'率'},{n:'営業利益（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'営業利益率',sens:'mgr',g:'利益',t:'率'}]},
+    {cat:'売上系', cscope:'store', items:[
+      {n:'売上（税抜）',sens:'open',g:'売上',t:'金額'},{n:'売上（税込）',sens:'open',g:'売上',t:'金額'},{n:'売上前年比',sens:'open',g:'売上',t:'前年比'},
+      {n:'客数',sens:'open',g:'売上',t:'件数'},{n:'ランチ客数',sens:'open',g:'売上',t:'件数'},{n:'ディナー客数',sens:'open',g:'売上',t:'件数'},
+      {n:'客単価',sens:'open',g:'売上',t:'金額'},{n:'来店組数',sens:'open',g:'売上',t:'件数'},{n:'ランチ売上',sens:'open',g:'売上',t:'金額'},{n:'ディナー売上',sens:'open',g:'売上',t:'金額'}]},
+    {cat:'仕入・原価系', cscope:'store', items:[
+      {n:'仕入額',sens:'mgr',g:'コスト',t:'金額'},{n:'原価率',sens:'mgr',g:'コスト',t:'率'},{n:'仕入数量',sens:'open',g:'コスト',t:'件数'},{n:'仕入単価',sens:'mgr',g:'コスト',t:'金額'},
+      {n:'廃棄ロス',sens:'open',g:'コスト',t:'金額'},{n:'在庫金額',sens:'mgr',g:'コスト',t:'金額'},{n:'棚卸差異',sens:'mgr',g:'コスト',t:'金額'}]},
+    {cat:'人件費系', cscope:'store', items:[
+      {n:'人件費（自店舗）',sens:'mgr',g:'コスト',t:'金額'},{n:'ヘルプ人件費',sens:'mgr',g:'コスト',t:'金額'},{n:'人件費率',sens:'mgr',g:'コスト',t:'率'},{n:'総労働時間',sens:'open',g:'コスト',t:'時間'},{n:'人時売上高',sens:'mgr',g:'コスト',t:'金額'}]},
+    {cat:'固定費系', cscope:'store', items:[
+      {n:'地代家賃',sens:'mgr',g:'コスト',t:'金額'},{n:'水道光熱費',sens:'open',g:'コスト',t:'金額'},{n:'減価償却費',sens:'mgr',g:'コスト',t:'金額'},{n:'販促費',sens:'open',g:'コスト',t:'金額'},
+      {n:'本部費',sens:'mgr',g:'コスト',t:'金額'},{n:'雑費',sens:'open',g:'コスト',t:'金額'},{n:'資材費',sens:'open',g:'コスト',t:'金額'},{n:'固定費合計',sens:'mgr',g:'コスト',t:'金額'}]},
+    {cat:'利益系', cscope:'store', items:[
+      {n:'粗利（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'粗利率',sens:'mgr',g:'利益',t:'率'},{n:'FL率',sens:'mgr',g:'利益',t:'率'},{n:'FLR率',sens:'mgr',g:'利益',t:'率'},
+      {n:'営業利益（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'営業利益率',sens:'mgr',g:'利益',t:'率'}]},
+    {cat:'売上（全社集計）', cscope:'company', items:[{n:'売上（全社）',sens:'exec',g:'売上',t:'金額',scope:'company'}]},
     {cat:'人件費（全社集計）', cscope:'company', items:[{n:'人件費（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'}]},
     {cat:'利益（全社集計）', cscope:'company', items:[{n:'粗利（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'営業利益（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'}]}
   ],
