@@ -389,7 +389,7 @@
       <h1>権限一覧</h1>
       <div class="legend" id="listLegend"></div>
       <div class="sp"></div>
-      <button class="btn ghost" onclick="show('setup')">⚙ 初期設定</button>
+      <button class="btn ghost" onclick="show('setup')">⚙ 権限テンプレート</button>
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
     <div class="screennav">
@@ -417,7 +417,7 @@
   <!-- 初期設定（推奨ロール一括作成・一時保存→適用） -->
   <main id="view-setup" class="hide">
     <div class="titlebar">
-      <h1>初期設定</h1><div class="sp"></div>
+      <h1>権限テンプレート</h1><div class="sp"></div>
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
     </div>
     <div class="panel">
@@ -1338,7 +1338,7 @@ function renderList(){
   const ALL=[{key:'view',cls:'grpview',label:'一覧画面名',cats:vc},{key:'ops',cls:'grpops',label:'設定画面名',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   const banner=document.getElementById('demoBanner');
-  if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>初期設定で推奨5権限を登録しました</b>（全権オーナー／本部管理／エリア長／店長／従業員）。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
+  if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>権限テンプレートで推奨5権限を登録しました</b>（全権オーナー／本部管理／エリア長／店長／従業員）。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
   else { banner.className='hide'; banner.innerHTML=''; }
   document.querySelectorAll('.listtabs .ltab').forEach(b=>b.classList.toggle('on', b.dataset.tab===listTab));
   document.getElementById('listLegend').innerHTML = listTab==='view'
@@ -1457,7 +1457,7 @@ function renderSetup(){
   const groups=['会社ロール','店舗ロール'];
   const cards=groups.map(g=>{ const rs=ROLES.map((r,ri)=>({r,ri})).filter(x=>grp(x.r)===g); if(!rs.length) return ''; return `<div class="setup-section">${g}</div><div class="setup-grid">${rs.map(x=>setupCard(x.r,x.ri)).join('')}</div>`; }).join('');
   const cn=id=>{const c=CATEGORIES.find(x=>x.id===id);return c?c.name:id;};
-  const cov=`<div class="setup-cov"><div class="setup-cov-h">📦 初期設定で登録済みの主要画面（最低限の土台）</div><div><b>設定系：</b>${STARTER_CATS.set.map(cn).join('・')}</div><div><b>一覧・分析系：</b>${STARTER_CATS.view.map(cn).join('・')}</div><div class="setup-cov-note">※ 下記ロールは導入時に登録済みです。内容を確認し、必要なら「権限編集」でカスタマイズしてください。<br>※ 経理・人事などの個別ロールや顧客独自ロールは、この土台をもとに「＋新しい権限を作成」で追加します。</div></div>`;
+  const cov=`<div class="setup-cov"><div class="setup-cov-h">📦 権限テンプレートで登録済みの主要画面（最低限の土台）</div><div><b>設定系：</b>${STARTER_CATS.set.map(cn).join('・')}</div><div><b>一覧・分析系：</b>${STARTER_CATS.view.map(cn).join('・')}</div><div class="setup-cov-note">※ 下記ロールは導入時に登録済みです。内容を確認し、必要なら「権限編集」でカスタマイズしてください。<br>※ 経理・人事などの個別ロールや顧客独自ロールは、この土台をもとに「＋新しい権限を作成」で追加します。</div></div>`;
   document.getElementById('setupBody').innerHTML=cov+cards;
   document.getElementById('setupStatus').innerHTML=`登録済み：${ROLES.length}ロール（確認・カスタマイズ）`;
 }
