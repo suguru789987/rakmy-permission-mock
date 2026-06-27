@@ -421,12 +421,11 @@
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
     </div>
     <div class="panel">
-      <p class="setup-lead">導入時に<b>推奨ロール（権限母体）が登録済み</b>です。この画面は<b>内容を確認し、土台としてカスタマイズ</b>するためのものです。各ロールの権限内容を確認 → 必要なら「権限編集」で調整。経理/人事などの個別ロールは「＋新しい権限を作成」で土台から派生して追加します。</p>
+      <p class="setup-lead"><b>再利用できる権限の雛形ライブラリ</b>です（運用状態に関わらず常に同じ）。新規作成の土台になる推奨雛形（全権オーナー／本部管理／エリア長／店長／従業員）の内容を確認し、「<b>この雛形で新規作成</b>」から派生してロールを作れます。現在登録中のロールは「権限一覧」で確認できます。</p>
       <div id="setupBody"></div>
       <div class="setupbar">
         <span class="setup-status" id="setupStatus"></span>
         <div class="sp"></div>
-        <button class="btn ghost" onclick="resetSetupRecommended()">推奨設定に戻す（再作成）</button>
         <button class="btn primary" onclick="createRole()">＋ 新しい権限を作成</button>
       </div>
     </div>
@@ -1215,21 +1214,22 @@ let _roleSeq=0, rmTier='shop';
 let rmScope='self';
 // 運用時の新規作成：テンプレート or 既存ロール複製をベースに、権限プレビューを見て作成
 const ROLE_TEMPLATES=[
-  {id:'full',    name:'全権オーナー相当', group:'会社ロール', tier:'company', scope:'all',   preset:'full',    rep:'owner'},
-  {id:'company', name:'本部管理',         group:'会社ロール', tier:'company', scope:'all',   preset:'company', rep:'owner'},
-  {id:'area',    name:'エリア長',         group:'店舗ロール', tier:'shop',    scope:'shops', preset:'manager', rep:'manager'},
-  {id:'manager', name:'店長',             group:'店舗ロール', tier:'shop',    scope:'self',  preset:'manager', rep:'manager'},
-  {id:'staff',   name:'従業員',           group:'店舗ロール', tier:'shop',    scope:'self',  preset:'staff',   rep:'staff'},
-  {id:'blank',   name:'まっさら（なし）', group:'その他',     tier:'shop',    scope:'self',  preset:'blank',   rep:'tmp'},
+  {id:'full',    name:'全権オーナー相当', group:'会社ロール', tier:'company', scope:'all',   preset:'full',    rep:'owner',   summary:'全権・すべて操作可'},
+  {id:'company', name:'本部管理',         group:'会社ロール', tier:'company', scope:'all',   preset:'full',    rep:'owner',   summary:'全社の設定・一覧を操作／閲覧（全権相当）'},
+  {id:'area',    name:'エリア長',         group:'店舗ロール', tier:'shop',    scope:'shops', preset:'manager', rep:'manager', summary:'掌握店舗の設定・一覧を全て操作／閲覧'},
+  {id:'manager', name:'店長',             group:'店舗ロール', tier:'shop',    scope:'self',  preset:'manager', rep:'manager', summary:'自店舗の設定・一覧を全て操作／閲覧'},
+  {id:'staff',   name:'従業員',           group:'店舗ロール', tier:'shop',    scope:'self',  preset:'staff',   rep:'staff',   summary:'閲覧中心（操作は最小）'},
+  {id:'blank',   name:'まっさら（なし）', group:'その他',     tier:'shop',    scope:'self',  preset:'blank',   rep:'tmp',     summary:'全機能なしから付与'},
 ];
 let _rmBasePerm=null, _rmBaseSrc=null;   // 作成に使うベース権限（クローン元）と複製元roleKey
 function rmBasePreviewRole(){ const t=document.getElementById('rmBase').value; if(t.startsWith('role:')){ const r=ROLES[+t.slice(5)]; return {perm:r.perm,tier:r.tier,key:r.key}; } const tpl=ROLE_TEMPLATES.find(x=>x.id===t.slice(4)); const perm=buildPerm(PRESET[tpl.preset],tpl.tier,tpl.rep); return {perm,tier:tpl.tier,key:tpl.rep,tpl}; }
-function createRole(){
+function createRole(preselect){
   const tplOpts=ROLE_TEMPLATES.map(t=>`<option value="tpl:${t.id}">${t.name}（${t.group}）</option>`).join('');
   const roleOpts=ROLES.filter(r=>!r.system).map((r,i)=>`<option value="role:${ROLES.indexOf(r)}">${r.name} を複製</option>`).join('');
   document.getElementById('rmBase').innerHTML=`<optgroup label="テンプレート">${tplOpts}</optgroup><optgroup label="既存ロールを複製">${roleOpts}</optgroup>`;
   document.getElementById('rmName').value='';
   document.getElementById('roleModal').classList.remove('hide');
+  if(preselect) document.getElementById('rmBase').value='tpl:'+preselect;   // 雛形から作成（権限テンプレート画面）
   rmSetBase(); setTimeout(()=>document.getElementById('rmName').focus(),40);
 }
 function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; _rmBaseSrc = document.getElementById('rmBase').value.startsWith('role:')?ROLES[+document.getElementById('rmBase').value.slice(5)].key:null;
@@ -1443,25 +1443,21 @@ let _setupDirty=false;
 function loadSetupDraft(){ const d=lsGet('rakmy_setup_draft',null); if(d&&d.sel){ setupDraft=d; } else { SETUP_TEMPLATES.forEach(t=>{ setupDraft.sel[t.key]=true; setupDraft.base[t.key]='preset'; }); } }
 function setupToggle(k){ const t=SETUP_TEMPLATES.find(x=>x.key===k); if(t&&t.fixedBase) return; setupDraft.sel[k]=(setupDraft.sel[k]===false); _setupDirty=true; renderSetup(); }
 function setupBase(k,v){ setupDraft.base[k]=(v==='preset')?'preset':parseInt(v,10); _setupDirty=true; renderSetup(); }
-// 初期設定＝登録済みの推奨ロールを「確認・カスタマイズ」する画面（適用フォームではない）
-function setupCard(r,ri){
-  const pr={perm:r.perm,tier:r.tier,key:r.key};
-  const badge = r.system?'<span class="setup-fixed">全権固定</span>':'<span class="setup-rec">登録済み</span>';
-  const act = r.system
-    ? `<button class="btn ghost" onclick="openCatalogAll()">カタログ管理</button>`
-    : `<button class="btn ghost" onclick="editRole(${ri})">権限編集（カスタマイズ）</button>`;
-  return `<div class="setupcard"><div class="setup-chk"><b>${r.name}</b>${badge}</div><div class="setup-meta">${scopeLabel(r)}</div><div class="rm-preview">${permSummaryHTML(pr)}</div><div class="setup-card-act">${act}</div></div>`;
+// 権限テンプレート＝固定の雛形ライブラリ（両モード共通）。新規作成の土台。確認＋「この雛形で新規作成」
+const scopeLabelTpl = s => s==='all'?'会社（全社・本部）':s==='shops'?'店舗（掌握店舗群）':'店舗（自店舗）';
+function setupCard(t){
+  const pr={perm:buildPerm(PRESET[t.preset],t.tier,t.rep),tier:t.tier,key:t.rep};
+  return `<div class="setupcard"><div class="setup-chk"><b>${t.name}</b><span class="setup-rec">雛形</span></div><div class="setup-meta">${scopeLabelTpl(t.scope)}｜${t.summary||''}</div><div class="rm-preview">${permSummaryHTML(pr)}</div><div class="setup-card-act"><button class="btn ghost" onclick="createRole('${t.id}')">この雛形で新規作成</button></div></div>`;
 }
 function renderSetup(){
-  const grp=r=>r.system?'会社ロール':(r.tier==='company'?'会社ロール':'店舗ロール');
+  const libs=ROLE_TEMPLATES.filter(t=>t.id!=='blank');
   const groups=['会社ロール','店舗ロール'];
-  const cards=groups.map(g=>{ const rs=ROLES.map((r,ri)=>({r,ri})).filter(x=>grp(x.r)===g); if(!rs.length) return ''; return `<div class="setup-section">${g}</div><div class="setup-grid">${rs.map(x=>setupCard(x.r,x.ri)).join('')}</div>`; }).join('');
+  const cards=groups.map(g=>{ const ts=libs.filter(t=>t.group===g); if(!ts.length) return ''; return `<div class="setup-section">${g}</div><div class="setup-grid">${ts.map(setupCard).join('')}</div>`; }).join('');
   const cn=id=>{const c=CATEGORIES.find(x=>x.id===id);return c?c.name:id;};
-  const cov=`<div class="setup-cov"><div class="setup-cov-h">📦 権限テンプレートで登録済みの主要画面（最低限の土台）</div><div><b>設定系：</b>${STARTER_CATS.set.map(cn).join('・')}</div><div><b>一覧・分析系：</b>${STARTER_CATS.view.map(cn).join('・')}</div><div class="setup-cov-note">※ 下記ロールは導入時に登録済みです。内容を確認し、必要なら「権限編集」でカスタマイズしてください。<br>※ 経理・人事などの個別ロールや顧客独自ロールは、この土台をもとに「＋新しい権限を作成」で追加します。</div></div>`;
+  const cov=`<div class="setup-cov"><div class="setup-cov-h">📦 雛形が付与する主要画面（最低限の土台）</div><div><b>設定系：</b>${STARTER_CATS.set.map(cn).join('・')}</div><div><b>一覧・分析系：</b>${STARTER_CATS.view.map(cn).join('・')}</div><div class="setup-cov-note">※ これは<b>再利用できる雛形ライブラリ</b>です（運用状態に関わらず常に同じ）。新規作成の土台に使えます。<br>※ 現在登録されているロールの状態は「権限一覧」で確認できます。</div></div>`;
   document.getElementById('setupBody').innerHTML=cov+cards;
-  document.getElementById('setupStatus').innerHTML=`登録済み：${ROLES.length}ロール（確認・カスタマイズ）`;
+  document.getElementById('setupStatus').innerHTML=`雛形：${libs.length}種（新規作成の土台）`;
 }
-function resetSetupRecommended(){ applyDemoMode(); cur.idx=0; renderSetup(); toast('推奨設定に戻しました（登録済みロールを推奨内容で再作成）'); }
 function saveSetupDraft(){ setupDraft.savedAt=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}); _setupDirty=false; lsSet('rakmy_setup_draft',setupDraft); renderSetup(); toast('下書きを一時保存しました（まだ適用されていません）'); }
 function applySetup(){
   let n=0;
