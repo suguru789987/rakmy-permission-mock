@@ -251,6 +251,7 @@
   .allbulk .bl{ color:#1f3b5e; font-size:13.5px; }
   .allbulk .bulkbtn{ font-size:13.5px; padding:8px 20px; border-color:#bcd6f5; }
   .allbulk .bulkbtn:hover{ background:#1f3b5e; color:#fff; border-color:#1f3b5e; }
+  .allbulk .bulkbtn.on{ background:#1f3b5e; color:#fff; border-color:#1f3b5e; }
   .caret{ cursor:pointer; color:#9aa0a6; margin-right:8px; user-select:none; font-size:12px; width:14px; display:inline-block;}
   .l3{ display:block; padding:6px 0 8px; background:#fafbfc; border-bottom:1px solid #f0f2f4;}
   .l3 .lv1 label, .l3grid label.lv1{ color:#9aa0a6;}
@@ -1407,7 +1408,9 @@ function renderCatList(){
     <button class="ltab ${editTab==='ops'?'on':''}" data-tab="ops" onclick="setEditTab('ops')">設定画面権限</button>
   </div>`;
   const bulkVals = editTab==='view' ? [1,0] : [3,2,1,0];
-  h+=`<div class="bulkrow allbulk"><span class="bl">⭐ 全カテゴリを一括設定（初期値）：</span>${bulkVals.map(s=>`<button class="bulkbtn" title="${VTIP[s]}" onclick="setAllCats(${s})">${VLAB[s]}</button>`).join('')}</div>`;
+  const acats=catsByGroup().filter(c=>c.group===editTab && c.features.some(f=>featShown(f))); const avals=acats.map(c=>catSel(cur.perm,c.id));
+  const uni=(avals.length&&avals.every(v=>v===avals[0])&&typeof avals[0]==='number')?avals[0]:null;   // 全カテゴリが同一レベルか
+  h+=`<div class="bulkrow allbulk"><span class="bl">⭐ 全カテゴリを一括設定（初期値）：</span>${bulkVals.map(s=>`<button class="bulkbtn${(uni!==null&&((s===uni)||(s>=1&&s<=uni)))?' on':''}" title="${VTIP[s]}" onclick="setAllCats(${s})">${VLAB[s]}</button>`).join('')}</div>`;
   catsByGroup().filter(c=>c.group===editTab).filter(c=>c.features.some(f=>featShown(f))).forEach(c=>{
     const feats=c.features.filter(f=>featShown(f));
     const sel=catSel(cur.perm,c.id);
