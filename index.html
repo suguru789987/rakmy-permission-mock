@@ -1139,7 +1139,7 @@ function setAllCats(val){
 /* ===== プリセット ===== */
 const PRESET = {
   staff:  f => ({base:1,view:1,edit:0,action:0,admin:0}[f.k]),   // 従業員
-  manager:f => ({base:1,view:1,edit:2,action:2,admin:0}[f.k]),   // 店長
+  manager:f => ({base:1,view:1,edit:2,action:2,admin:2}[f.k]),   // 店長・エリア長：掌握店舗の設定/一覧は全て操作・閲覧可
   company:f => ({base:1,view:1,edit:2,action:2,admin:2}[f.k]),   // 経理/人事の非fixed（全社・操作可）
   full:   f => maxV(f.k),                                         // オーナー
   blank:  f => minV(f.k),                                         // 新規作成＝まっさら（常時のみ閲覧、他はすべて「なし」）
@@ -1179,10 +1179,10 @@ function applyOpsSeed(){ seedPartial('keiri','dashboard',0); seedPartial('jinji'
 // 新規導入デモ：初期設定で推奨5権限（全権/本部管理/エリア長/店長/従業員）が登録済みの状態
 function buildNewRoles(){ return [
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner'), system:true},
-  {name:'本部管理', key:'honbu', tier:'company', scope:'company', scopeType:'all', perm:buildStarterPerm(PRESET.company,'company','owner')},
-  {name:'エリア長', key:'area', tier:'shop', scope:'shop', scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildStarterPerm(PRESET.manager,'shop','manager')},
-  {name:'店長', key:'manager', tier:'shop', scope:'shop', scopeType:'self', perm:buildStarterPerm(PRESET.manager,'shop','manager')},
-  {name:'従業員', key:'staff', tier:'shop', scope:'shop', scopeType:'self', perm:buildStarterPerm(PRESET.staff,'shop','staff')},
+  {name:'本部管理', key:'honbu', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner')},   // 全権相当：全社の設定/一覧を操作・閲覧可
+  {name:'エリア長', key:'area', tier:'shop', scope:'shop', scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildPerm(PRESET.manager,'shop','manager')},   // 掌握店舗の設定/一覧を全て操作・閲覧可
+  {name:'店長', key:'manager', tier:'shop', scope:'shop', scopeType:'self', perm:buildPerm(PRESET.manager,'shop','manager')},   // 自店舗の設定/一覧を全て操作・閲覧可
+  {name:'従業員', key:'staff', tier:'shop', scope:'shop', scopeType:'self', perm:buildStarterPerm(PRESET.staff,'shop','staff')},   // 閲覧中心（雛形のまま）
 ]; }
 let demoMode = lsGet('rakmy_demo_mode','ops');
 let ROLES = buildOpsRoles(); applyOpsSeed();
