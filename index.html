@@ -1411,7 +1411,7 @@ function renderCatList(){
   catsByGroup().filter(c=>c.group===editTab).filter(c=>c.features.some(f=>featShown(f))).forEach(c=>{
     const feats=c.features.filter(f=>featShown(f));
     const sel=catSel(cur.perm,c.id);
-    const seg=catVals(c).slice().reverse().map(s=>`<button data-v="${s}" title="${VTIP[s]}" class="${sel===s?'on':''}${(typeof sel==='number'&&s>=1&&s<sel)?' inc':''}" onclick="setCatVal('${c.id}',${s})">${VLAB[s]}</button>`).join('');
+    const seg=catVals(c).slice().reverse().map(s=>`<button data-v="${s}" title="${VTIP[s]}" class="${((sel===s)||(typeof sel==='number'&&s>=1&&s<=sel))?'on':''}" onclick="setCatVal('${c.id}',${s})">${VLAB[s]}</button>`).join('');
     const mixed = sel==='mixed' ? '<span class="mixedchip">一部</span>' : '';
     h+=`<div class="summ-row"><div class="cn">${c.name}${c.hasNew?'<span class="badge-new">★★含む</span>':''}<span class="cnt">（${feats.length}機能）</span>${mixed}</div><div class="seg">${seg}</div><button class="detailbtn" onclick="openCat('${c.id}')">詳細 ＞</button></div>`;
   });
@@ -1454,7 +1454,7 @@ function featRowHTML(cid,f,fi,group){
   // コントロール（固定幅の右カラム）：常時=固定ピル、それ以外=セグメント
   const ctrl = kd.lock
     ? `<span class="fixedpill">閲覧・固定</span>`
-    : `<div class="seg">${featVals(f).slice().reverse().map(s=>`<button data-v="${s}" title="${valTip(f,s)}" class="${v===s?'on':''}${(s>=1&&s<v)?' inc':''}" onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('')}</div>`;
+    : `<div class="seg">${featVals(f).slice().reverse().map(s=>`<button data-v="${s}" title="${valTip(f,s)}" class="${((v===s)||(s>=1&&s<=v))?'on':''}" onclick="setFeat('${cid}',${fi},${s})">${kd.lab[s]}</button>`).join('')}</div>`;
   let html=`<div class="featcard acc-${group}${f.nestedUnder?' nested':''}"><div class="feat">${caret}<div class="fn"><span class="featchip">機能</span>${f.n}${badges}</div><div class="ctrl">${ctrl}</div></div>`;
   if(hasL3 && exp){
     let inner='';
