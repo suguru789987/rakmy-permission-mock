@@ -58,6 +58,11 @@
   .setup-cov{ background:#eef6ff; border:1.5px solid #bcd6f5; border-radius:10px; padding:12px 16px; margin:0 0 16px; font-size:13px; color:#234; line-height:1.9; }
   .setup-cov-h{ font-weight:800; color:#1f3b5e; margin-bottom:2px; }
   .setup-cov-note{ font-size:12px; color:#6b7280; margin-top:4px; }
+  .demo-toggle{ display:inline-flex; margin-left:16px; border:1px solid #d4dae2; border-radius:8px; overflow:hidden; }
+  .demo-toggle button{ border:none; background:#fff; padding:7px 14px; font-size:12.5px; font-weight:700; color:#5a6675; cursor:pointer; border-left:1px solid #d4dae2; }
+  .demo-toggle button:first-child{ border-left:none; }
+  .demo-toggle button.on{ background:#1f3b5e; color:#fff; }
+  .demo-banner{ background:#e3f6ec; border:1.5px solid #bfe8d2; border-radius:9px; padding:11px 14px; margin:0 0 14px; font-size:13px; color:#15532f; line-height:1.7; }
   .rm-preview{ background:#f7f9fb; border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin:4px 0 6px; }
   .rmp-h{ font-size:11.5px; font-weight:800; color:#6b7280; margin-bottom:6px; }
   .rmp-row{ display:flex; align-items:center; gap:6px; font-size:12px; margin:4px 0; }
@@ -364,6 +369,10 @@
   <header>
     <span class="logo">ラクミー <small>経営管理</small></span>
     <span class="company"><span class="ic"></span>株式会社 麺屋ミライ ▾</span>
+    <div class="demo-toggle">
+      <button data-m="ops" onclick="setDemoMode('ops')">🏢 運用デモ</button>
+      <button data-m="new" onclick="setDemoMode('new')">🆕 新規導入デモ</button>
+    </div>
     <span class="sp"></span><span class="round">?</span><span class="round">◍</span>
   </header>
 
@@ -393,6 +402,7 @@
       </div>
     </div>
     <div class="panel">
+      <div id="demoBanner" class="hide"></div>
       <div class="listtabs">
         <button class="ltab" data-tab="view" onclick="setListTab('view')">一覧画面権限</button>
         <button class="ltab" data-tab="ops" onclick="setListTab('ops')">設定画面権限</button>
@@ -1153,20 +1163,31 @@ function buildPerm(presetFn,scope,roleKey){
   return p;
 }
 const SHOPS=['麺屋ミライ 渋谷店','麺屋ミライ 新宿店','麺屋ミライ 池袋店','麺屋ミライ 横浜店','麺屋ミライ 大宮店'];
-let ROLES = [
+// 運用デモ：経理/人事に分割済み・回っている状態
+function buildOpsRoles(){ return [
   {name:'店長',   key:'manager', tier:'shop',    scope:'shop',    scopeType:'self', perm:buildPerm(PRESET.manager,'shop','manager')},
   {name:'従業員', key:'staff',   tier:'shop',    scope:'shop',    scopeType:'self', perm:buildPerm(PRESET.staff,'shop','staff')},
   {name:'エリア長', key:'area',  tier:'shop',    scope:'shop',    scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildPerm(PRESET.manager,'shop','manager')},
   {name:'経理担当',   key:'keiri',   tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.company,'company','keiri')},
   {name:'人事担当',   key:'jinji',   tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.company,'company','jinji')},
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner'), system:true},
-];
+]; }
 /* デモ用：カテゴリ内で設定がバラつく「一部」状態を意図的に作る（1機能だけ下げる→混在＝一部表示の確認用） */
 function seedPartial(roleKey,cid,val){ const r=ROLES.find(x=>x.key===roleKey), c=CATEGORIES.find(x=>x.id===cid); if(!r||!c) return; const idx=c.features.findIndex(f=>!f.fixed&&!f.inheritFrom&&!(f.noStaff&&roleKey==='staff')); if(idx>=0) setFeatVal(r.perm,cid,idx,c.features[idx],val); }
-seedPartial('keiri','dashboard',0);   // 経理：ダッシュボードの一部機能を非表示＝一覧画面で「一部」
-seedPartial('jinji','sales',0);       // 人事：売上分析の一部を非表示
-seedPartial('manager','detail',0);    // 店長：詳細分析の一部を非表示
-seedPartial('keiri','inventory',1);   // 経理：棚卸の一部を閲覧どまり＝設定画面で「一部」
+function applyOpsSeed(){ seedPartial('keiri','dashboard',0); seedPartial('jinji','sales',0); seedPartial('manager','detail',0); seedPartial('keiri','inventory',1); }
+// 新規導入デモ：初期設定で推奨5権限（全権/本部管理/エリア長/店長/従業員）が登録済みの状態
+function buildNewRoles(){ return [
+  {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner'), system:true},
+  {name:'本部管理', key:'honbu', tier:'company', scope:'company', scopeType:'all', perm:buildStarterPerm(PRESET.company,'company','owner')},
+  {name:'エリア長', key:'area', tier:'shop', scope:'shop', scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildStarterPerm(PRESET.manager,'shop','manager')},
+  {name:'店長', key:'manager', tier:'shop', scope:'shop', scopeType:'self', perm:buildStarterPerm(PRESET.manager,'shop','manager')},
+  {name:'従業員', key:'staff', tier:'shop', scope:'shop', scopeType:'self', perm:buildStarterPerm(PRESET.staff,'shop','staff')},
+]; }
+let demoMode = lsGet('rakmy_demo_mode','ops');
+let ROLES = buildOpsRoles(); applyOpsSeed();
+function applyDemoMode(){ ROLES = (demoMode==='new')?buildNewRoles():buildOpsRoles(); if(demoMode!=='new') applyOpsSeed(); }
+function setDemoMode(m){ demoMode=m; lsSet('rakmy_demo_mode',m); applyDemoMode(); cur.idx=0; cur.view='cats'; updateDemoToggle(); show('list'); }
+function updateDemoToggle(){ document.querySelectorAll('.demo-toggle button').forEach(b=>b.classList.toggle('on',b.dataset.m===demoMode)); }
 function scopeLabel(r){ if(r.scopeType==='shops') return '指定店舗群（'+((r.shops||[]).length)+'店舗）'; if(r.scopeType==='all'||r.scope==='company') return r.tier==='company'?'会社（全社・本部）':'全社'; return '店舗（自店舗）'; }
 const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
 /* 全権の付与（オーナーが会社ロールへ移譲）：全機能max＋adminOnly操作も付与 */
@@ -1313,6 +1334,9 @@ function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
   const ALL=[{key:'view',cls:'grpview',label:'一覧画面名',cats:vc},{key:'ops',cls:'grpops',label:'設定画面名',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
+  const banner=document.getElementById('demoBanner');
+  if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>初期設定で推奨5権限を登録しました</b>（全権オーナー／本部管理／エリア長／店長／従業員）。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
+  else { banner.className='hide'; banner.innerHTML=''; }
   document.querySelectorAll('.listtabs .ltab').forEach(b=>b.classList.toggle('on', b.dataset.tab===listTab));
   document.getElementById('listLegend').innerHTML = listTab==='view'
     ? '<span><b style="background:#1bbf73">閲覧</b> 見られる</span><span><b style="background:#3b82f6">一部</b> 一部のみ</span><span><b style="background:#9aa0a6">—</b> なし</span>'
@@ -1683,6 +1707,8 @@ function toast(msg){ const t=document.getElementById('toast'); t.innerHTML='<spa
 
 loadColState();
 loadSetupDraft();
+applyDemoMode();
+updateDemoToggle();
 show('list');
 </script>
 </body>
