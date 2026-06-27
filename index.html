@@ -1352,11 +1352,10 @@ function show(v){
 }
 /* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
 const SETUP_TEMPLATES=[
-  {key:'owner', name:'オーナー（全権）', scope:'会社（全社・本部）', preset:'full', summary:'全権固定・すべて操作可', fixedBase:true},
-  {key:'keiri', name:'経理担当', scope:'会社（全社・本部）', preset:'company', summary:'財務系の本部機能＋全社の設定操作'},
-  {key:'jinji', name:'人事担当', scope:'会社（全社・本部）', preset:'company', summary:'人事系の本部機能＋全社の設定操作'},
-  {key:'manager', name:'店長', scope:'店舗（自店舗）', preset:'manager', summary:'自店舗の設定操作＋閲覧'},
-  {key:'staff', name:'従業員', scope:'店舗（自店舗）', preset:'staff', summary:'閲覧中心（操作は最小）'},
+  {key:'owner', name:'オーナー（全権）', roleKeys:['owner'], scope:'会社（全社・本部）', preset:'full', summary:'全権固定・すべて操作可', fixedBase:true},
+  {key:'company', name:'会社ロール（本部）', roleKeys:['keiri','jinji'], scope:'会社（全社・本部）', preset:'company', summary:'本部・全社の標準。経理／人事などはここを土台に新設'},
+  {key:'manager', name:'店長', roleKeys:['manager'], scope:'店舗（自店舗）', preset:'manager', summary:'自店舗の設定操作＋閲覧'},
+  {key:'staff', name:'従業員', roleKeys:['staff'], scope:'店舗（自店舗）', preset:'staff', summary:'閲覧中心（操作は最小）'},
 ];
 const SETUP_BASE_OPT=[['preset','推奨（プリセット）'],[2,'操作可'],[1,'閲覧のみ'],[0,'なし']];
 // 初期設定の雛形＝最初に使う主要画面のみ付与（他はなし）。設定系＝会社情報/店舗情報/費用/予算、一覧系＝仕入・売上・詳細(予実)・集計(予算一覧)・ダッシュボード
@@ -1378,7 +1377,7 @@ function renderSetup(){
     return `<div class="setupcard${on?'':' off'}"><label class="setup-chk"><input type="checkbox" ${on?'checked':''} ${t.fixedBase?'disabled checked':''} onclick="setupToggle('${t.key}')"> <b>${t.name}</b></label><div class="setup-meta">${t.scope}｜${t.summary}</div><div class="setup-base-wrap">初期権限：${baseSel}</div></div>`;
   }).join('');
   const cn=id=>{const c=CATEGORIES.find(x=>x.id===id);return c?c.name:id;};
-  const cov=`<div class="setup-cov"><div class="setup-cov-h">📦 この雛形で付与する主要画面（最低限）</div><div><b>設定系：</b>${STARTER_CATS.set.map(cn).join('・')}</div><div><b>一覧・分析系：</b>${STARTER_CATS.view.map(cn).join('・')}</div><div class="setup-cov-note">※ これ以外は「なし」で作成。後から「権限編集」で追加できます（オーナーは全権）。</div></div>`;
+  const cov=`<div class="setup-cov"><div class="setup-cov-h">📦 この雛形で付与する主要画面（最低限）</div><div><b>設定系：</b>${STARTER_CATS.set.map(cn).join('・')}</div><div><b>一覧・分析系：</b>${STARTER_CATS.view.map(cn).join('・')}</div><div class="setup-cov-note">※ これ以外は「なし」で作成。後から「権限編集」で追加できます（オーナーは全権）。<br>※ 経理・人事などの個別ロールや顧客独自ロールは、この土台をもとに「＋権限を新規作成」で随時追加します（初期設定は最低限の土台のみ）。</div></div>`;
   document.getElementById('setupBody').innerHTML=cov+'<div class="setup-grid">'+cards+'</div>';
   const cnt=SETUP_TEMPLATES.filter(t=>setupDraft.sel[t.key]!==false).length;
   document.getElementById('setupStatus').innerHTML = _setupDirty ? `<b style="color:#c33;">未保存の変更あり</b>（作成対象：${cnt}ロール）`
@@ -1388,10 +1387,11 @@ function renderSetup(){
 function saveSetupDraft(){ setupDraft.savedAt=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}); _setupDirty=false; lsSet('rakmy_setup_draft',setupDraft); renderSetup(); toast('下書きを一時保存しました（まだ適用されていません）'); }
 function applySetup(){
   let n=0;
-  SETUP_TEMPLATES.forEach(t=>{ if(setupDraft.sel[t.key]===false) return; const ri=ROLES.findIndex(r=>r.key===t.key); if(ri<0) return;
+  SETUP_TEMPLATES.forEach(t=>{ if(setupDraft.sel[t.key]===false) return;
     const base=setupDraft.base[t.key]!=null?setupDraft.base[t.key]:'preset';
     const presetFn=(t.fixedBase||base==='preset')?PRESET[t.preset]:(f=>base);
-    ROLES[ri].perm = t.fixedBase ? buildPerm(presetFn, ROLES[ri].scope, t.key) : buildStarterPerm(presetFn, ROLES[ri].scope, t.key); n++; });   // オーナーは全権、他は雛形のみ
+    (t.roleKeys||[t.key]).forEach(rk=>{ const ri=ROLES.findIndex(r=>r.key===rk); if(ri<0) return;
+      ROLES[ri].perm = t.fixedBase ? buildPerm(presetFn, ROLES[ri].scope, rk) : buildStarterPerm(presetFn, ROLES[ri].scope, rk); n++; }); });   // オーナーは全権、他は雛形のみ。会社ロールは経理/人事へまとめて適用
   _setupDirty=false; lsSet('rakmy_setup_draft',setupDraft); show('list'); toast(`初期設定を適用しました（${n}ロール）`);
 }
 function discardSetupDraft(){ try{ localStorage.removeItem('rakmy_setup_draft'); }catch(e){} setupDraft={sel:{},base:{},savedAt:null}; SETUP_TEMPLATES.forEach(t=>{ setupDraft.sel[t.key]=true; setupDraft.base[t.key]='preset'; }); _setupDirty=false; renderSetup(); toast('下書きを破棄しました'); }
