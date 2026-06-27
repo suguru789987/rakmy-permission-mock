@@ -71,7 +71,12 @@
   .setup-section{ font-size:14px; font-weight:800; color:#1f3b5e; margin:18px 0 8px; padding-bottom:5px; border-bottom:2px solid #e3e8ee; }
   .setup-section:first-child{ margin-top:0; }
   .setup-rec{ font-size:10.5px; font-weight:800; color:#0f7d49; background:#e3f6ec; border:1px solid #bfe8d2; border-radius:10px; padding:1px 8px; margin-left:8px; }
-  .setup-card-act{ margin-top:10px; } .setup-card-act .btn{ width:100%; }
+  .setup-card-act{ margin-top:10px; display:flex; flex-direction:column; gap:6px; } .setup-card-act .btn{ width:100%; }
+  .tpd-sec{ font-size:13px; font-weight:800; color:#1f3b5e; margin:14px 0 6px; padding-bottom:5px; border-bottom:2px solid #e3e8ee; }
+  .tpd-sec:first-child{ margin-top:0; }
+  .tpd-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 4px; border-bottom:1px solid #f0f2f4; font-size:13px; }
+  .tpd-name{ font-weight:700; color:#333; }
+  .tpd-empty{ font-size:12px; color:#9aa0a6; padding:6px 4px; }
   .setupcard .rm-preview{ margin:8px 0 0; }
   .setupcard{ border:1.5px solid var(--line); border-radius:10px; padding:14px 16px; background:#fff; }
   .setupcard.off{ opacity:.5; background:#f7f8fa; }
@@ -574,6 +579,16 @@
       <button class="btn ghost" onclick="closeSaveViewModal()">キャンセル</button>
       <button class="btn primary" onclick="submitSaveView()">保存</button>
     </div>
+  </div>
+</div>
+
+<!-- 雛形の画面ごと権限 詳細モーダル -->
+<div id="tplDetailModal" class="modal-overlay hide">
+  <div class="modal" style="width:680px; max-height:82vh; overflow:auto;">
+    <h3 id="tplDetailTitle"></h3>
+    <p class="modal-note" style="min-height:auto;">この雛形でどの画面が操作／閲覧できるかの一覧です。</p>
+    <div id="tplDetailBody"></div>
+    <div class="modal-actions"><button class="btn primary" onclick="closeTplDetail()">閉じる</button></div>
   </div>
 </div>
 
@@ -1447,7 +1462,7 @@ function setupBase(k,v){ setupDraft.base[k]=(v==='preset')?'preset':parseInt(v,1
 const scopeLabelTpl = s => s==='all'?'会社（全社・本部）':s==='shops'?'店舗（掌握店舗群）':'店舗（自店舗）';
 function setupCard(t){
   const pr={perm:buildPerm(PRESET[t.preset],t.tier,t.rep),tier:t.tier,key:t.rep};
-  return `<div class="setupcard"><div class="setup-chk"><b>${t.name}</b><span class="setup-rec">雛形</span></div><div class="setup-meta">${scopeLabelTpl(t.scope)}｜${t.summary||''}</div><div class="rm-preview">${permSummaryHTML(pr)}</div><div class="setup-card-act"><button class="btn ghost" onclick="createRole('${t.id}')">この雛形で新規作成</button></div></div>`;
+  return `<div class="setupcard"><div class="setup-chk"><b>${t.name}</b><span class="setup-rec">雛形</span></div><div class="setup-meta">${scopeLabelTpl(t.scope)}｜${t.summary||''}</div><div class="rm-preview">${permSummaryHTML(pr)}</div><div class="setup-card-act"><button class="btn ghost" onclick="openTplDetail('${t.id}')">📋 画面ごとの詳細を見る</button><button class="btn ghost" onclick="createRole('${t.id}')">この雛形で新規作成</button></div></div>`;
 }
 function renderSetup(){
   const libs=ROLE_TEMPLATES.filter(t=>t.id!=='blank');
@@ -1458,6 +1473,19 @@ function renderSetup(){
   document.getElementById('setupBody').innerHTML=cov+cards;
   document.getElementById('setupStatus').innerHTML=`雛形：${libs.length}種（新規作成の土台）`;
 }
+// 雛形（またはロール）の画面ごとの操作/閲覧可否を一覧表示
+function lvlPill(s,gk){ return s==='no'?'<span class="pill pno">—</span>' : gk==='view'?(s==='op'?'<span class="pill pop">閲覧</span>':'<span class="pill pvw">一部</span>') : (s==='op'?'<span class="pill pop">操作</span>':'<span class="pill pvw">閲覧のみ</span>'); }
+function tplDetailBodyHTML(pr){
+  const sec=(gk,lab)=>{ const cats=CATEGORIES.filter(c=>c.group===gk&&catApplies(pr,c.id));
+    const rows=cats.map(c=>`<div class="tpd-row"><span class="tpd-name">${c.name}</span>${lvlPill(catStatus(pr,c.id),gk)}</div>`).join('');
+    return `<div class="tpd-sec">${lab}（${cats.length}画面）</div>${rows||'<div class="tpd-empty">対象画面なし</div>'}`; };
+  return sec('view','一覧・分析画面')+sec('ops','設定画面');
+}
+function openTplDetail(tplId){ const t=ROLE_TEMPLATES.find(x=>x.id===tplId); if(!t) return; const pr={perm:buildPerm(PRESET[t.preset],t.tier,t.rep),tier:t.tier,key:t.rep};
+  document.getElementById('tplDetailTitle').textContent=t.name+'｜画面ごとの権限';
+  document.getElementById('tplDetailBody').innerHTML=tplDetailBodyHTML(pr);
+  document.getElementById('tplDetailModal').classList.remove('hide'); }
+function closeTplDetail(){ document.getElementById('tplDetailModal').classList.add('hide'); }
 function saveSetupDraft(){ setupDraft.savedAt=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}); _setupDirty=false; lsSet('rakmy_setup_draft',setupDraft); renderSetup(); toast('下書きを一時保存しました（まだ適用されていません）'); }
 function applySetup(){
   let n=0;
