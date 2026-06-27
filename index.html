@@ -539,7 +539,7 @@ const KIND = {
   view:   {vals:[0,1],   lab:{0:'なし',1:'閲覧'}, tag:'閲覧専用'},
   edit:   {vals:[0,1,2,3], lab:{0:'なし',1:'閲覧',2:'操作',3:'全て'}, tag:'設定'},
   action: {vals:[0,2],   lab:{0:'なし',2:'実行可'}, tag:'実行'},
-  admin:  {vals:[0,2],   lab:{0:'なし',2:'設定可'}, tag:'管理'},
+  admin:  {vals:[0,1,2], lab:{0:'なし',1:'閲覧',2:'設定可'}, tag:'管理'},
 };
 /* 第三階層（操作）。性質から導出 */
 const OPS = {
@@ -558,7 +558,7 @@ function valTip(f,s){ const k=f.k;
   if(k==='base') return '常時閲覧（編集不可）';
   if(k==='view') return s===0?'アクセス不可':'閲覧（エクスポートは操作詳細で個別指定）';
   if(k==='action') return s===0?'実行不可':'実行できる';
-  if(k==='admin') return s===0?'アクセス不可':'閲覧＋設定変更ができる';
+  if(k==='admin') return s===0?'アクセス不可':s===1?'閲覧のみ（設定変更不可）':'閲覧＋設定変更ができる';
   return {0:'アクセス不可',1:'閲覧のみ（見るだけ）',2:'閲覧＋登録＋編集（削除なし）',3:'閲覧＋登録＋編集＋削除（すべて含む）'}[s]||''; }
 // 機能ごとに選べる権限値（CRUD系で削除opがあれば 全て(3) まで／画面項目2軸は 操作(2) まで）
 function featVals(f){ if(f.k!=='edit') return KIND[f.k].vals; if(f.subitems) return [0,1,2]; return opsOf(f).some(o=>o.id==='delete')?[0,1,2,3]:[0,1,2]; }
