@@ -58,6 +58,9 @@
   .setup-cov{ background:#eef6ff; border:1.5px solid #bcd6f5; border-radius:10px; padding:12px 16px; margin:0 0 16px; font-size:13px; color:#234; line-height:1.9; }
   .setup-cov-h{ font-weight:800; color:#1f3b5e; margin-bottom:2px; }
   .setup-cov-note{ font-size:12px; color:#6b7280; margin-top:4px; }
+  .setup-section{ font-size:14px; font-weight:800; color:#1f3b5e; margin:18px 0 8px; padding-bottom:5px; border-bottom:2px solid #e3e8ee; }
+  .setup-section:first-child{ margin-top:0; }
+  .setup-rec{ font-size:10.5px; font-weight:800; color:#0f7d49; background:#e3f6ec; border:1px solid #bfe8d2; border-radius:10px; padding:1px 8px; margin-left:8px; }
   .setupcard{ border:1.5px solid var(--line); border-radius:10px; padding:14px 16px; background:#fff; }
   .setupcard.off{ opacity:.5; background:#f7f8fa; }
   .setup-chk{ display:flex; align-items:center; gap:8px; font-size:15px; cursor:pointer; }
@@ -401,14 +404,14 @@
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
     </div>
     <div class="panel">
-      <p class="setup-lead">導入時に<b>最初に使う主要画面だけ</b>を付与した<b>雛形</b>でロールを一括作成します（他はなし＝後から追加）。<b>一時保存（下書き）</b>で保留し、確認後に<b>適用</b>で反映。<b>適用するまで権限一覧には反映されません。</b></p>
+      <p class="setup-lead"><b>推奨設定で土台（権限母体）を自動作成</b>します。1つずつ設定する必要はなく、推奨のまま確認して適用するだけでOK（必要な行だけ変更可）。会社ロールは母体を作り後で経理/人事等に分けて制限・解放、店舗は店長・エリア店長の母体→従業員の順。<b>一時保存（下書き）</b>で保留でき、<b>適用</b>するまで権限一覧には反映されません。</p>
       <div id="setupBody"></div>
       <div class="setupbar">
         <span class="setup-status" id="setupStatus"></span>
         <div class="sp"></div>
         <button class="btn ghost" onclick="discardSetupDraft()">下書きを破棄</button>
         <button class="btn ghost" onclick="saveSetupDraft()">一時保存（下書き）</button>
-        <button class="btn primary" onclick="applySetup()">適用する</button>
+        <button class="btn primary" onclick="applySetup()">推奨設定で適用</button>
       </div>
     </div>
   </main>
@@ -1352,10 +1355,10 @@ function show(v){
 }
 /* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
 const SETUP_TEMPLATES=[
-  {key:'owner', name:'オーナー（全権）', roleKeys:['owner'], scope:'会社（全社・本部）', preset:'full', summary:'全権固定・すべて操作可', fixedBase:true},
-  {key:'company', name:'会社ロール（本部）', roleKeys:['keiri','jinji'], scope:'会社（全社・本部）', preset:'company', summary:'本部・全社の標準。経理／人事などはここを土台に新設'},
-  {key:'manager', name:'店長', roleKeys:['manager'], scope:'店舗（自店舗）', preset:'manager', summary:'自店舗の設定操作＋閲覧'},
-  {key:'staff', name:'従業員', roleKeys:['staff'], scope:'店舗（自店舗）', preset:'staff', summary:'閲覧中心（操作は最小）'},
+  {key:'owner', group:'会社ロール', name:'オーナー（全権）', roleKeys:['owner'], scope:'全社・本部', preset:'full', summary:'全権固定・すべて操作可', fixedBase:true},
+  {key:'company', group:'会社ロール', name:'会社ロール（権限母体）', roleKeys:['keiri','jinji'], scope:'全社・本部', preset:'company', summary:'本部・全社の権限母体。経理／人事などはここを土台に新設し、制限・解放で調整'},
+  {key:'manager', group:'店舗ロール', name:'店長・エリア店長（権限母体）', roleKeys:['manager','area'], scope:'自店舗／掌握店舗群', preset:'manager', summary:'店舗運営の権限母体。エリア店長は掌握店舗分の設定・一覧も閲覧可（差は範囲のみ）'},
+  {key:'staff', group:'店舗ロール', name:'従業員', roleKeys:['staff'], scope:'自店舗', preset:'staff', summary:'閲覧中心（操作は最小）。店長母体を絞った権限'},
 ];
 const SETUP_BASE_OPT=[['preset','推奨（プリセット）'],[2,'操作可'],[1,'閲覧のみ'],[0,'なし']];
 // 初期設定の雛形＝最初に使う主要画面のみ付与（他はなし）。設定系＝会社情報/店舗情報/費用/予算、一覧系＝仕入・売上・詳細(予実)・集計(予算一覧)・ダッシュボード
@@ -1369,16 +1372,19 @@ let _setupDirty=false;
 function loadSetupDraft(){ const d=lsGet('rakmy_setup_draft',null); if(d&&d.sel){ setupDraft=d; } else { SETUP_TEMPLATES.forEach(t=>{ setupDraft.sel[t.key]=true; setupDraft.base[t.key]='preset'; }); } }
 function setupToggle(k){ const t=SETUP_TEMPLATES.find(x=>x.key===k); if(t&&t.fixedBase) return; setupDraft.sel[k]=(setupDraft.sel[k]===false); _setupDirty=true; renderSetup(); }
 function setupBase(k,v){ setupDraft.base[k]=(v==='preset')?'preset':parseInt(v,10); _setupDirty=true; renderSetup(); }
+function setupCard(t){
+  const on=setupDraft.sel[t.key]!==false, base=setupDraft.base[t.key]!=null?setupDraft.base[t.key]:'preset';
+  const baseSel = t.fixedBase ? '<span class="setup-fixed">全権固定</span>'
+    : `<select class="setup-base" onchange="setupBase('${t.key}',this.value)" ${on?'':'disabled'}>${SETUP_BASE_OPT.map(([v,l])=>`<option value="${v}" ${String(base)===String(v)?'selected':''}>${l}</option>`).join('')}</select>`;
+  const rec = String(base)==='preset' ? '<span class="setup-rec">推奨</span>' : '';
+  return `<div class="setupcard${on?'':' off'}"><label class="setup-chk"><input type="checkbox" ${on?'checked':''} ${t.fixedBase?'disabled checked':''} onclick="setupToggle('${t.key}')"> <b>${t.name}</b>${rec}</label><div class="setup-meta">${t.scope}｜${t.summary}</div><div class="setup-base-wrap">初期権限：${baseSel}</div></div>`;
+}
 function renderSetup(){
-  const cards=SETUP_TEMPLATES.map(t=>{
-    const on=setupDraft.sel[t.key]!==false, base=setupDraft.base[t.key]!=null?setupDraft.base[t.key]:'preset';
-    const baseSel = t.fixedBase ? '<span class="setup-fixed">全権固定</span>'
-      : `<select class="setup-base" onchange="setupBase('${t.key}',this.value)" ${on?'':'disabled'}>${SETUP_BASE_OPT.map(([v,l])=>`<option value="${v}" ${String(base)===String(v)?'selected':''}>${l}</option>`).join('')}</select>`;
-    return `<div class="setupcard${on?'':' off'}"><label class="setup-chk"><input type="checkbox" ${on?'checked':''} ${t.fixedBase?'disabled checked':''} onclick="setupToggle('${t.key}')"> <b>${t.name}</b></label><div class="setup-meta">${t.scope}｜${t.summary}</div><div class="setup-base-wrap">初期権限：${baseSel}</div></div>`;
-  }).join('');
+  const groups=[...new Set(SETUP_TEMPLATES.map(t=>t.group))];
+  const cards=groups.map(g=>`<div class="setup-section">${g}</div><div class="setup-grid">${SETUP_TEMPLATES.filter(t=>t.group===g).map(setupCard).join('')}</div>`).join('');
   const cn=id=>{const c=CATEGORIES.find(x=>x.id===id);return c?c.name:id;};
   const cov=`<div class="setup-cov"><div class="setup-cov-h">📦 この雛形で付与する主要画面（最低限）</div><div><b>設定系：</b>${STARTER_CATS.set.map(cn).join('・')}</div><div><b>一覧・分析系：</b>${STARTER_CATS.view.map(cn).join('・')}</div><div class="setup-cov-note">※ これ以外は「なし」で作成。後から「権限編集」で追加できます（オーナーは全権）。<br>※ 経理・人事などの個別ロールや顧客独自ロールは、この土台をもとに「＋権限を新規作成」で随時追加します（初期設定は最低限の土台のみ）。</div></div>`;
-  document.getElementById('setupBody').innerHTML=cov+'<div class="setup-grid">'+cards+'</div>';
+  document.getElementById('setupBody').innerHTML=cov+cards;
   const cnt=SETUP_TEMPLATES.filter(t=>setupDraft.sel[t.key]!==false).length;
   document.getElementById('setupStatus').innerHTML = _setupDirty ? `<b style="color:#c33;">未保存の変更あり</b>（作成対象：${cnt}ロール）`
     : setupDraft.savedAt ? `下書き保存済み ${setupDraft.savedAt}（作成対象：${cnt}ロール・未適用）`
