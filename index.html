@@ -53,6 +53,17 @@
   .listpickbar{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px; background:#f5f7f9; border-radius:8px; }
   .listpickbar .lpb-label{ font-size:14.5px; font-weight:800; color:#334; }
   .btn.big{ font-size:18px; padding:17px 36px; border-radius:11px; box-shadow:0 4px 10px rgba(21,155,93,.3); }
+  .setup-lead{ font-size:13.5px; color:#445; line-height:1.7; margin:0 0 16px; }
+  #setupBody{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  .setupcard{ border:1.5px solid var(--line); border-radius:10px; padding:14px 16px; background:#fff; }
+  .setupcard.off{ opacity:.5; background:#f7f8fa; }
+  .setup-chk{ display:flex; align-items:center; gap:8px; font-size:15px; cursor:pointer; }
+  .setup-meta{ font-size:12px; color:#8a92a0; margin:6px 0 10px; }
+  .setup-base-wrap{ font-size:12.5px; font-weight:700; color:#445; display:flex; align-items:center; gap:8px; }
+  .setup-base{ font-size:12.5px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+  .setup-fixed{ font-size:12px; font-weight:700; color:#caa12a; }
+  .setupbar{ display:flex; align-items:center; gap:10px; margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+  .setup-status{ font-size:12.5px; color:#667; }
   .listtabs{ display:flex; gap:6px; margin:0 0 12px; }
   .listtabs .ltab{ font-size:13.5px; font-weight:800; color:#5a6675; padding:9px 22px; border:1px solid var(--line); border-bottom:none; border-radius:9px 9px 0 0; background:#f1f3f5; cursor:pointer; }
   .listtabs .ltab.on{ color:#15452e; background:#fff; box-shadow:0 -2px 0 #1bbf73 inset; }
@@ -356,6 +367,7 @@
       <h1>権限一覧</h1>
       <div class="legend" id="listLegend"></div>
       <div class="sp"></div>
+      <button class="btn ghost" onclick="show('setup')">⚙ 初期設定</button>
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
     <div class="screennav">
@@ -376,6 +388,25 @@
       </div>
       <div class="listpickbar" id="listPickBar"></div>
       <div style="overflow:auto;" id="listScroll"><table class="list" id="listTable"></table></div>
+    </div>
+  </main>
+
+  <!-- 初期設定（推奨ロール一括作成・一時保存→適用） -->
+  <main id="view-setup" class="hide">
+    <div class="titlebar">
+      <h1>初期設定</h1><div class="sp"></div>
+      <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
+    </div>
+    <div class="panel">
+      <p class="setup-lead">導入時の<b>推奨ロール</b>を選んで一括作成します。各ロールの初期権限レベルを選び、<b>一時保存（下書き）</b>で保留、内容を確認してから<b>適用</b>で反映します。<b>適用するまで権限一覧には反映されません。</b></p>
+      <div id="setupBody"></div>
+      <div class="setupbar">
+        <span class="setup-status" id="setupStatus"></span>
+        <div class="sp"></div>
+        <button class="btn ghost" onclick="discardSetupDraft()">下書きを破棄</button>
+        <button class="btn ghost" onclick="saveSetupDraft()">一時保存（下書き）</button>
+        <button class="btn primary" onclick="applySetup()">適用する</button>
+      </div>
     </div>
   </main>
 
@@ -1305,9 +1336,10 @@ document.addEventListener('click',e=>{ let ch=false;
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist'];
+  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist','setup'];
   VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
+  if(v==='setup') renderSetup();
   if(v==='list') renderList();
   if(v==='catalog') renderCatalog();
   if(v==='summary') renderSummary();
@@ -1315,6 +1347,43 @@ function show(v){
   if(v==='condset') renderCondset();
   if(v==='tpllist') renderTplList();
 }
+/* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
+const SETUP_TEMPLATES=[
+  {key:'owner', name:'オーナー（全権）', scope:'会社（全社・本部）', preset:'full', summary:'全権固定・すべて操作可', fixedBase:true},
+  {key:'keiri', name:'経理担当', scope:'会社（全社・本部）', preset:'company', summary:'財務系の本部機能＋全社の設定操作'},
+  {key:'jinji', name:'人事担当', scope:'会社（全社・本部）', preset:'company', summary:'人事系の本部機能＋全社の設定操作'},
+  {key:'manager', name:'店長', scope:'店舗（自店舗）', preset:'manager', summary:'自店舗の設定操作＋閲覧'},
+  {key:'staff', name:'従業員', scope:'店舗（自店舗）', preset:'staff', summary:'閲覧中心（操作は最小）'},
+];
+const SETUP_BASE_OPT=[['preset','推奨（プリセット）'],[2,'操作可（全カテゴリ）'],[1,'閲覧のみ'],[0,'なし']];
+let setupDraft={sel:{},base:{},savedAt:null};
+let _setupDirty=false;
+function loadSetupDraft(){ const d=lsGet('rakmy_setup_draft',null); if(d&&d.sel){ setupDraft=d; } else { SETUP_TEMPLATES.forEach(t=>{ setupDraft.sel[t.key]=true; setupDraft.base[t.key]='preset'; }); } }
+function setupToggle(k){ const t=SETUP_TEMPLATES.find(x=>x.key===k); if(t&&t.fixedBase) return; setupDraft.sel[k]=(setupDraft.sel[k]===false); _setupDirty=true; renderSetup(); }
+function setupBase(k,v){ setupDraft.base[k]=(v==='preset')?'preset':parseInt(v,10); _setupDirty=true; renderSetup(); }
+function renderSetup(){
+  const cards=SETUP_TEMPLATES.map(t=>{
+    const on=setupDraft.sel[t.key]!==false, base=setupDraft.base[t.key]!=null?setupDraft.base[t.key]:'preset';
+    const baseSel = t.fixedBase ? '<span class="setup-fixed">全権固定</span>'
+      : `<select class="setup-base" onchange="setupBase('${t.key}',this.value)" ${on?'':'disabled'}>${SETUP_BASE_OPT.map(([v,l])=>`<option value="${v}" ${String(base)===String(v)?'selected':''}>${l}</option>`).join('')}</select>`;
+    return `<div class="setupcard${on?'':' off'}"><label class="setup-chk"><input type="checkbox" ${on?'checked':''} ${t.fixedBase?'disabled checked':''} onclick="setupToggle('${t.key}')"> <b>${t.name}</b></label><div class="setup-meta">${t.scope}｜${t.summary}</div><div class="setup-base-wrap">初期権限：${baseSel}</div></div>`;
+  }).join('');
+  document.getElementById('setupBody').innerHTML=cards;
+  const cnt=SETUP_TEMPLATES.filter(t=>setupDraft.sel[t.key]!==false).length;
+  document.getElementById('setupStatus').innerHTML = _setupDirty ? `<b style="color:#c33;">未保存の変更あり</b>（作成対象：${cnt}ロール）`
+    : setupDraft.savedAt ? `下書き保存済み ${setupDraft.savedAt}（作成対象：${cnt}ロール・未適用）`
+    : `作成対象：${cnt}ロール`;
+}
+function saveSetupDraft(){ setupDraft.savedAt=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}); _setupDirty=false; lsSet('rakmy_setup_draft',setupDraft); renderSetup(); toast('下書きを一時保存しました（まだ適用されていません）'); }
+function applySetup(){
+  let n=0;
+  SETUP_TEMPLATES.forEach(t=>{ if(setupDraft.sel[t.key]===false) return; const ri=ROLES.findIndex(r=>r.key===t.key); if(ri<0) return;
+    const base=setupDraft.base[t.key]!=null?setupDraft.base[t.key]:'preset';
+    const presetFn=(t.fixedBase||base==='preset')?PRESET[t.preset]:(f=>base);
+    ROLES[ri].perm=buildPerm(presetFn, ROLES[ri].scope, t.key); n++; });
+  _setupDirty=false; lsSet('rakmy_setup_draft',setupDraft); show('list'); toast(`初期設定を適用しました（${n}ロール）`);
+}
+function discardSetupDraft(){ try{ localStorage.removeItem('rakmy_setup_draft'); }catch(e){} setupDraft={sel:{},base:{},savedAt:null}; SETUP_TEMPLATES.forEach(t=>{ setupDraft.sel[t.key]=true; setupDraft.base[t.key]='preset'; }); _setupDirty=false; renderSetup(); toast('下書きを破棄しました'); }
 /* ===== ユーザー割当 ===== */
 // 従業員一覧／アカウントmaster と連動（name/shop/title はそこから取得）。ここでは roleKeys（権限割当）のみ編集。
 let USERS=[
@@ -1552,6 +1621,7 @@ function saveRole(){ ROLES[cur.idx]={...ROLES[cur.idx],perm:cur.perm}; const nm=
 function toast(msg){ const t=document.getElementById('toast'); t.innerHTML='<span class="tk">✓</span>'+msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
 
 loadColState();
+loadSetupDraft();
 show('list');
 </script>
 </body>
