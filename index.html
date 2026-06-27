@@ -58,6 +58,11 @@
   .setup-cov{ background:#eef6ff; border:1.5px solid #bcd6f5; border-radius:10px; padding:12px 16px; margin:0 0 16px; font-size:13px; color:#234; line-height:1.9; }
   .setup-cov-h{ font-weight:800; color:#1f3b5e; margin-bottom:2px; }
   .setup-cov-note{ font-size:12px; color:#6b7280; margin-top:4px; }
+  .rm-preview{ background:#f7f9fb; border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin:4px 0 6px; }
+  .rmp-h{ font-size:11.5px; font-weight:800; color:#6b7280; margin-bottom:6px; }
+  .rmp-row{ display:flex; align-items:center; gap:6px; font-size:12px; margin:4px 0; }
+  .rmp-g{ display:inline-block; min-width:64px; font-weight:800; color:#445; }
+  .rmp-tot{ color:#9aa0a6; font-size:11px; margin-left:2px; }
   .setup-section{ font-size:14px; font-weight:800; color:#1f3b5e; margin:18px 0 8px; padding-bottom:5px; border-bottom:2px solid #e3e8ee; }
   .setup-section:first-child{ margin-top:0; }
   .setup-rec{ font-size:10.5px; font-weight:800; color:#0f7d49; background:#e3f6ec; border:1px solid #bfe8d2; border-radius:10px; padding:1px 8px; margin-left:8px; }
@@ -506,6 +511,9 @@
 <div id="roleModal" class="modal-overlay hide">
   <div class="modal">
     <h3>権限を新規作成</h3>
+    <label class="ml">ベース（テンプレート／既存ロールの複製）</label>
+    <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
+    <div id="rmPreview" class="rm-preview"></div>
     <label class="ml">権限名</label>
     <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
     <label class="ml">区分</label>
@@ -1183,7 +1191,41 @@ function renderDelegateList(){
 }
 let _roleSeq=0, rmTier='shop';
 let rmScope='self';
-function createRole(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); rmSetScope('self'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
+// 運用時の新規作成：テンプレート or 既存ロール複製をベースに、権限プレビューを見て作成
+const ROLE_TEMPLATES=[
+  {id:'full',    name:'全権オーナー相当', group:'会社ロール', tier:'company', scope:'all',   preset:'full',    rep:'owner'},
+  {id:'company', name:'本部管理',         group:'会社ロール', tier:'company', scope:'all',   preset:'company', rep:'owner'},
+  {id:'area',    name:'エリア長',         group:'店舗ロール', tier:'shop',    scope:'shops', preset:'manager', rep:'manager'},
+  {id:'manager', name:'店長',             group:'店舗ロール', tier:'shop',    scope:'self',  preset:'manager', rep:'manager'},
+  {id:'staff',   name:'従業員',           group:'店舗ロール', tier:'shop',    scope:'self',  preset:'staff',   rep:'staff'},
+  {id:'blank',   name:'まっさら（なし）', group:'その他',     tier:'shop',    scope:'self',  preset:'blank',   rep:'tmp'},
+];
+let _rmBasePerm=null, _rmBaseSrc=null;   // 作成に使うベース権限（クローン元）と複製元roleKey
+function rmBasePreviewRole(){ const t=document.getElementById('rmBase').value; if(t.startsWith('role:')){ const r=ROLES[+t.slice(5)]; return {perm:r.perm,tier:r.tier,key:r.key}; } const tpl=ROLE_TEMPLATES.find(x=>x.id===t.slice(4)); const perm=buildPerm(PRESET[tpl.preset],tpl.tier,tpl.rep); return {perm,tier:tpl.tier,key:tpl.rep,tpl}; }
+function createRole(){
+  const tplOpts=ROLE_TEMPLATES.map(t=>`<option value="tpl:${t.id}">${t.name}（${t.group}）</option>`).join('');
+  const roleOpts=ROLES.filter(r=>!r.system).map((r,i)=>`<option value="role:${ROLES.indexOf(r)}">${r.name} を複製</option>`).join('');
+  document.getElementById('rmBase').innerHTML=`<optgroup label="テンプレート">${tplOpts}</optgroup><optgroup label="既存ロールを複製">${roleOpts}</optgroup>`;
+  document.getElementById('rmName').value='';
+  document.getElementById('roleModal').classList.remove('hide');
+  rmSetBase(); setTimeout(()=>document.getElementById('rmName').focus(),40);
+}
+function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; _rmBaseSrc = document.getElementById('rmBase').value.startsWith('role:')?ROLES[+document.getElementById('rmBase').value.slice(5)].key:null;
+  // ベースに応じて区分・スコープの既定を反映（後から変更可）
+  const v=document.getElementById('rmBase').value;
+  let tier,scope; if(v.startsWith('role:')){ const r=ROLES[+v.slice(5)]; tier=r.tier; scope=r.scopeType; } else { const tpl=ROLE_TEMPLATES.find(x=>x.id===v.slice(4)); tier=tpl.tier; scope=tpl.scope; }
+  rmTier=tier; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===tier));
+  rmSetScope(scope);
+  document.getElementById('rmNote').textContent='区分・データ範囲はベースの既定です（必要なら変更可）。作成後は権限編集で微調整できます。';
+  renderRmPreview(pr);
+}
+function renderRmPreview(pr){
+  const row=gk=>{ const cats=CATEGORIES.filter(c=>c.group===gk); const ap=cats.filter(c=>catApplies(pr,c.id)); const t={op:0,vw:0,no:0}; ap.forEach(c=>t[catStatus(pr,c.id)]++);
+    const lab=gk==='view'?'一覧・分析':'設定'; const main=gk==='ops'?`<span class="pill pop">操作 ${t.op}</span> <span class="pill pvw">閲覧 ${t.vw}</span>`:`<span class="pill pop">閲覧 ${t.op+t.vw}</span> <span class="pill pvw">一部 ${t.vw}</span>`;
+    return `<div class="rmp-row"><span class="rmp-g">${lab}</span>${main} <span class="pill pno">なし ${t.no}</span> <span class="rmp-tot">/ ${ap.length}画面</span></div>`; };
+  document.getElementById('rmPreview').innerHTML=`<div class="rmp-h">この権限の内容（プレビュー）</div>${row('view')}${row('ops')}`;
+}
+function createRoleOld(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); rmSetScope('self'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   rmSetScope(t==='company'?'all':'self');   // 区分に応じた既定スコープ
   document.getElementById('rmNote').textContent = t==='shop'
@@ -1196,10 +1238,12 @@ function closeRoleModal(){ document.getElementById('roleModal').classList.add('h
 function submitRoleModal(){
   const nm=document.getElementById('rmName').value.trim();
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
-  const company=rmTier==='company'; _roleSeq++; const key='role'+_roleSeq, tier=rmTier, scope=tier;
+  _roleSeq++; const key='role'+_roleSeq, tier=rmTier, scope=tier;
   const shops = rmScope==='shops' ? [...document.querySelectorAll('.rmShopCb:checked')].map(c=>c.value) : undefined;
-  _allCat().forEach(it=>it.roles[key]=false);   // 新規＝カタログも空（まっさら）。後で付与
-  ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm:buildPerm(PRESET.blank, scope, key)});   // まっさら＝全機能「なし」（常時のみ閲覧固定）から付与
+  // カタログ：既存複製ならコピー元の選択を引き継ぐ、テンプレ/まっさらは空
+  _allCat().forEach(it=>it.roles[key] = _rmBaseSrc ? !!it.roles[_rmBaseSrc] : false);
+  const perm = _rmBasePerm ? {..._rmBasePerm} : buildPerm(PRESET.blank, scope, key);   // 選んだベース権限のクローンから作成
+  ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm});
   closeRoleModal(); editRole(ROLES.length-1);
 }
 
