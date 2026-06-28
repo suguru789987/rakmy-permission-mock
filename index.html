@@ -403,7 +403,6 @@
       <h1>権限一覧</h1>
       <div class="legend" id="listLegend"></div>
       <div class="sp"></div>
-      <button class="btn ghost" onclick="show('setup')">⚙ ベーステンプレート一覧</button>
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
     <div class="screennav">
@@ -425,23 +424,6 @@
       </div>
       <div class="listpickbar" id="listPickBar"></div>
       <div style="overflow:auto;" id="listScroll"><table class="list" id="listTable"></table></div>
-    </div>
-  </main>
-
-  <!-- 初期設定（推奨ロール一括作成・一時保存→適用） -->
-  <main id="view-setup" class="hide">
-    <div class="titlebar">
-      <h1>ベーステンプレート一覧</h1><div class="sp"></div>
-      <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
-    </div>
-    <div class="panel">
-      <p class="setup-lead"><b>再利用できる権限の雛形ライブラリ</b>です（運用状態に関わらず常に同じ）。新規作成の土台になる推奨雛形（全権オーナー／本部管理／エリア長／店長／従業員）の内容を確認し、「<b>この雛形で新規作成</b>」から派生してロールを作れます。現在登録中のロールは「権限一覧」で確認できます。</p>
-      <div id="setupBody"></div>
-      <div class="setupbar">
-        <span class="setup-status" id="setupStatus"></span>
-        <div class="sp"></div>
-        <button class="btn primary" onclick="createRole()">＋ 新しい権限を作成</button>
-      </div>
     </div>
   </main>
 
@@ -1456,10 +1438,9 @@ document.addEventListener('click',e=>{ let ch=false;
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist','setup','newrole'];
+  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist','newrole'];
   VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
-  if(v==='setup') renderSetup();
   if(v==='list') renderList();
   if(v==='catalog') renderCatalog();
   if(v==='summary') renderSummary();
