@@ -1355,7 +1355,7 @@ function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; persistColState(
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); return [{tally:true}]; }   // 表示順は選択順に従う
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
-  const ALL=[{key:'view',cls:'grpview',label:'＋ 表示する画面を追加',cats:vc},{key:'ops',cls:'grpops',label:'＋ 表示する画面を追加',cats:oc}];
+  const ALL=[{key:'view',cls:'grpview',label:'＋ 表示する画面を追加',cats:vc},{key:'ops',cls:'grpops',label:'＋ 設定する画面を追加',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   const banner=document.getElementById('demoBanner');
   if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>権限テンプレートで推奨5権限を登録しました</b>（全権オーナー／本部管理／エリア長／店長／従業員）。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
