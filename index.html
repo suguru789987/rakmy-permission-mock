@@ -1271,7 +1271,7 @@ let _rmBaseVal='', _rmBaseOpts=[], _rmBaseOpen=false;   // ハードプルダウ
 // 候補をデモモードで出し分け：新規導入デモは既存コピーを出さない（既存＝雛形そのものなため）／運用デモは出す
 function buildBaseOpts(){ const o=[]; ROLE_TEMPLATES.filter(t=>t.id!=='blank').forEach(t=>o.push({val:'tpl:'+t.id,name:t.name+'（雛形）',grp:'ベーステンプレートから'}));
   if(demoMode!=='new') ROLES.filter(r=>!r.system).forEach(r=>o.push({val:'role:'+ROLES.indexOf(r),name:r.name+' を複製',grp:'既存権限をコピー'}));
-  o.push({val:'tpl:blank',name:'まっさら（なし）から作成',grp:'ゼロから'}); return o; }
+  o.push({val:'tpl:blank',name:'プレーンテンプレートから作成',grp:'ゼロから'}); return o; }
 function rmBaseLabel(){ const o=_rmBaseOpts.find(x=>x.val===_rmBaseVal); return o?o.name:'—'; }
 function renderBaseDD(){ document.getElementById('rmBaseBtnLabel').textContent=rmBaseLabel();
   const p=document.getElementById('rmBasePanel'); p.classList.toggle('hide',!_rmBaseOpen); if(!_rmBaseOpen){ p.innerHTML=''; return; }
