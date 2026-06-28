@@ -1569,6 +1569,8 @@ function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.g
   const hint = edit ? '各画面の<b>操作/閲覧/なし</b>を直接編集できます（テンプレを土台に追加・削減）。画面名クリックで列の内訳。' : '画面名をクリックすると、その画面の<b>列（機能・項目）ごと</b>の閲覧/操作が見られます。';
   el.innerHTML=summary+`<div class="tpd-hint">${hint}</div>`+sec('view','一覧・分析画面')+sec('ops','設定画面');
 }
+function setRoleCat(r,cid,val){ const c=CATEGORIES.find(x=>x.id===cid); if(!c) return;   // カテゴリ内の全機能を一括設定（大元スイッチ→内訳に連動）
+  c.features.forEach((f,fi)=>{ if(f.fixed&&r.tier!=='company') return; if(f.noStaff&&r.key==='staff') return; if(f.inheritFrom) return; setFeatVal(r.perm,cid,fi,f,val); }); }
 function rmEditCat(cid,val){ const r={perm:_rmBasePerm,tier:rmTier,key:'__new'}; setRoleCat(r,cid,val); rmRefreshPanel(); }
 function rmRefreshPanel(){ _tpdTarget='rmDetailPanel'; _tpdPr={perm:_rmBasePerm,tier:rmTier,key:'__new'}; renderTplDetail(); }
 function toggleTpd(cid){ _tpdExp[cid]=!_tpdExp[cid]; renderTplDetail(); }
