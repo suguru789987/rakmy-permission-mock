@@ -63,7 +63,12 @@
   .demo-toggle button:first-child{ border-left:none; }
   .demo-toggle button.on{ background:#1f3b5e; color:#fff; }
   .demo-banner{ background:#e3f6ec; border:1.5px solid #bfe8d2; border-radius:9px; padding:11px 14px; margin:0 0 14px; font-size:13px; color:#15532f; line-height:1.7; }
-  .rm-preview{ background:#f7f9fb; border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin:4px 0 6px; }
+  .nr-step{ font-size:15px; font-weight:800; color:#1f3b5e; margin:20px 0 10px; padding-bottom:7px; border-bottom:2px solid #e3e8ee; }
+  .nr-step:first-child{ margin-top:0; }
+  .nr-step small{ font-weight:600; font-size:12px; color:#9aa0a6; margin-left:10px; }
+  .nr-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+  #view-newrole .modal-input, #view-newrole .rolesel{ max-width:560px; }
+  .rm-preview{ background:#f7f9fb; border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin:4px 0 6px; max-width:560px; }
   .rmp-h{ font-size:11.5px; font-weight:800; color:#6b7280; margin-bottom:6px; }
   .rmp-row{ display:flex; align-items:center; gap:6px; font-size:12px; margin:4px 0; }
   .rmp-g{ display:inline-block; min-width:64px; font-weight:800; color:#445; }
@@ -435,6 +440,41 @@
     </div>
   </main>
 
+  <!-- 権限を新規作成（遷移先画面） -->
+  <main id="view-newrole" class="hide">
+    <div class="titlebar">
+      <h1>権限を新規作成</h1><div class="sp"></div>
+      <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
+    </div>
+    <div class="panel">
+      <div class="nr-step">① ベーステンプレートを選ぶ<small>土台にする雛形 ／ 既存ロールの複製</small></div>
+      <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
+      <div id="rmPreview" class="rm-preview"></div>
+      <button class="btn ghost" style="width:100%;margin:2px 0 4px;" onclick="openBaseDetail()">📋 画面ごとの詳細を見る</button>
+
+      <div class="nr-step">② 新規権限を設定する<small>名前・区分・データ範囲</small></div>
+      <label class="ml">権限名</label>
+      <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
+      <label class="ml">区分</label>
+      <div class="rolesel" id="rmTier" style="margin:0;">
+        <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
+        <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
+      </div>
+      <label class="ml">データ範囲（スコープ）</label>
+      <div class="rolesel" id="rmScope" style="margin:0;">
+        <button class="rolebtn on" data-s="self" onclick="rmSetScope('self')">自店舗のみ</button>
+        <button class="rolebtn" data-s="shops" onclick="rmSetScope('shops')">指定店舗群（エリア）</button>
+        <button class="rolebtn" data-s="all" onclick="rmSetScope('all')">全社</button>
+      </div>
+      <div id="rmShops" class="hide" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+      <div class="modal-note" id="rmNote"></div>
+      <div class="nr-actions">
+        <button class="btn ghost" onclick="show('list')">キャンセル</button>
+        <button class="btn primary" onclick="submitRoleModal()">作成</button>
+      </div>
+    </div>
+  </main>
+
   <!-- 編集 -->
   <main id="view-edit" class="hide">
     <div class="titlebar">
@@ -522,35 +562,6 @@
 </div>
 
 <!-- 権限作成モーダル -->
-<div id="roleModal" class="modal-overlay hide">
-  <div class="modal">
-    <h3>権限を新規作成</h3>
-    <label class="ml">ベース（テンプレート／既存ロールの複製）</label>
-    <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
-    <div id="rmPreview" class="rm-preview"></div>
-    <button class="btn ghost" style="width:100%;margin:2px 0 4px;" onclick="openBaseDetail()">📋 画面ごとの詳細を見る</button>
-    <label class="ml">権限名</label>
-    <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
-    <label class="ml">区分</label>
-    <div class="rolesel" id="rmTier" style="margin:0;">
-      <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
-      <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
-    </div>
-    <label class="ml">データ範囲（スコープ）</label>
-    <div class="rolesel" id="rmScope" style="margin:0;">
-      <button class="rolebtn on" data-s="self" onclick="rmSetScope('self')">自店舗のみ</button>
-      <button class="rolebtn" data-s="shops" onclick="rmSetScope('shops')">指定店舗群（エリア）</button>
-      <button class="rolebtn" data-s="all" onclick="rmSetScope('all')">全社</button>
-    </div>
-    <div id="rmShops" class="hide" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div>
-    <div class="modal-note" id="rmNote"></div>
-    <div class="modal-actions">
-      <button class="btn ghost" onclick="closeRoleModal()">キャンセル</button>
-      <button class="btn primary" onclick="submitRoleModal()">作成</button>
-    </div>
-  </div>
-</div>
-
 <!-- トースト通知 -->
 <div id="toast" class="toast"></div>
 
@@ -1243,8 +1254,8 @@ function createRole(preselect){
   const roleOpts=ROLES.filter(r=>!r.system).map((r,i)=>`<option value="role:${ROLES.indexOf(r)}">${r.name} を複製</option>`).join('');
   document.getElementById('rmBase').innerHTML=`<optgroup label="テンプレート">${tplOpts}</optgroup><optgroup label="既存ロールを複製">${roleOpts}</optgroup>`;
   document.getElementById('rmName').value='';
-  document.getElementById('roleModal').classList.remove('hide');
-  if(preselect) document.getElementById('rmBase').value='tpl:'+preselect;   // 雛形から作成（権限テンプレート画面）
+  show('newrole');
+  if(preselect) document.getElementById('rmBase').value='tpl:'+preselect;   // 雛形から作成
   rmSetBase(); setTimeout(()=>document.getElementById('rmName').focus(),40);
 }
 function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; _rmBaseSrc = document.getElementById('rmBase').value.startsWith('role:')?ROLES[+document.getElementById('rmBase').value.slice(5)].key:null;
@@ -1270,7 +1281,6 @@ function openBaseDetail(){ const pr=rmBasePreviewRole(); const v=document.getEle
   document.getElementById('tplDetailTitle').textContent=nm+'｜画面ごとの権限';
   document.getElementById('tplDetailBody').innerHTML=tplDetailBodyHTML(pr);
   document.getElementById('tplDetailModal').classList.remove('hide'); }
-function createRoleOld(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); rmSetScope('self'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   rmSetScope(t==='company'?'all':'self');   // 区分に応じた既定スコープ
   document.getElementById('rmNote').textContent = t==='shop'
@@ -1279,7 +1289,6 @@ function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').for
 function rmSetScope(s){ rmScope=s; document.querySelectorAll('#rmScope button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
   const box=document.getElementById('rmShops'); box.style.display = s==='shops'?'flex':'none';   // インラインdisplayを直接切替（.hideだとインラインに負ける）
   if(s==='shops'&&!box.dataset.built){ box.innerHTML=SHOPS.map((sh,i)=>`<label class="ro"><input type="checkbox" class="rmShopCb" value="${sh}" ${i<3?'checked':''}> ${sh}</label>`).join(''); box.dataset.built='1'; } }
-function closeRoleModal(){ document.getElementById('roleModal').classList.add('hide'); }
 function submitRoleModal(){
   const nm=document.getElementById('rmName').value.trim();
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
@@ -1289,7 +1298,7 @@ function submitRoleModal(){
   _allCat().forEach(it=>it.roles[key] = _rmBaseSrc ? !!it.roles[_rmBaseSrc] : false);
   const perm = _rmBasePerm ? {..._rmBasePerm} : buildPerm(PRESET.blank, scope, key);   // 選んだベース権限のクローンから作成
   ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm});
-  closeRoleModal(); editRole(ROLES.length-1);
+  editRole(ROLES.length-1);   // 作成後はそのまま権限編集へ
 }
 
 let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
@@ -1439,7 +1448,7 @@ document.addEventListener('click',e=>{ let ch=false;
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist','setup'];
+  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist','setup','newrole'];
   VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='setup') renderSetup();
