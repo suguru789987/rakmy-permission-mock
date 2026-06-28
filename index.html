@@ -218,6 +218,7 @@
   table.list tr.grouprow.owner td{ background:#eef0f3; color:#374151;}
   table.list tr.spacerrow td{ background:#eef0f3; height:14px; padding:0; border-left:none; border-right:none;}
   table.list tr.ownerrow td.name{ font-weight:800;}
+  table.list td.ownerband{ text-align:center; color:#5a6675; font-size:13px; font-weight:700; background:#f3f8f4; }
   .crown{ margin-right:6px;}
   .ownerbadge{ display:inline-block; font-size:10px; font-weight:700; color:#fff; background:#caa12a; border-radius:10px; padding:1px 8px; margin-left:8px; vertical-align:middle;}
   .rolechip{ display:inline-block; font-size:11.5px; font-weight:700; color:#2c5d9e; background:#eaf2fb; border:1px solid #cfe0f5; border-radius:12px; padding:2px 10px; margin:2px 4px 2px 0;}
@@ -1440,9 +1441,10 @@ function renderList(){
     const gcell = firstOfG ? `<td class="grpcol gc-${GCLS[g]}" rowspan="${gcount[g]}">${SHORT[g]}</td>` : '';
     if(firstOfG) lastG=g;
     h+=`<tr class="${r.system?'ownerrow':''}">${gcell}<td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
-    grps.forEach(g=>groupLeaves(g).forEach(lf=>{
-      if(lf.tally){ const clk=r.system?'':` cellclick" onclick="editRoleHere(${ri})`; h+=`<td class="sumcell${clk}">${groupTallyHTML(r,g.cats,g.key)}</td>`; }
-      else { const clk=r.system?'':`class="cellclick" onclick="gotoCatEdit(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="${r.system?'':'クリックで詳細設定へ'}">${listSummary(r,lf.c.id)}</td>`; }
+    if(r.system){ h+=`<td colspan="${leaf}" class="ownerband">全画面 <span class="pill pop">操作</span> 可（全権・固定／編集不可）</td>`; }   // オーナーは一律全権のため1行サマリに圧縮
+    else grps.forEach(g=>groupLeaves(g).forEach(lf=>{
+      if(lf.tally){ const clk=` cellclick" onclick="editRoleHere(${ri})`; h+=`<td class="sumcell${clk}">${groupTallyHTML(r,g.cats,g.key)}</td>`; }
+      else { const clk=`class="cellclick" onclick="gotoCatEdit(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="クリックで詳細設定へ">${listSummary(r,lf.c.id)}</td>`; }
     }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
