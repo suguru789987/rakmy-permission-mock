@@ -394,7 +394,6 @@
       <h1>権限一覧</h1>
       <div class="legend" id="listLegend"></div>
       <div class="sp"></div>
-      <button class="btn ghost" onclick="show('setup')">⚙ 権限テンプレート</button>
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
     <div class="screennav">
@@ -529,6 +528,7 @@
     <label class="ml">ベース（テンプレート／既存ロールの複製）</label>
     <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
     <div id="rmPreview" class="rm-preview"></div>
+    <button class="btn ghost" style="width:100%;margin:2px 0 4px;" onclick="openBaseDetail()">📋 画面ごとの詳細を見る</button>
     <label class="ml">権限名</label>
     <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
     <label class="ml">区分</label>
@@ -1264,6 +1264,12 @@ function permSummaryHTML(pr){
   return row('view')+row('ops');
 }
 function renderRmPreview(pr){ document.getElementById('rmPreview').innerHTML=`<div class="rmp-h">この権限の内容（プレビュー）</div>${permSummaryHTML(pr)}`; }
+// 作成モーダルで選択中ベースの画面ごと詳細を表示（テンプレート画面の機能を統合）
+function openBaseDetail(){ const pr=rmBasePreviewRole(); const v=document.getElementById('rmBase').value;
+  const nm = v.startsWith('role:') ? ROLES[+v.slice(5)].name+'（複製元）' : ((ROLE_TEMPLATES.find(x=>x.id===v.slice(4))||{}).name||'')+'（雛形）';
+  document.getElementById('tplDetailTitle').textContent=nm+'｜画面ごとの権限';
+  document.getElementById('tplDetailBody').innerHTML=tplDetailBodyHTML(pr);
+  document.getElementById('tplDetailModal').classList.remove('hide'); }
 function createRoleOld(){ rmTier='shop'; document.getElementById('rmName').value=''; rmSetTier('shop'); rmSetScope('self'); document.getElementById('roleModal').classList.remove('hide'); setTimeout(()=>document.getElementById('rmName').focus(),40); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   rmSetScope(t==='company'?'all':'self');   // 区分に応じた既定スコープ
