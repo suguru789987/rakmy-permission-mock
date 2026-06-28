@@ -66,7 +66,7 @@
   .nr-cols{ display:flex; gap:28px; align-items:flex-start; }
   .nr-main{ flex:0 0 520px; max-width:520px; }
   .nr-side{ flex:1; min-width:0; position:sticky; top:12px; background:#eef2f7; border:1px solid #d8e0ea; border-radius:12px; padding:14px; }
-  .nr-detailpanel{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; max-height:64vh; overflow:auto; }
+  .nr-detailpanel{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; max-height:48vh; overflow:auto; }
   .nr-colhead{ font-size:12.5px; font-weight:800; padding:7px 12px; border-radius:8px; margin:0 0 12px; display:inline-block; }
   .nr-colhead-edit{ color:#15532f; background:#e3f6ec; border:1px solid #bfe8d2; }
   .nr-colhead-prev{ color:#1f3b5e; background:#dde6f2; border:1px solid #c3d2e6; }
@@ -428,7 +428,7 @@
     </div>
     <div class="screennav">
       <div class="snset">
-        <button class="snbtn" onclick="editRole(cur.idx)">権限編集</button>
+        <button class="snbtn" onclick="editRoleHere(cur.idx)">権限編集</button>
         <button class="snbtn" onclick="openCatalogAll()">指標カタログ</button>
       </div>
       <div class="snsep"></div>
@@ -451,18 +451,19 @@
   <!-- 権限を新規作成（遷移先画面） -->
   <main id="view-newrole" class="hide">
     <div class="titlebar">
-      <h1>権限を新規作成</h1><div class="sp"></div>
+      <h1 id="nrTitle">権限を新規作成</h1><div class="sp"></div>
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
     </div>
     <div class="panel">
-      <div class="nr-cols">
-      <div class="nr-main">
-      <div class="nr-colhead nr-colhead-edit">✏️ 操作（ここで設定します）</div>
-      <div class="nr-step">① 作成方法（ベース）を選ぶ<small>ベーステンプレートから ／ 既存権限をコピー ／ まっさら（ゼロから）</small></div>
-      <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
-      <p class="nr-hint">選んだベースの内容は右の「権限内容」で確認できます。</p>
+      <div id="nrBaseStep">
+        <div class="nr-step">① ベースを選ぶ<small>ベーステンプレート ／ 既存権限をコピー ／ まっさら（ゼロから）</small></div>
+        <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
+      </div>
 
-      <div class="nr-step">② 新規権限を設定する<small>名前・区分・データ範囲</small></div>
+      <div class="nr-step">② 権限内容を編集<small>画面ごとに 操作／閲覧／なし。テンプレを土台に追加・削減。画面名クリックで列の内訳</small></div>
+      <div id="rmDetailPanel" class="nr-detailpanel nr-grid"></div>
+
+      <div class="nr-step">③ 基本設定<small>名前・区分・データ範囲</small></div>
       <label class="ml">権限名</label>
       <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" oninput="rmValidate()" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
       <label class="ml">区分</label>
@@ -478,12 +479,6 @@
       </div>
       <div id="rmShops" class="hide" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div>
       <div class="modal-note" id="rmNote"></div>
-      </div>
-      <div class="nr-side">
-        <div class="nr-colhead nr-colhead-prev">✅ 権限内容（テンプレを土台に編集・追加/削減）</div>
-        <div id="rmDetailPanel" class="nr-detailpanel"></div>
-      </div>
-      </div>
       <div class="nr-actions">
         <span class="nr-warn" id="rmWarn"></span>
         <button class="btn ghost" onclick="show('list')">キャンセル</button>
@@ -1265,8 +1260,13 @@ const ROLE_TEMPLATES=[
   {id:'blank',   name:'まっさら（なし）', group:'その他',     tier:'shop',    scope:'self',  preset:'blank',   rep:'tmp',     summary:'全機能なしから付与'},
 ];
 let _rmBasePerm=null, _rmBaseSrc=null;   // 作成に使うベース権限（クローン元）と複製元roleKey
+let _nrMode='new', _nrEditIdx=-1;        // 新規作成／既存編集の兼用
 function rmBasePreviewRole(){ const t=document.getElementById('rmBase').value; if(t.startsWith('role:')){ const r=ROLES[+t.slice(5)]; return {perm:r.perm,tier:r.tier,key:r.key}; } const tpl=ROLE_TEMPLATES.find(x=>x.id===t.slice(4)); const perm=buildPerm(PRESET[tpl.preset],tpl.tier,tpl.rep); return {perm,tier:tpl.tier,key:tpl.rep,tpl}; }
 function createRole(preselect){
+  _nrMode='new'; _nrEditIdx=-1;
+  document.getElementById('nrTitle').textContent='権限を新規作成';
+  document.getElementById('rmCreateBtn').textContent='作成';
+  document.getElementById('nrBaseStep').style.display='';
   const tplOpts=ROLE_TEMPLATES.filter(t=>t.id!=='blank').map(t=>`<option value="tpl:${t.id}">${t.name}（雛形）</option>`).join('');
   const roleOpts=ROLES.filter(r=>!r.system).map(r=>`<option value="role:${ROLES.indexOf(r)}">${r.name} を複製</option>`).join('');
   document.getElementById('rmBase').innerHTML=`<optgroup label="ベーステンプレートから">${tplOpts}</optgroup><optgroup label="既存権限をコピー">${roleOpts}</optgroup><optgroup label="ゼロから"><option value="tpl:blank">まっさら（なし）から作成</option></optgroup>`;
@@ -1274,6 +1274,19 @@ function createRole(preselect){
   show('newrole');
   if(preselect) document.getElementById('rmBase').value='tpl:'+preselect;
   rmSetBase(); rmValidate(); setTimeout(()=>document.getElementById('rmName').focus(),40);
+}
+// 既存ロールをこの画面で編集（兼用）。①ベース選択は隠し、現在の権限を②で直接編集
+function editRoleHere(ri){ const r=ROLES[ri]; if(r.system){ toast('オーナー（全権）は全権固定のため編集できません'); return; }
+  _nrMode='edit'; _nrEditIdx=ri;
+  document.getElementById('nrTitle').textContent='権限編集：'+r.name;
+  document.getElementById('rmCreateBtn').textContent='保存';
+  document.getElementById('nrBaseStep').style.display='none';
+  _rmBasePerm={...r.perm}; _rmBaseSrc=null;
+  rmTier=r.tier; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===r.tier));
+  _rmBaseTier=r.tier; _rmBaseScope=r.scopeType; rmSetScope(r.scopeType);
+  document.getElementById('rmName').value=r.name;
+  document.getElementById('rmNote').textContent='画面ごとに権限を編集できます。細かい機能・指標は一覧のセルから詳細編集へ。';
+  show('newrole'); rmRefreshPanel(); rmValidate(); rmCheckIntegrity();
 }
 function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; _rmBaseSrc = document.getElementById('rmBase').value.startsWith('role:')?ROLES[+document.getElementById('rmBase').value.slice(5)].key:null;
   // ベースに応じて区分・スコープの既定を反映（後から変更可）
@@ -1308,13 +1321,17 @@ function rmSetScope(s){ rmScope=s; document.querySelectorAll('#rmScope button').
 function submitRoleModal(){
   const nm=document.getElementById('rmName').value.trim();
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
-  _roleSeq++; const key='role'+_roleSeq, tier=rmTier, scope=tier;
+  const tier=rmTier, scope=tier;
   const shops = rmScope==='shops' ? [...document.querySelectorAll('.rmShopCb:checked')].map(c=>c.value) : undefined;
-  // カタログ：既存複製ならコピー元の選択を引き継ぐ、テンプレ/まっさらは空
-  _allCat().forEach(it=>it.roles[key] = _rmBaseSrc ? !!it.roles[_rmBaseSrc] : false);
-  const perm = _rmBasePerm ? {..._rmBasePerm} : buildPerm(PRESET.blank, scope, key);   // 選んだベース権限のクローンから作成
+  if(_nrMode==='edit' && _nrEditIdx>=0){   // 既存編集：上書き保存
+    const r=ROLES[_nrEditIdx]; r.name=nm; r.tier=tier; r.scope=scope; r.scopeType=rmScope; r.shops=shops; r.perm={..._rmBasePerm};
+    show('list'); toast(`「${nm}」の権限を保存しました`); return;
+  }
+  _roleSeq++; const key='role'+_roleSeq;
+  _allCat().forEach(it=>it.roles[key] = _rmBaseSrc ? !!it.roles[_rmBaseSrc] : false);   // カタログ：複製はコピー元を引継ぎ
+  const perm = _rmBasePerm ? {..._rmBasePerm} : buildPerm(PRESET.blank, scope, key);
   ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm});
-  editRole(ROLES.length-1);   // 作成後はそのまま権限編集へ
+  show('list'); toast(`「${nm}」を作成しました`);
 }
 
 let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
@@ -1419,13 +1436,13 @@ function renderList(){
     if(firstOfG) lastG=g;
     h+=`<tr class="${r.system?'ownerrow':''}">${gcell}<td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
     grps.forEach(g=>groupLeaves(g).forEach(lf=>{
-      if(lf.tally){ const clk=r.system?'':` cellclick" onclick="editRole(${ri})`; h+=`<td class="sumcell${clk}">${groupTallyHTML(r,g.cats,g.key)}</td>`; }
+      if(lf.tally){ const clk=r.system?'':` cellclick" onclick="editRoleHere(${ri})`; h+=`<td class="sumcell${clk}">${groupTallyHTML(r,g.cats,g.key)}</td>`; }
       else { const clk=r.system?'':`class="cellclick" onclick="gotoCatEdit(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="${r.system?'':'クリックで詳細設定へ'}">${listSummary(r,lf.c.id)}</td>`; }
     }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
-    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
-    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRole(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標カタログ ＞</button>`;
+    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
+    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標カタログ ＞</button>`;
     h+=`<td class="actcol">${act}</td></tr>`;
   });
   const tbl=document.getElementById('listTable');
@@ -1595,7 +1612,7 @@ function renderSummary(){
       const val=featVal(r.perm,c.id,fi,f), mx=maxV(f.k);
       if(val>=2&&mx>=2) op++; else if(val>=1) vw++; else no++; }));
     const n=r.system?allN:catN(r.key);
-    const act=r.system?`<span style="color:#9aa0a6;font-size:11px;">全権・固定</span>`:`<button class="rowedit" onclick="editRole(${ri})">権限編集</button>`;
+    const act=r.system?`<span style="color:#9aa0a6;font-size:11px;">全権・固定</span>`:`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button>`;
     h+=`<tr><td class="name">${r.system?'👑 ':''}${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}</span></td>`
       +`<td><b style="color:#159b5d">${op}</b></td><td><b style="color:#3b82f6">${vw}</b></td><td><b style="color:#c33">${no}</b></td>`
       +`<td>${n.tx}${r.system?'（全件）':''}</td><td>${n.tag}</td><td>${act}</td></tr>`;
