@@ -399,6 +399,7 @@
       <h1>権限一覧</h1>
       <div class="legend" id="listLegend"></div>
       <div class="sp"></div>
+      <button class="btn ghost" onclick="show('setup')">⚙ ベーステンプレート一覧</button>
       <button class="btn primary" onclick="createRole()">＋ 権限を新規作成</button>
     </div>
     <div class="screennav">
@@ -426,7 +427,7 @@
   <!-- 初期設定（推奨ロール一括作成・一時保存→適用） -->
   <main id="view-setup" class="hide">
     <div class="titlebar">
-      <h1>権限テンプレート</h1><div class="sp"></div>
+      <h1>ベーステンプレート一覧</h1><div class="sp"></div>
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
     </div>
     <div class="panel">
@@ -447,7 +448,7 @@
       <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
     </div>
     <div class="panel">
-      <div class="nr-step">① ベーステンプレートを選ぶ<small>土台にする雛形 ／ 既存ロールの複製</small></div>
+      <div class="nr-step">① コピー元を選ぶ<small>既存権限をコピー ／ まっさらから（雛形はベーステンプレート一覧から）</small></div>
       <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
       <div id="rmPreview" class="rm-preview"></div>
       <button class="btn ghost" style="width:100%;margin:2px 0 4px;" onclick="openBaseDetail()">📋 画面ごとの詳細を見る</button>
@@ -1250,12 +1251,13 @@ const ROLE_TEMPLATES=[
 let _rmBasePerm=null, _rmBaseSrc=null;   // 作成に使うベース権限（クローン元）と複製元roleKey
 function rmBasePreviewRole(){ const t=document.getElementById('rmBase').value; if(t.startsWith('role:')){ const r=ROLES[+t.slice(5)]; return {perm:r.perm,tier:r.tier,key:r.key}; } const tpl=ROLE_TEMPLATES.find(x=>x.id===t.slice(4)); const perm=buildPerm(PRESET[tpl.preset],tpl.tier,tpl.rep); return {perm,tier:tpl.tier,key:tpl.rep,tpl}; }
 function createRole(preselect){
-  const tplOpts=ROLE_TEMPLATES.map(t=>`<option value="tpl:${t.id}">${t.name}（${t.group}）</option>`).join('');
-  const roleOpts=ROLES.filter(r=>!r.system).map((r,i)=>`<option value="role:${ROLES.indexOf(r)}">${r.name} を複製</option>`).join('');
-  document.getElementById('rmBase').innerHTML=`<optgroup label="テンプレート">${tplOpts}</optgroup><optgroup label="既存ロールを複製">${roleOpts}</optgroup>`;
+  const roleOpts=ROLES.filter(r=>!r.system).map(r=>`<option value="role:${ROLES.indexOf(r)}">${r.name} を複製</option>`).join('');
+  let opts=`<optgroup label="既存権限をコピー">${roleOpts}</optgroup><optgroup label="その他"><option value="tpl:blank">まっさら（なし）から作成</option></optgroup>`;
+  if(preselect){ const t=ROLE_TEMPLATES.find(x=>x.id===preselect); if(t) opts=`<optgroup label="ベーステンプレート">`+`<option value="tpl:${t.id}">${t.name}（雛形）</option>`+`</optgroup>`+opts; }   // テンプレート画面から来た場合のみ雛形を土台に
+  document.getElementById('rmBase').innerHTML=opts;
   document.getElementById('rmName').value='';
   show('newrole');
-  if(preselect) document.getElementById('rmBase').value='tpl:'+preselect;   // 雛形から作成
+  if(preselect) document.getElementById('rmBase').value='tpl:'+preselect;
   rmSetBase(); setTimeout(()=>document.getElementById('rmName').focus(),40);
 }
 function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; _rmBaseSrc = document.getElementById('rmBase').value.startsWith('role:')?ROLES[+document.getElementById('rmBase').value.slice(5)].key:null;
