@@ -81,6 +81,7 @@
   .rmseg button.on[data-v="2"]{ background:var(--green); color:#fff; font-weight:700; }
   .rmseg button.on[data-v="1"]{ background:var(--blue); color:#fff; font-weight:700; }
   .rmseg button.on[data-v="0"]{ background:#cc3333; color:#fff; font-weight:700; }
+  .rmseg button.on[data-v="3"]{ background:#0a6b3d; color:#fff; font-weight:700; }
   @media(max-width:1000px){ .nr-cols{ flex-direction:column; } .nr-main{ flex:1; max-width:none; } }
   .nr-step{ font-size:15px; font-weight:800; color:#1f3b5e; margin:20px 0 10px; padding-bottom:7px; border-bottom:2px solid #e3e8ee; }
   .nr-step:first-child{ margin-top:0; }
@@ -1545,6 +1546,11 @@ function renderSetup(){
 // 雛形（またはロール）の画面ごとの操作/閲覧可否を一覧表示
 function lvlPill(s,gk){ return s==='no'?'<span class="pill pno">—</span>' : gk==='view'?(s==='op'?'<span class="pill pop">閲覧</span>':'<span class="pill pvw">一部</span>') : (s==='op'?'<span class="pill pop">操作</span>':'<span class="pill pvw">閲覧のみ</span>'); }
 function featPill(v){ return v===0?'<span class="pill pno">—</span>' : v>=2?'<span class="pill pop">操作</span>' : '<span class="pill pvw">閲覧</span>'; }
+// 編集時：列（機能）ごとの可否セグメント
+function featSeg(pr,cid,fi,f){ if(KIND[f.k].lock) return '<span class="pill pvw">閲覧固定</span>';
+  const v=featVal(pr.perm,cid,fi,f), vals=featVals(f);
+  return `<span class="rmseg">${vals.slice().reverse().map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="event.stopPropagation();rmEditFeat('${cid}',${fi},${s})">${(KIND[f.k].lab[s]!=null?KIND[f.k].lab[s]:VLAB[s])}</button>`).join('')}</span>`; }
+function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeatVal(_rmBasePerm,cid,fi,c.features[fi],val); rmRefreshPanel(); }
 let _tpdPr=null, _tpdExp={}, _tpdTarget='tplDetailBody';
 // 画面ごとの詳細：概要（画面×可否）→クリックで列（機能/項目）ごとの閲覧/操作を展開
 function screenSeg(pr,c,gk){ const st=catStatus(pr,c.id), cur=st==='no'?0:st==='vw'?1:2;
@@ -1555,7 +1561,7 @@ function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.g
   const sec=(gk,lab)=>{ const cats=CATEGORIES.filter(c=>c.group===gk&&catApplies(pr,c.id));
     const rows=cats.map(c=>{ const open=_tpdExp[c.id];
       const feats=c.features.filter(f=>(f.fixed?pr.tier==='company':true)&&!(f.noStaff&&pr.key==='staff'));
-      const sub=open?`<div class="tpd-detail">${feats.map(f=>{const fi=c.features.indexOf(f);return `<div class="tpd-sub"><span>${f.n}</span>${featPill(featVal(pr.perm,c.id,fi,f))}</div>`;}).join('')||'<div class="tpd-empty">機能なし</div>'}</div>`:'';
+      const sub=open?`<div class="tpd-detail">${feats.map(f=>{const fi=c.features.indexOf(f);return `<div class="tpd-sub"><span>${f.n}</span>${edit?featSeg(pr,c.id,fi,f):featPill(featVal(pr.perm,c.id,fi,f))}</div>`;}).join('')||'<div class="tpd-empty">機能なし</div>'}</div>`:'';
       const right = edit ? screenSeg(pr,c,gk) : lvlPill(catStatus(pr,c.id),gk);
       return `<div class="tpd-row tpd-click" onclick="toggleTpd('${c.id}')"><span class="tpd-name">${open?'▼':'▶'} ${c.name}</span>${right}</div>${sub}`; }).join('');
     return `<div class="tpd-sec">${lab}（${cats.length}画面）</div>${rows||'<div class="tpd-empty">対象画面なし</div>'}`; };
