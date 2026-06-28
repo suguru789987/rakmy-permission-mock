@@ -1384,7 +1384,7 @@ function setListTab(t){ listTab=t; listPickOpen.view=false; listPickOpen.ops=fal
 let listRolePick=null, listRoleOpen=false;   // 表示ロール選択（null=全て／配列=選択keyのみ）
 function toggleRoleDD(){ listRoleOpen=!listRoleOpen; renderList(); }
 function toggleRolePick(key){ const all=ROLES.map(r=>r.key); const sel=[...(listRolePick||all)]; const i=sel.indexOf(key); i>=0?sel.splice(i,1):sel.push(key); listRolePick = sel.length===all.length?null:sel; renderList(); }
-function toggleRoleGrp(g){ const all=ROLES.map(r=>r.key); const sel=new Set(listRolePick||all); const keys=ROLES.filter(r=>(r.system?'owner':r.tier)===g).map(r=>r.key); const allOn=keys.every(k=>sel.has(k)); keys.forEach(k=>allOn?sel.delete(k):sel.add(k)); const arr=[...sel]; listRolePick = arr.length===all.length?null:arr; renderList(); }
+function toggleRoleGrp(g){ const all=ROLES.map(r=>r.key); const sel=new Set(listRolePick||all); const keys=ROLES.filter(r=>((r.system||r.tier==='company')?'company':'shop')===g).map(r=>r.key); const allOn=keys.every(k=>sel.has(k)); keys.forEach(k=>allOn?sel.delete(k):sel.add(k)); const arr=[...sel]; listRolePick = arr.length===all.length?null:arr; renderList(); }
 function setRolesAll(on){ listRolePick = on?null:[]; renderList(); }
 let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
@@ -1454,12 +1454,12 @@ function renderList(){
   tbl.innerHTML=h;
   // 表外の固定ツールバー：列プルダウン＋表示ロール選択プルダウン（選択は自動記憶。保存ビューは廃止）
   const allKeys=ROLES.map(r=>r.key), selKeys=listRolePick||allKeys;
-  const gname={owner:'オーナー',company:'会社ロール',shop:'店舗ロール'};
+  const bigGrp=r=>(r.system||r.tier==='company')?'company':'shop';   // 大別：会社（オーナー含む）／店舗
   let rpanel='';
   if(listRoleOpen){ let body='';
-    ['owner','company','shop'].forEach(g=>{ const rs=ROLES.filter(r=>(r.system?'owner':r.tier)===g); if(!rs.length) return;
+    [['company','会社ロール'],['shop','店舗ロール']].forEach(([g,lab])=>{ const rs=ROLES.filter(r=>bigGrp(r)===g); if(!rs.length) return;
       const allOn=rs.every(r=>selKeys.includes(r.key));
-      body+=`<div class="rgrp" onclick="event.stopPropagation();toggleRoleGrp('${g}')"><span class="pchk">${allOn?'☑':'☐'}</span>${gname[g]}</div>`;
+      body+=`<div class="rgrp" onclick="event.stopPropagation();toggleRoleGrp('${g}')"><span class="pchk">${allOn?'☑':'☐'}</span>${lab}</div>`;
       body+=rs.map(r=>`<label class="ropt ${selKeys.includes(r.key)?'on':''}" onclick="event.stopPropagation();toggleRolePick('${r.key}')"><span class="pchk">${selKeys.includes(r.key)?'☑':'☐'}</span>${r.name}</label>`).join(''); });
     rpanel=`<div class="rolepanel"><div class="rolefoot"><button onclick="event.stopPropagation();setRolesAll(true)">全て</button><button onclick="event.stopPropagation();setRolesAll(false)">クリア</button><button class="rf-main" onclick="event.stopPropagation();toggleRoleDD()">閉じる</button></div>${body}</div>`; }
   const roleDD=`<span class="lpb-label">👤 表示ロール：</span><div class="roleddwrap"><button class="hdd-btn" style="min-width:170px;" onclick="event.stopPropagation();toggleRoleDD()"><span>${listRolePick?`選択中 ${selKeys.length}/${allKeys.length}`:'全ロール'}</span><span class="hdd-ar">▼</span></button>${rpanel}</div><span class="ltb-note">選んだロールが両タブ（一覧／設定）に共通で適用されます</span>`;
