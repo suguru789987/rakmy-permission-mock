@@ -598,19 +598,6 @@
   </div>
 </div>
 
-<!-- 表示列の保存モーダル -->
-<div id="saveViewModal" class="modal-overlay hide">
-  <div class="modal">
-    <h3>表示列を保存</h3>
-    <p class="modal-note" style="min-height:auto;">現在表示している列の組み合わせに名前を付けて保存します。後で「保存ビュー」から1クリックで呼び出せます。</p>
-    <label class="ml">ビュー名</label>
-    <input id="saveViewInput" class="modal-input" placeholder="例：経理ビュー / 分析のみ" onkeydown="if(event.key==='Enter')submitSaveView();">
-    <div class="modal-actions">
-      <button class="btn ghost" onclick="closeSaveViewModal()">キャンセル</button>
-      <button class="btn primary" onclick="submitSaveView()">保存</button>
-    </div>
-  </div>
-</div>
 
 <!-- 雛形の画面ごと権限 詳細モーダル -->
 <div id="tplDetailModal" class="modal-overlay hide">
@@ -1464,13 +1451,8 @@ function renderList(){
   });
   const tbl=document.getElementById('listTable');
   tbl.innerHTML=h;
-  // 表外の固定ツールバー：列プルダウン＋保存＋保存ビュー一覧（プルダウン項目に埋もれないよう操作部に分離）
-  const vc2=savedViews.filter(v=>v.tab===listTab);
-  const vlist=savedViews.map((v,i)=>v.tab===listTab?`<div class="savedview" onclick="applyView(${i})"><span>★ ${v.name}</span><button class="sv-del" title="削除" onclick="deleteView(${i},event)">×</button></div>`:'').filter(Boolean).join('');
-  const vpanel=savedViewsOpen?`<div class="svpanel">${vlist||'<div class="svempty">保存した表示列はありません</div>'}</div>`:'';
-  const savebar=`<button class="lpb-save" onclick="saveCurrentView('${listTab}')">💾 保存</button>`
-    +`<div class="svwrap"><button class="lpb-views${savedViewsOpen?' on':''}" onclick="toggleSavedViews()">📑 保存ビュー${vc2.length?`（${vc2.length}）`:''} ▾</button>${vpanel}</div>`;
-  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 列の表示：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('')+savebar;
+  // 表外の固定ツールバー：列プルダウンのみ（選択は自動記憶。保存ビューは廃止）
+  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 列の表示：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('');
   lastListLeaf=leaf; fitListWidth();
   positionPickPanels();
 }
@@ -1493,7 +1475,6 @@ window.addEventListener('scroll',positionPickPanels,true); window.addEventListen
 // プルダウン外をクリックしたら閉じる（列プルダウン・保存ビュー一覧とも）
 document.addEventListener('click',e=>{ let ch=false;
   if((listPickOpen.view||listPickOpen.ops)&&!e.target.closest('.pickwrap')){ listPickOpen.view=false; listPickOpen.ops=false; ch=true; }
-  if(savedViewsOpen&&!e.target.closest('.svwrap')){ savedViewsOpen=false; ch=true; }
   if(ch) renderList();
   if(_rmBaseOpen&&!e.target.closest('#rmBaseWrap')){ _rmBaseOpen=false; renderBaseDD(); } });
 
