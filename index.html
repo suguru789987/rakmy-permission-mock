@@ -360,15 +360,6 @@
   .pickbtn.open .ddcaret{ transform:rotate(180deg); }
   .pickpanel{ position:absolute; top:calc(100% + 4px); left:0; min-width:200px; max-height:320px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:9px; box-shadow:0 12px 30px rgba(0,0,0,.2); z-index:80; padding:5px;}
   .pickpanel.floating{ position:fixed; top:0; left:0;}
-  .lpb-save, .lpb-views{ font-size:13px; font-weight:700; color:#1f3b5e; background:#fff; border:1.5px solid #b9c6d6; border-radius:8px; padding:8px 14px; cursor:pointer;}
-  .lpb-save:hover{ background:#1f3b5e; color:#fff; border-color:#1f3b5e;}
-  .lpb-views:hover, .lpb-views.on{ border-color:#159b5d; color:#159b5d;}
-  .svwrap{ position:relative; display:inline-block;}
-  .svpanel{ position:absolute; top:calc(100% + 6px); left:0; min-width:220px; max-height:300px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:9px; box-shadow:0 12px 30px rgba(0,0,0,.2); z-index:90; padding:6px;}
-  .savedview{ display:flex; align-items:center; justify-content:space-between; gap:6px; padding:8px 10px; border-radius:7px; font-size:13px; font-weight:700; color:#1f7a4d; cursor:pointer;}
-  .savedview:hover{ background:#eef9f2;}
-  .sv-del{ border:none; background:transparent; color:#c33; font-size:16px; font-weight:800; cursor:pointer; line-height:1; padding:0 2px;}
-  .svempty{ font-size:12px; color:#9aa0a6; padding:8px 10px;}
   .pickopt{ display:flex; align-items:center; gap:7px; padding:7px 11px; border-radius:7px; font-size:12.5px; font-weight:600; color:#333; cursor:pointer; white-space:nowrap;}
   .pickopt:hover{ background:#eef6fb;} .pickopt.on{ background:#eef9f2; color:#0f7d49;} .pickopt .pchk{ font-size:14px;}
   .pickall{ font-weight:800; border-bottom:1px solid #eef0f2; border-radius:7px 7px 0 0; margin-bottom:3px;}
@@ -1381,9 +1372,6 @@ let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
 let listPickOpen={view:false,ops:false}; // カテゴリ選択チェックパネルの開閉
 // 表示列の保存：選択状態を自動記憶（次回も同じ列）＋名前付き保存ビュー（適用/削除）。localStorageに永続化
-let savedViews=[];
-let savedViewsOpen=false;
-function toggleSavedViews(){ savedViewsOpen=!savedViewsOpen; renderList(); }
 function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 // 既定で表示する基礎列（主要画面）。導入時・運用時とも一目で権限が見えるように
@@ -1392,13 +1380,7 @@ function persistColState(){ lsSet('rakmy_col_state_v2',{expand:listExpand,pick:l
 function loadColState(){ const s=lsGet('rakmy_col_state_v2',null);
   if(s&&s.expand&&s.pick){ listExpand=s.expand; listPick=s.pick; }
   else { listPick={view:[...DEFAULT_COLS.view],ops:[...DEFAULT_COLS.ops]}; }   // 初回は基礎列を表示
-  savedViews=lsGet('rakmy_saved_views',[]); }
-let _saveViewTab=null;
-function saveCurrentView(g){ _saveViewTab=g; const m=document.getElementById('saveViewModal'); const inp=document.getElementById('saveViewInput'); inp.value=''; m.classList.remove('hide'); setTimeout(()=>inp.focus(),0); }
-function closeSaveViewModal(){ document.getElementById('saveViewModal').classList.add('hide'); }
-function submitSaveView(){ const g=_saveViewTab, name=(document.getElementById('saveViewInput').value||'').trim(); if(!name){ document.getElementById('saveViewInput').style.borderColor='#c33'; return; } savedViews.push({name,tab:g,expand:listExpand[g],pick:[...listPick[g]]}); lsSet('rakmy_saved_views',savedViews); closeSaveViewModal(); renderList(); toast('表示列「'+name+'」を保存しました'); }
-function applyView(i){ const v=savedViews[i]; if(!v) return; listTab=v.tab; listExpand[v.tab]=!!v.expand; listPick[v.tab]=[...(v.pick||[])]; persistColState(); renderList(); }
-function deleteView(i,ev){ if(ev) ev.stopPropagation(); savedViews.splice(i,1); lsSet('rakmy_saved_views',savedViews); renderList(); }
+}
 function toggleListAll(g){ listExpand[g]=!listExpand[g]; if(listExpand[g]) listPick[g]=[]; persistColState(); renderList(); }   // プルダウン内「全て」＝全カテゴリ列を展開
 function toggleListPickDD(g){ listPickOpen[g]=!listPickOpen[g]; const o=g==='view'?'ops':'view'; listPickOpen[o]=false; renderList(); }
 function toggleListPickItem(g,cid){ listExpand[g]=false; const a=listPick[g], i=a.indexOf(cid); i>=0?a.splice(i,1):a.push(cid); persistColState(); renderList(); }   // 個別選択時は「全て」を解除
