@@ -1355,7 +1355,7 @@ function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; persistColState(
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); return [{tally:true}]; }   // 表示順は選択順に従う
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
-  const ALL=[{key:'view',cls:'grpview',label:'一覧画面名',cats:vc},{key:'ops',cls:'grpops',label:'設定画面名',cats:oc}];
+  const ALL=[{key:'view',cls:'grpview',label:'＋ 表示する画面を追加',cats:vc},{key:'ops',cls:'grpops',label:'＋ 表示する画面を追加',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   const banner=document.getElementById('demoBanner');
   if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>権限テンプレートで推奨5権限を登録しました</b>（全権オーナー／本部管理／エリア長／店長／従業員）。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
@@ -1389,7 +1389,7 @@ function renderList(){
     h+=`<tr class="${r.system?'ownerrow':''}">${gcell}<td class="name">${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></td>`;
     grps.forEach(g=>groupLeaves(g).forEach(lf=>{
       if(lf.tally){ const clk=r.system?'':` cellclick" onclick="editRole(${ri})`; h+=`<td class="sumcell${clk}">${groupTallyHTML(r,g.cats,g.key)}</td>`; }
-      else { const clk=r.system?'':`class="cellclick" onclick="gotoCatEdit(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="${r.system?'':'クリックで設定へ'}">${listSummary(r,lf.c.id)}</td>`; }
+      else { const clk=r.system?'':`class="cellclick" onclick="cycleCell(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="${r.system?'':'クリックで切替（'+(g.key==='view'?'なし⇄閲覧':'なし→閲覧→操作')+'）'}">${listSummary(r,lf.c.id)}</td>`; }
     }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
@@ -1704,6 +1704,16 @@ function featRowHTML(cid,f,fi,group){
 }
 // マトリクスのセルから、そのロール×カテゴリの設定詳細へ直接遷移
 function gotoCatEdit(ri,cid){ if(ROLES[ri].system){ toast('オーナー（全権）は全権固定のため編集できません'); return; } editRole(ri); const c=CATEGORIES.find(x=>x.id===cid); if(c) editTab=c.group; openCat(cid); }
+// 一覧上でセルクリック→そのロール×画面の可否をインライン切替（なし→閲覧→操作）。細かい操作詳細は権限編集で
+function setRoleCat(r,cid,val){ const c=CATEGORIES.find(x=>x.id===cid); if(!c) return;
+  c.features.forEach((f,fi)=>{ if(f.fixed&&r.tier!=='company') return; if(f.noStaff&&r.key==='staff') return; if(f.inheritFrom) return; setFeatVal(r.perm,cid,fi,f,val); }); }
+function cycleCell(ri,cid){ const r=ROLES[ri]; if(r.system){ toast('オーナー（全権）は固定のため変更できません'); return; }
+  if(!catApplies(r,cid)){ toast('この権限の対象外の画面です'); return; }
+  const c=CATEGORIES.find(x=>x.id===cid), st=catStatus(r,cid);
+  let next; if(c.group==='view'){ next=(st==='no')?1:0; } else { const lvl=st==='no'?0:st==='vw'?1:2; next=(lvl+1)%3; }
+  setRoleCat(r,cid,next); renderList();
+  const lab=c.group==='view'?(next?'閲覧':'なし'):(next===2?'操作':next===1?'閲覧':'なし');
+  toast(`${r.name}：${c.name} → ${lab}`); }
 function openCat(cid){
   cur.view='detail'; cur.detailCat=cid; cur.expanded={}; cur.itemFilter={};
   // 詳細画面では既定で全機能の詳細（操作・指標）を開く＝トグル不要で見える
