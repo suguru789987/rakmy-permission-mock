@@ -52,10 +52,16 @@
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
   .listpickbar{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px; background:#f5f7f9; border-radius:8px; }
   .listpickbar .lpb-label{ font-size:14.5px; font-weight:800; color:#334; }
-  .scopefilt{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
-  .scopefilt button{ border:none; background:#fff; padding:8px 14px; font-size:12.5px; font-weight:700; color:#5a6675; cursor:pointer; border-left:1px solid var(--line); }
-  .scopefilt button:first-child{ border-left:none; }
-  .scopefilt button.on{ background:#1f3b5e; color:#fff; }
+  .roleddwrap{ position:relative; display:inline-block; }
+  .rolepanel{ position:absolute; top:calc(100% + 4px); right:0; min-width:240px; max-height:360px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.2); z-index:90; padding:6px; }
+  .rolefoot{ display:flex; gap:6px; padding:4px 4px 8px; border-bottom:1px solid #f0f2f4; margin-bottom:4px; }
+  .rolefoot button{ flex:1; border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px; font-size:12px; font-weight:700; color:#5a6675; cursor:pointer; }
+  .rolefoot .rf-main{ background:#1f3b5e; color:#fff; border-color:#1f3b5e; }
+  .rgrp{ font-size:11px; font-weight:800; color:#1f3b5e; padding:8px 10px 4px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .ropt{ display:flex; align-items:center; gap:8px; padding:7px 10px 7px 22px; border-radius:7px; font-size:13px; font-weight:600; color:#333; cursor:pointer; }
+  .ropt:hover, .rgrp:hover{ background:#eef6fb; }
+  .ropt.on{ color:#0f7d49; }
+  .rolepanel .pchk{ font-size:14px; }
   .btn.big{ font-size:18px; padding:17px 36px; border-radius:11px; box-shadow:0 4px 10px rgba(21,155,93,.3); }
   .setup-lead{ font-size:13.5px; color:#445; line-height:1.7; margin:0 0 16px; }
   .setup-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
@@ -1372,8 +1378,11 @@ function groupTallyHTML(role,cats,gkey){
 }
 let listTab='view';   // 一覧のタブ：view=表示権限／ops=設定権限。各タブはその群のみを二値で表示
 function setListTab(t){ listTab=t; listPickOpen.view=false; listPickOpen.ops=false; renderList(); }
-let listScopeFilter='all';   // 区分フィルタ：all=全ロール／company=会社（オーナー含む）／shop=店舗
-function setListScope(f){ listScopeFilter=f; renderList(); }
+let listRolePick=null, listRoleOpen=false;   // 表示ロール選択（null=全て／配列=選択keyのみ）
+function toggleRoleDD(){ listRoleOpen=!listRoleOpen; renderList(); }
+function toggleRolePick(key){ const all=ROLES.map(r=>r.key); const sel=[...(listRolePick||all)]; const i=sel.indexOf(key); i>=0?sel.splice(i,1):sel.push(key); listRolePick = sel.length===all.length?null:sel; renderList(); }
+function toggleRoleGrp(g){ const all=ROLES.map(r=>r.key); const sel=new Set(listRolePick||all); const keys=ROLES.filter(r=>(r.system?'owner':r.tier)===g).map(r=>r.key); const allOn=keys.every(k=>sel.has(k)); keys.forEach(k=>allOn?sel.delete(k):sel.add(k)); const arr=[...sel]; listRolePick = arr.length===all.length?null:arr; renderList(); }
+function setRolesAll(on){ listRolePick = on?null:[]; renderList(); }
 let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
 let listPickOpen={view:false,ops:false}; // カテゴリ選択チェックパネルの開閉
@@ -1419,7 +1428,7 @@ function renderList(){
   const GCLS={shop:'view',owner:'owner',company:'ops'};
   const SHORT={owner:'オーナー',company:'会社',shop:'店舗'};
   let rows=ROLES.map((r,ri)=>({r,ri})).sort((a,b)=>GORDER[grp(a.r)]-GORDER[grp(b.r)]||a.ri-b.ri);
-  rows=rows.filter(({r})=> listScopeFilter==='all' || (listScopeFilter==='company'? grp(r)!=='shop' : grp(r)==='shop'));   // 区分フィルタ
+  rows=rows.filter(({r})=> !listRolePick || listRolePick.includes(r.key));   // 表示ロール選択
   const gcount={}; rows.forEach(({r})=>{ const g=grp(r); gcount[g]=(gcount[g]||0)+1; });
   let lastG=null;
   rows.forEach(({r,ri})=>{
@@ -1440,9 +1449,18 @@ function renderList(){
   });
   const tbl=document.getElementById('listTable');
   tbl.innerHTML=h;
-  // 表外の固定ツールバー：列プルダウン＋区分フィルタ（選択は自動記憶。保存ビューは廃止）
-  const filt=`<span class="lpb-label" style="margin-left:auto;">区分：</span><span class="scopefilt">${[['all','全ロール'],['company','会社'],['shop','店舗']].map(([v,l])=>`<button class="${listScopeFilter===v?'on':''}" onclick="setListScope('${v}')">${l}</button>`).join('')}</span>`;
-  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 列の表示：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('')+filt;
+  // 表外の固定ツールバー：列プルダウン＋表示ロール選択プルダウン（選択は自動記憶。保存ビューは廃止）
+  const allKeys=ROLES.map(r=>r.key), selKeys=listRolePick||allKeys;
+  const gname={owner:'オーナー',company:'会社ロール',shop:'店舗ロール'};
+  let rpanel='';
+  if(listRoleOpen){ let body='';
+    ['owner','company','shop'].forEach(g=>{ const rs=ROLES.filter(r=>(r.system?'owner':r.tier)===g); if(!rs.length) return;
+      const allOn=rs.every(r=>selKeys.includes(r.key));
+      body+=`<div class="rgrp" onclick="event.stopPropagation();toggleRoleGrp('${g}')"><span class="pchk">${allOn?'☑':'☐'}</span>${gname[g]}</div>`;
+      body+=rs.map(r=>`<label class="ropt ${selKeys.includes(r.key)?'on':''}" onclick="event.stopPropagation();toggleRolePick('${r.key}')"><span class="pchk">${selKeys.includes(r.key)?'☑':'☐'}</span>${r.name}</label>`).join(''); });
+    rpanel=`<div class="rolepanel"><div class="rolefoot"><button onclick="event.stopPropagation();setRolesAll(true)">全て</button><button onclick="event.stopPropagation();setRolesAll(false)">クリア</button><button class="rf-main" onclick="event.stopPropagation();toggleRoleDD()">閉じる</button></div>${body}</div>`; }
+  const roleDD=`<span class="lpb-label" style="margin-left:auto;">👤 表示ロール：</span><div class="roleddwrap"><button class="hdd-btn" style="min-width:170px;" onclick="event.stopPropagation();toggleRoleDD()"><span>${listRolePick?`選択中 ${selKeys.length}/${allKeys.length}`:'全ロール'}</span><span class="hdd-ar">▼</span></button>${rpanel}</div>`;
+  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 列の表示：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('')+roleDD;
   lastListLeaf=leaf; fitListWidth();
   positionPickPanels();
 }
@@ -1465,6 +1483,7 @@ window.addEventListener('scroll',positionPickPanels,true); window.addEventListen
 // プルダウン外をクリックしたら閉じる（列プルダウン・保存ビュー一覧とも）
 document.addEventListener('click',e=>{ let ch=false;
   if((listPickOpen.view||listPickOpen.ops)&&!e.target.closest('.pickwrap')){ listPickOpen.view=false; listPickOpen.ops=false; ch=true; }
+  if(listRoleOpen&&!e.target.closest('.roleddwrap')){ listRoleOpen=false; ch=true; }
   if(ch) renderList();
   if(_rmBaseOpen&&!e.target.closest('#rmBaseWrap')){ _rmBaseOpen=false; renderBaseDD(); } });
 
