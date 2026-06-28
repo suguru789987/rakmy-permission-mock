@@ -72,6 +72,12 @@
   .nr-colhead-prev{ color:#1f3b5e; background:#dde6f2; border:1px solid #c3d2e6; }
   .nr-hint{ font-size:12px; color:#9aa0a6; margin:6px 0 0; }
   .tpd-divider{ border-top:1px solid var(--line); margin:10px 0; }
+  .rmseg{ display:inline-flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; flex:0 0 auto; }
+  .rmseg button{ border:none; background:#fff; padding:4px 11px; font-size:11.5px; cursor:pointer; color:#667; border-left:1px solid var(--line); }
+  .rmseg button:first-child{ border-left:none; }
+  .rmseg button.on[data-v="2"]{ background:var(--green); color:#fff; font-weight:700; }
+  .rmseg button.on[data-v="1"]{ background:var(--blue); color:#fff; font-weight:700; }
+  .rmseg button.on[data-v="0"]{ background:#cc3333; color:#fff; font-weight:700; }
   @media(max-width:1000px){ .nr-cols{ flex-direction:column; } .nr-main{ flex:1; max-width:none; } }
   .nr-step{ font-size:15px; font-weight:800; color:#1f3b5e; margin:20px 0 10px; padding-bottom:7px; border-bottom:2px solid #e3e8ee; }
   .nr-step:first-child{ margin-top:0; }
@@ -474,7 +480,7 @@
       <div class="modal-note" id="rmNote"></div>
       </div>
       <div class="nr-side">
-        <div class="nr-colhead nr-colhead-prev">👁 プレビュー（参照のみ・編集しません）</div>
+        <div class="nr-colhead nr-colhead-prev">✅ 権限内容（テンプレを土台に編集・追加/削減）</div>
         <div id="rmDetailPanel" class="nr-detailpanel"></div>
       </div>
       </div>
@@ -1277,7 +1283,7 @@ function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; _r
   rmTier=tier; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===tier));
   rmSetScope(scope);
   document.getElementById('rmNote').textContent='区分・データ範囲はベースの既定です（必要なら変更可）。作成後は権限編集で微調整できます。';
-  renderInlineDetail(pr); rmCheckIntegrity();
+  renderInlineDetail({perm:_rmBasePerm,tier:rmTier,key:'__new'}); rmCheckIntegrity();
 }
 let _rmBaseTier,_rmBaseScope;
 function rmValidate(){ const nm=document.getElementById('rmName').value.trim(); const b=document.getElementById('rmCreateBtn'); if(b) b.disabled=!nm; }
@@ -1294,7 +1300,7 @@ function openBaseDetail(){ const pr=rmBasePreviewRole(); const v=document.getEle
   const nm = v.startsWith('role:') ? ROLES[+v.slice(5)].name+'（複製元）' : ((ROLE_TEMPLATES.find(x=>x.id===v.slice(4))||{}).name||'')+'（雛形）';
   openTplDetailPr(pr, nm+'｜画面ごとの権限'); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); }
+  rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
 function rmSetScope(s){ rmScope=s; document.querySelectorAll('#rmScope button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
   const box=document.getElementById('rmShops'); box.style.display = s==='shops'?'flex':'none';   // インラインdisplayを直接切替（.hideだとインラインに負ける）
   if(s==='shops'&&!box.dataset.built){ box.innerHTML=SHOPS.map((sh,i)=>`<label class="ro"><input type="checkbox" class="rmShopCb" value="${sh}" ${i<3?'checked':''}> ${sh}</label>`).join(''); box.dataset.built='1'; }
@@ -1507,16 +1513,24 @@ function lvlPill(s,gk){ return s==='no'?'<span class="pill pno">—</span>' : gk
 function featPill(v){ return v===0?'<span class="pill pno">—</span>' : v>=2?'<span class="pill pop">操作</span>' : '<span class="pill pvw">閲覧</span>'; }
 let _tpdPr=null, _tpdExp={}, _tpdTarget='tplDetailBody';
 // 画面ごとの詳細：概要（画面×可否）→クリックで列（機能/項目）ごとの閲覧/操作を展開
+function screenSeg(pr,c,gk){ const st=catStatus(pr,c.id), cur=st==='no'?0:st==='vw'?1:2;
+  const levels = gk==='view'?[[1,'閲覧'],[0,'なし']]:[[2,'操作'],[1,'閲覧'],[0,'なし']];
+  return `<span class="rmseg">${levels.map(([v,l])=>`<button data-v="${v}" class="${cur===v?'on':''}" onclick="event.stopPropagation();rmEditCat('${c.id}',${v})">${l}</button>`).join('')}</span>`; }
 function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.getElementById(_tpdTarget); if(!el) return;
+  const edit = _tpdTarget==='rmDetailPanel';
   const sec=(gk,lab)=>{ const cats=CATEGORIES.filter(c=>c.group===gk&&catApplies(pr,c.id));
     const rows=cats.map(c=>{ const open=_tpdExp[c.id];
       const feats=c.features.filter(f=>(f.fixed?pr.tier==='company':true)&&!(f.noStaff&&pr.key==='staff'));
       const sub=open?`<div class="tpd-detail">${feats.map(f=>{const fi=c.features.indexOf(f);return `<div class="tpd-sub"><span>${f.n}</span>${featPill(featVal(pr.perm,c.id,fi,f))}</div>`;}).join('')||'<div class="tpd-empty">機能なし</div>'}</div>`:'';
-      return `<div class="tpd-row tpd-click" onclick="toggleTpd('${c.id}')"><span class="tpd-name">${open?'▼':'▶'} ${c.name}</span>${lvlPill(catStatus(pr,c.id),gk)}</div>${sub}`; }).join('');
+      const right = edit ? screenSeg(pr,c,gk) : lvlPill(catStatus(pr,c.id),gk);
+      return `<div class="tpd-row tpd-click" onclick="toggleTpd('${c.id}')"><span class="tpd-name">${open?'▼':'▶'} ${c.name}</span>${right}</div>${sub}`; }).join('');
     return `<div class="tpd-sec">${lab}（${cats.length}画面）</div>${rows||'<div class="tpd-empty">対象画面なし</div>'}`; };
-  const summary = _tpdTarget==='rmDetailPanel' ? `<div class="rmp-h">概要（許可数）</div>${permSummaryHTML(pr)}<div class="tpd-divider"></div>` : '';
-  el.innerHTML=summary+`<div class="tpd-hint">画面名をクリックすると、その画面の<b>列（機能・項目）ごと</b>の閲覧/操作が見られます。</div>`+sec('view','一覧・分析画面')+sec('ops','設定画面');
+  const summary = edit ? `<div class="rmp-h">概要（許可数）</div>${permSummaryHTML(pr)}<div class="tpd-divider"></div>` : '';
+  const hint = edit ? '各画面の<b>操作/閲覧/なし</b>を直接編集できます（テンプレを土台に追加・削減）。画面名クリックで列の内訳。' : '画面名をクリックすると、その画面の<b>列（機能・項目）ごと</b>の閲覧/操作が見られます。';
+  el.innerHTML=summary+`<div class="tpd-hint">${hint}</div>`+sec('view','一覧・分析画面')+sec('ops','設定画面');
 }
+function rmEditCat(cid,val){ const r={perm:_rmBasePerm,tier:rmTier,key:'__new'}; setRoleCat(r,cid,val); rmRefreshPanel(); }
+function rmRefreshPanel(){ _tpdTarget='rmDetailPanel'; _tpdPr={perm:_rmBasePerm,tier:rmTier,key:'__new'}; renderTplDetail(); }
 function toggleTpd(cid){ _tpdExp[cid]=!_tpdExp[cid]; renderTplDetail(); }
 function openTplDetailPr(pr,title){ _tpdTarget='tplDetailBody'; _tpdPr=pr; _tpdExp={}; document.getElementById('tplDetailTitle').textContent=title; renderTplDetail(); document.getElementById('tplDetailModal').classList.remove('hide'); }
 function renderInlineDetail(pr){ _tpdTarget='rmDetailPanel'; _tpdPr=pr; _tpdExp={}; renderTplDetail(); }
