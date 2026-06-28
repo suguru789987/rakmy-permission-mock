@@ -7,6 +7,28 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>ラクミー 経営管理｜権限設定（モック v4・概要/詳細・3階層）</title>
+<script>
+  // ===== 恒久キャッシュ対策 =====
+  // ビルド版数（デプロイ時にGitHub ActionsがコミットSHAへ自動置換）
+  window.__BUILD__='__BUILD_PLACEHOLDER__';
+  // ① 既存Service Worker解除＋キャッシュ破棄（古い配信を残さない）
+  try{
+    if('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));
+    if(window.caches) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)));
+  }catch(e){}
+  // ② ネットワーク優先で最新版を取得し、版数が違えばその場で差し替え（URLは変えずキャッシュも使わない）
+  (async function(){
+    if(window.__BUILD__==='__BUILD_'+'PLACEHOLDER__') return;   // ローカル(未デプロイ)では何もしない
+    try{
+      const r=await fetch('index.html?_='+Date.now(),{cache:'no-store'});
+      const t=await r.text(); const m=t.match(/__BUILD__='([0-9a-f]+)'/);
+      if(m && m[1]!==window.__BUILD__ && !sessionStorage.getItem('swap_'+m[1])){
+        sessionStorage.setItem('swap_'+m[1],'1');
+        document.open(); document.write(t); document.close();   // 最新HTMLへ差し替え→再初期化
+      }
+    }catch(e){}
+  })();
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root{ --green:#1bbf73; --green-d:#159b5d; --blue:#3b82f6; --gray:#9aa0a6;
@@ -220,6 +242,7 @@
   table.list tr.ownerrow td.name{ font-weight:800;}
   table.list td.ownerband{ text-align:center; color:#5a6675; font-size:13px; font-weight:700; background:#f3f8f4; }
   .crown{ margin-right:6px;}
+  #buildstamp{ position:fixed; right:8px; bottom:6px; z-index:9999; font-size:10px; color:#aab2bd; background:rgba(255,255,255,.7); padding:2px 7px; border-radius:6px; pointer-events:none; font-family:monospace; }
   .ownerbadge{ display:inline-block; font-size:10px; font-weight:700; color:#fff; background:#caa12a; border-radius:10px; padding:1px 8px; margin-left:8px; vertical-align:middle;}
   .rolechip{ display:inline-block; font-size:11.5px; font-weight:700; color:#2c5d9e; background:#eaf2fb; border:1px solid #cfe0f5; border-radius:12px; padding:2px 10px; margin:2px 4px 2px 0;}
   .screennav{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 14px;}
@@ -1828,6 +1851,10 @@ loadSetupDraft();
 applyDemoMode();
 updateDemoToggle();
 show('list');
+// ビルド版数の可視表示（最新確認用）
+(function(){ const b=window.__BUILD__||''; const v=/^[0-9a-f]+$/.test(b)?b.slice(0,7):'local';
+  const el=document.createElement('div'); el.id='buildstamp'; el.textContent='build '+v; el.title='ビルド版数（'+b+'）';
+  document.body.appendChild(el); })();
 </script>
 </body>
 </html>
