@@ -65,8 +65,11 @@
   .demo-banner{ background:#e3f6ec; border:1.5px solid #bfe8d2; border-radius:9px; padding:11px 14px; margin:0 0 14px; font-size:13px; color:#15532f; line-height:1.7; }
   .nr-cols{ display:flex; gap:28px; align-items:flex-start; }
   .nr-main{ flex:0 0 520px; max-width:520px; }
-  .nr-side{ flex:1; min-width:0; position:sticky; top:12px; }
-  .nr-detailpanel{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; max-height:70vh; overflow:auto; }
+  .nr-side{ flex:1; min-width:0; position:sticky; top:12px; background:#eef2f7; border:1px solid #d8e0ea; border-radius:12px; padding:14px; }
+  .nr-detailpanel{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; max-height:64vh; overflow:auto; }
+  .nr-colhead{ font-size:12.5px; font-weight:800; padding:7px 12px; border-radius:8px; margin:0 0 12px; display:inline-block; }
+  .nr-colhead-edit{ color:#15532f; background:#e3f6ec; border:1px solid #bfe8d2; }
+  .nr-colhead-prev{ color:#1f3b5e; background:#dde6f2; border:1px solid #c3d2e6; }
   .nr-hint{ font-size:12px; color:#9aa0a6; margin:6px 0 0; }
   .tpd-divider{ border-top:1px solid var(--line); margin:10px 0; }
   @media(max-width:1000px){ .nr-cols{ flex-direction:column; } .nr-main{ flex:1; max-width:none; } }
@@ -448,6 +451,7 @@
     <div class="panel">
       <div class="nr-cols">
       <div class="nr-main">
+      <div class="nr-colhead nr-colhead-edit">✏️ 操作（ここで設定します）</div>
       <div class="nr-step">① 作成方法（ベース）を選ぶ<small>ベーステンプレートから ／ 既存権限をコピー ／ まっさら（ゼロから）</small></div>
       <select id="rmBase" class="modal-input" onchange="rmSetBase()"></select>
       <p class="nr-hint">選んだベースの内容は右の「権限内容」で確認できます。</p>
@@ -470,7 +474,7 @@
       <div class="modal-note" id="rmNote"></div>
       </div>
       <div class="nr-side">
-        <div class="nr-step">権限内容（画面ごと）<small>画面名クリックで列の詳細</small></div>
+        <div class="nr-colhead nr-colhead-prev">👁 プレビュー（参照のみ・編集しません）</div>
         <div id="rmDetailPanel" class="nr-detailpanel"></div>
       </div>
       </div>
