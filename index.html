@@ -67,6 +67,9 @@
   .nr-main{ flex:0 0 520px; max-width:520px; }
   .nr-side{ flex:1; min-width:0; position:sticky; top:12px; background:#eef2f7; border:1px solid #d8e0ea; border-radius:12px; padding:14px; }
   .nr-detailpanel{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; max-height:48vh; overflow:auto; }
+  .nr-field{ margin:0 0 18px; max-width:600px; }
+  .nr-field .nrl{ display:block; font-weight:700; font-size:13px; margin:0 0 7px; color:#444; }
+  .nr-field .rolesel{ display:flex; gap:10px; flex-wrap:wrap; }
   .nr-colhead{ font-size:12.5px; font-weight:800; padding:7px 12px; border-radius:8px; margin:0 0 12px; display:inline-block; }
   .nr-colhead-edit{ color:#15532f; background:#e3f6ec; border:1px solid #bfe8d2; }
   .nr-colhead-prev{ color:#1f3b5e; background:#dde6f2; border:1px solid #c3d2e6; }
@@ -464,20 +467,20 @@
       <div id="rmDetailPanel" class="nr-detailpanel nr-grid"></div>
 
       <div class="nr-step">③ 基本設定<small>名前・区分・データ範囲</small></div>
-      <label class="ml">権限名</label>
-      <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" oninput="rmValidate()" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';">
-      <label class="ml">区分</label>
-      <div class="rolesel" id="rmTier" style="margin:0;">
-        <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
-        <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
-      </div>
-      <label class="ml">データ範囲（スコープ）</label>
-      <div class="rolesel" id="rmScope" style="margin:0;">
-        <button class="rolebtn on" data-s="self" onclick="rmSetScope('self')">自店舗のみ</button>
-        <button class="rolebtn" data-s="shops" onclick="rmSetScope('shops')">指定店舗群（エリア）</button>
-        <button class="rolebtn" data-s="all" onclick="rmSetScope('all')">全社</button>
-      </div>
-      <div id="rmShops" class="hide" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+      <div class="nr-field"><label class="nrl">権限名</label>
+        <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" oninput="rmValidate()" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';"></div>
+      <div class="nr-field"><label class="nrl">区分</label>
+        <div class="rolesel" id="rmTier" style="margin:0;">
+          <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
+          <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
+        </div></div>
+      <div class="nr-field"><label class="nrl">データ範囲（スコープ）</label>
+        <div class="rolesel" id="rmScope" style="margin:0;">
+          <button class="rolebtn on" data-s="self" onclick="rmSetScope('self')">自店舗のみ</button>
+          <button class="rolebtn" data-s="shops" onclick="rmSetScope('shops')">指定店舗群（エリア）</button>
+          <button class="rolebtn" data-s="all" onclick="rmSetScope('all')">全社</button>
+        </div>
+        <div id="rmShops" class="hide" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div></div>
       <div class="modal-note" id="rmNote"></div>
       <div class="nr-actions">
         <span class="nr-warn" id="rmWarn"></span>
