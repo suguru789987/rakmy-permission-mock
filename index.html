@@ -1335,7 +1335,7 @@ function toggleSavedViews(){ savedViewsOpen=!savedViewsOpen; renderList(); }
 function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 // 既定で表示する基礎列（主要画面）。導入時・運用時とも一目で権限が見えるように
-const DEFAULT_COLS={ view:['dashboard','sales','purchase','detail','report'], ops:['cost','budget','employees','pettycash','transfer','vendor','delivery'] };
+const DEFAULT_COLS={ view:['dashboard','report','detail','purchase','sales'], ops:['cost','budget','employees','pettycash','transfer','vendor','delivery'] };
 function persistColState(){ lsSet('rakmy_col_state_v2',{expand:listExpand,pick:listPick}); }
 function loadColState(){ const s=lsGet('rakmy_col_state_v2',null);
   if(s&&s.expand&&s.pick){ listExpand=s.expand; listPick=s.pick; }
@@ -1352,7 +1352,7 @@ function toggleListPickDD(g){ listPickOpen[g]=!listPickOpen[g]; const o=g==='vie
 function toggleListPickItem(g,cid){ listExpand[g]=false; const a=listPick[g], i=a.indexOf(cid); i>=0?a.splice(i,1):a.push(cid); persistColState(); renderList(); }   // 個別選択時は「全て」を解除
 function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; persistColState(); renderList(); }   // クリア＝全解除（内訳に戻る）
 // 群の表示列（葉）：展開=全カテゴリ／折りたたみ＋選択あり=選択カテゴリ／折りたたみ＋未選択=内訳1列
-function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return g.cats.filter(c=>listPick[g.key].includes(c.id)).map(c=>({c})); return [{tally:true}]; }
+function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); return [{tally:true}]; }   // 表示順は選択順に従う
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
   const ALL=[{key:'view',cls:'grpview',label:'一覧画面名',cats:vc},{key:'ops',cls:'grpops',label:'設定画面名',cats:oc}];
