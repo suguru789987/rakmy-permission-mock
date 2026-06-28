@@ -52,8 +52,10 @@
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
   .listpickbar{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px; background:#f5f7f9; border-radius:8px; }
   .listpickbar .lpb-label{ font-size:14.5px; font-weight:800; color:#334; }
+  .listtopbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; }
+  .ltb-note{ font-size:12px; color:#9aa0a6; }
   .roleddwrap{ position:relative; display:inline-block; }
-  .rolepanel{ position:absolute; top:calc(100% + 4px); right:0; min-width:240px; max-height:360px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.2); z-index:90; padding:6px; }
+  .rolepanel{ position:absolute; top:calc(100% + 4px); left:0; min-width:240px; max-height:360px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.2); z-index:90; padding:6px; }
   .rolefoot{ display:flex; gap:6px; padding:4px 4px 8px; border-bottom:1px solid #f0f2f4; margin-bottom:4px; }
   .rolefoot button{ flex:1; border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px; font-size:12px; font-weight:700; color:#5a6675; cursor:pointer; }
   .rolefoot .rf-main{ background:#1f3b5e; color:#fff; border-color:#1f3b5e; }
@@ -444,6 +446,7 @@
     </div>
     <div class="panel">
       <div id="demoBanner" class="hide"></div>
+      <div class="listtopbar" id="listTopBar"></div>
       <div class="listtabs">
         <button class="ltab" data-tab="view" onclick="setListTab('view')">一覧画面権限</button>
         <button class="ltab" data-tab="ops" onclick="setListTab('ops')">設定画面権限</button>
@@ -1459,8 +1462,9 @@ function renderList(){
       body+=`<div class="rgrp" onclick="event.stopPropagation();toggleRoleGrp('${g}')"><span class="pchk">${allOn?'☑':'☐'}</span>${gname[g]}</div>`;
       body+=rs.map(r=>`<label class="ropt ${selKeys.includes(r.key)?'on':''}" onclick="event.stopPropagation();toggleRolePick('${r.key}')"><span class="pchk">${selKeys.includes(r.key)?'☑':'☐'}</span>${r.name}</label>`).join(''); });
     rpanel=`<div class="rolepanel"><div class="rolefoot"><button onclick="event.stopPropagation();setRolesAll(true)">全て</button><button onclick="event.stopPropagation();setRolesAll(false)">クリア</button><button class="rf-main" onclick="event.stopPropagation();toggleRoleDD()">閉じる</button></div>${body}</div>`; }
-  const roleDD=`<span class="lpb-label" style="margin-left:auto;">👤 表示ロール：</span><div class="roleddwrap"><button class="hdd-btn" style="min-width:170px;" onclick="event.stopPropagation();toggleRoleDD()"><span>${listRolePick?`選択中 ${selKeys.length}/${allKeys.length}`:'全ロール'}</span><span class="hdd-ar">▼</span></button>${rpanel}</div>`;
-  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 列の表示：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('')+roleDD;
+  const roleDD=`<span class="lpb-label">👤 表示ロール：</span><div class="roleddwrap"><button class="hdd-btn" style="min-width:170px;" onclick="event.stopPropagation();toggleRoleDD()"><span>${listRolePick?`選択中 ${selKeys.length}/${allKeys.length}`:'全ロール'}</span><span class="hdd-ar">▼</span></button>${rpanel}</div><span class="ltb-note">選んだロールが両タブ（一覧／設定）に共通で適用されます</span>`;
+  document.getElementById('listTopBar').innerHTML=roleDD;
+  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 列の表示：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('');
   lastListLeaf=leaf; fitListWidth();
   positionPickPanels();
 }
