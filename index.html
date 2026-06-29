@@ -106,6 +106,7 @@
   .wzoprow{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:5px 6px; background:#fff; border:1px solid #eef0f2; border-radius:7px; }
   .wzoprow .wzopn{ font-size:13px; font-weight:600; color:#333; }
   .wzoprow .opnote{ font-size:11px; color:#9aa0a6; margin-left:8px; }
+  .l3bar.wztoggle{ cursor:pointer; user-select:none; } .l3bar.wztoggle:hover{ filter:brightness(.98); }
   .rogrid{ display:flex; flex-wrap:wrap; gap:6px; }
   .rochip{ font-size:12px; color:#0f7d49; background:#eef9f2; border:1px solid #cce9da; border-radius:6px; padding:3px 9px; }
   .nr-field{ margin:0 0 18px; max-width:600px; }
@@ -748,9 +749,7 @@ const CATEGORIES = [
       {n:'今月売上（MTD）'},{n:'前年同期間比'},{n:'当月日平均'},{n:'客数'},{n:'客単価'},
       {n:'仕入率（原価率）'},{n:'人件費率'},{n:'FL率'},{n:'固定費率'},{n:'営業利益率'},
       {n:'坪月商'},{n:'繁盛店指数'},{n:'ROI（投資回収）'},{n:'予実進捗'}]},
-    {n:'お知らせ（ニュース）',k:'base'},
-    {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'base',new:true,future:true, catalog:'display'},
-    {n:'UIカスタマイズ：カスタムタグ（閲覧）',k:'base',new:true,future:true, catalog:'tags', ops:[{id:'view',n:'閲覧'}]}]},   // ダッシュボード＝ランディング画面：全機能 閲覧固定（閲覧可否設定なし・全ロール閲覧可）
+    {n:'お知らせ（ニュース）',k:'base'}]},   // ダッシュボード＝ランディング画面：閲覧固定（閲覧可否設定なし・全ロール閲覧可）。UIカスタマイズ(操作)は設定タブの「ダッシュボード（カスタマイズ）」、許可指標一覧は「指標一覧」で管理
   {id:'sales', name:'売上分析', ctx:'common', features:[
     {n:'ABC分析',k:'view', items:[{n:'売上構成比'},{n:'累計構成比'},{n:'ABCランク'},{n:'売上額'},{n:'数量'}]},
     {n:'商品別分析',k:'view', items:[{n:'商品別売上'},{n:'数量'},{n:'粗利'},{n:'粗利率'},{n:'構成比'}]},
@@ -1600,6 +1599,8 @@ function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeat
 function wzToggleOp(cid,fi,oid){ const k=opKey(cid,fi,oid); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
 function wzSetOp(cid,fi,oid,on){ _rmBasePerm[opKey(cid,fi,oid)]=on; rmRefreshPanel(); }   // 操作詳細：行ごと 許可/なし ボタン
 function wzSetItem(cid,fi,key,on){ _rmBasePerm[opKey(cid,fi,key)]=on; rmRefreshPanel(); }   // 指標項目：行ごと 表示/非表示 ボタン
+let _wzItemsExp={};   // 「閲覧可能指標」トグルの開閉（既定＝折りたたみ・件数のみ）
+function wzToggleItems(cid,fi){ const k=cid+'_'+fi; _wzItemsExp[k]=!_wzItemsExp[k]; rmRefreshPanel(); }
 function wzToggleItem(cid,fi,key){ const k=opKey(cid,fi,key); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
 function wzToggleSub(cid,fi,ii,vo){ const k=opKey(cid,fi,siKey(fi,ii,vo)); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
 function wzItemsAll(cid,fi,on){ const c=CATEGORIES.find(x=>x.id===cid),f=c.features[fi]; itemKeys(f).forEach(k=>_rmBasePerm[opKey(cid,fi,k)]=on); rmRefreshPanel(); }
@@ -1626,14 +1627,17 @@ function wzFeatDeep(pr,cid,f,fi){
     if(f.catalog==='tags'){ const ts=tagsFor(rk); cnt=ts.length; body= ts.length?`<div class="rogrid">`+ts.map(t=>chip(t.n)).join('')+`</div>`:`<div class="tpd-empty">タグなし</div>`; }
     else { const dims=CATALOG.dimensions; cnt+=dims.length; if(dims.length) body+=`<div class="l3grp">ディメンション（共通）</div><div class="rogrid">`+dims.map(d=>chip(d.n)).join('')+`</div>`;
       CATALOG.transactions.forEach(g=>{ const its=g.items.filter(i=>catItemAllowed(i,rk)); if(!its.length) return; cnt+=its.length; body+=`<div class="l3grp">${g.cat}</div><div class="rogrid">`+its.map(it=>chip(it.n)).join('')+`</div>`; }); }
-    inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 閲覧できる指標一覧（${cnt}件）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部の指標管理で設定（読取専用）</span></div><div class="viewdetail">${body}</div>`;
+    const ekc=cid+'_'+fi, opc=_wzItemsExp[ekc];
+    inner+=`<div class="l3bar viewbar wztoggle" onclick="event.stopPropagation();wzToggleItems('${cid}',${fi})"><span>${opc?'▼':'▶'} 👁 閲覧可能指標（${cnt}件）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部の指標管理で設定（読取専用）</span></div>${opc?`<div class="viewdetail">${body}</div>`:''}`;
   } else if(hasItems(f)){
     const ks=itemKeys(f),tot=ks.length,on=ks.filter(k=>pr.perm[opKey(cid,fi,k)]).length;
-    inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 閲覧詳細：見せる指標／項目（${on}/${tot}）</span><span style="flex:1"></span><button class="mini" onclick="event.stopPropagation();wzItemsAll('${cid}',${fi},true)">全表示</button><button class="mini" onclick="event.stopPropagation();wzItemsAll('${cid}',${fi},false)">全非表示</button></div><div class="viewdetail">`;
-    const itrow=(label,key)=>{ const sh=!!pr.perm[opKey(cid,fi,key)]; return `<div class="wzoprow"><span class="wzopn">${label}</span><span class="rmseg"><button class="${sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',true)">表示</button><button class="${!sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',false)">非表示</button></span></div>`; };
-    if(f.items){ inner+=`<div class="wzops">`+f.items.map((it,ii)=>itrow(it.n,'i'+ii)).join('')+`</div>`; }
-    else { inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div><div class="wzops">`+g.items.map((it,ii)=>itrow(it.n,'g'+gi+'_'+ii)).join('')+`</div>`).join(''); }
-    inner+=`</div>`;
+    const eki=cid+'_'+fi, opi=_wzItemsExp[eki];
+    inner+=`<div class="l3bar viewbar wztoggle" onclick="event.stopPropagation();wzToggleItems('${cid}',${fi})"><span>${opi?'▼':'▶'} 👁 閲覧可能指標（${on}/${tot}）</span><span style="flex:1"></span>${opi?`<button class="mini" onclick="event.stopPropagation();wzItemsAll('${cid}',${fi},true)">全表示</button><button class="mini" onclick="event.stopPropagation();wzItemsAll('${cid}',${fi},false)">全非表示</button>`:''}</div>`;
+    if(opi){ inner+=`<div class="viewdetail">`;
+      const itrow=(label,key)=>{ const sh=!!pr.perm[opKey(cid,fi,key)]; return `<div class="wzoprow"><span class="wzopn">${label}</span><span class="rmseg"><button class="${sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',true)">表示</button><button class="${!sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',false)">非表示</button></span></div>`; };
+      if(f.items){ inner+=`<div class="wzops">`+f.items.map((it,ii)=>itrow(it.n,'i'+ii)).join('')+`</div>`; }
+      else { inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div><div class="wzops">`+g.items.map((it,ii)=>itrow(it.n,'g'+gi+'_'+ii)).join('')+`</div>`).join(''); }
+      inner+=`</div>`; }
   }
   return inner? `<div class="l3 wz-l3" onclick="event.stopPropagation()">${inner}</div>` : '';
 }
