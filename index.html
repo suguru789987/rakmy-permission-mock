@@ -1574,7 +1574,7 @@ function featPill(v){ return v===0?'<span class="pill pno">—</span>' : v>=2?'<
 // 編集時：列（機能）ごとの可否セグメント
 function featSeg(pr,cid,fi,f){ if(KIND[f.k].lock) return '<span class="pill pvw">閲覧固定</span>';
   const v=featVal(pr.perm,cid,fi,f), vals=featVals(f);
-  return `<span class="rmseg">${vals.slice().reverse().map(s=>`<button data-v="${s}" class="${v===s?'on':''}" onclick="event.stopPropagation();rmEditFeat('${cid}',${fi},${s})">${(KIND[f.k].lab[s]!=null?KIND[f.k].lab[s]:VLAB[s])}</button>`).join('')}</span>`; }
+  return `<span class="rmseg">${vals.slice().reverse().map(s=>`<button data-v="${s}" class="${((v===s)||(v===2&&s===1))?'on':''}" onclick="event.stopPropagation();rmEditFeat('${cid}',${fi},${s})">${(KIND[f.k].lab[s]!=null?KIND[f.k].lab[s]:VLAB[s])}</button>`).join('')}</span>`; }   // 操作(2)選択時は閲覧(1)も点灯＝操作⊃閲覧。全て(3)は全てのみ
 function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeatVal(_rmBasePerm,cid,fi,c.features[fi],val); rmRefreshPanel(); }
 // ウィザード深部：操作詳細・指標を _rmBasePerm 上で編集（アコーディオン最深部の移植）
 function wzToggleOp(cid,fi,oid){ const k=opKey(cid,fi,oid); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
@@ -1647,7 +1647,7 @@ function screenSeg(pr,c,gk){
   const st=catStatus(pr,c.id);
   const cur = gk==='view' ? (st==='no'?0:1) : (st==='no'?0:st==='vw'?1:2);   // view群は満点=閲覧(1)。'op'を2にすると閲覧ボタン(1)に当たらず未点灯になるバグを修正
   const levels = gk==='view'?[[1,'閲覧'],[0,'なし']]:[[2,'操作'],[1,'閲覧'],[0,'なし']];
-  return `<span class="rmseg">${levels.map(([v,l])=>`<button data-v="${v}" class="${cur===v?'on':''}" onclick="event.stopPropagation();rmEditCat('${c.id}',${v})">${l}</button>`).join('')}</span>`; }
+  return `<span class="rmseg">${levels.map(([v,l])=>`<button data-v="${v}" class="${((cur===v)||(cur===2&&v===1))?'on':''}" onclick="event.stopPropagation();rmEditCat('${c.id}',${v})">${l}</button>`).join('')}</span>`; }   // 操作(2)選択時は閲覧(1)も点灯＝操作⊃閲覧
 function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.getElementById(_tpdTarget); if(!el) return;
   const edit = _tpdTarget==='rmDetailPanel';
   const sec=(gk,lab)=>{ const cats=orderedCats(gk).filter(c=>catApplies(pr,c.id));
