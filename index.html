@@ -124,6 +124,8 @@
   .rmseg button.on[data-v="1"]{ background:var(--blue); color:#fff; font-weight:700; }
   .rmseg button.on[data-v="0"]{ background:#cc3333; color:#fff; font-weight:700; }
   .rmseg button.on[data-v="3"]{ background:#0a6b3d; color:#fff; font-weight:700; }
+  .rmseg button.on[data-on="yes"]{ background:var(--green); color:#fff; font-weight:700; }   /* 許可/表示 */
+  .rmseg button.on[data-on="no"]{ background:#8a94a3; color:#fff; font-weight:700; }          /* なし/非表示 */
   @media(max-width:1000px){ .nr-cols{ flex-direction:column; } .nr-main{ flex:1; max-width:none; } }
   .nr-step{ font-size:15px; font-weight:800; color:#1f3b5e; margin:20px 0 10px; padding-bottom:7px; border-bottom:2px solid #e3e8ee; }
   .nr-step:first-child{ margin-top:0; }
@@ -1588,8 +1590,8 @@ function wzFeatDeep(pr,cid,f,fi){
   if(opsShow.length>0){
     const rows=opsShow.map(o=>{ const on=!!pr.perm[opKey(cid,fi,o.id)];
       const seg=o.adminOnly
-        ? `<span class="rmseg"><button class="${on?'on':''}" disabled>許可</button><button class="${!on?'on':''}" disabled>なし</button></span><span class="opnote">🔒 本部のみ</span>`
-        : `<span class="rmseg"><button class="${on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',true)">許可</button><button class="${!on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',false)">なし</button></span>`;
+        ? `<span class="rmseg"><button data-on="yes" class="${on?'on':''}" disabled>許可</button><button data-on="no" class="${!on?'on':''}" disabled>なし</button></span><span class="opnote">🔒 本部のみ</span>`
+        : `<span class="rmseg"><button data-on="yes" class="${on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',true)">許可</button><button data-on="no" class="${!on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',false)">なし</button></span>`;
       return `<div class="wzoprow"><span class="wzopn">${o.n}</span>${seg}</div>`; }).join('');
     const eko=cid+'_'+fi, opo=_wzOpsExp[eko];
     inner+=`<div class="l3bar opsbar wztoggle" onclick="event.stopPropagation();wzToggleOps('${cid}',${fi})"><span>${opo?'▼':'▶'} ⚙ 操作詳細：許可する操作を選択</span></div>${opo?`<div class="wzops">${rows}</div>`:''}`;
@@ -1607,7 +1609,7 @@ function wzFeatDeep(pr,cid,f,fi){
     const eki=cid+'_'+fi, opi=_wzItemsExp[eki];
     inner+=`<div class="l3bar viewbar wztoggle" onclick="event.stopPropagation();wzToggleItems('${cid}',${fi})"><span>${opi?'▼':'▶'} 👁 閲覧可能指標（${on}/${tot}）</span><span style="flex:1"></span>${opi?`<button class="mini" onclick="event.stopPropagation();wzItemsAll('${cid}',${fi},true)">全表示</button><button class="mini" onclick="event.stopPropagation();wzItemsAll('${cid}',${fi},false)">全非表示</button>`:''}</div>`;
     if(opi){ inner+=`<div class="viewdetail">`;
-      const itrow=(label,key)=>{ const sh=!!pr.perm[opKey(cid,fi,key)]; return `<div class="wzoprow"><span class="wzopn">${label}</span><span class="rmseg"><button class="${sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',true)">表示</button><button class="${!sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',false)">非表示</button></span></div>`; };
+      const itrow=(label,key)=>{ const sh=!!pr.perm[opKey(cid,fi,key)]; return `<div class="wzoprow"><span class="wzopn">${label}</span><span class="rmseg"><button data-on="yes" class="${sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',true)">表示</button><button data-on="no" class="${!sh?'on':''}" onclick="event.stopPropagation();wzSetItem('${cid}',${fi},'${key}',false)">非表示</button></span></div>`; };
       if(f.items){ inner+=`<div class="wzops">`+f.items.map((it,ii)=>itrow(it.n,'i'+ii)).join('')+`</div>`; }
       else { inner+=f.itemGroups.map((g,gi)=>`<div class="l3grp">${g.name}</div><div class="wzops">`+g.items.map((it,ii)=>itrow(it.n,'g'+gi+'_'+ii)).join('')+`</div>`).join(''); }
       inner+=`</div>`; }
