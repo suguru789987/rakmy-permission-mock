@@ -2,6 +2,8 @@
 
 会社画面の権限設定UI（権限一覧／権限編集／指標一覧／役割サマリ／ユーザー割当）の動作モック。
 
+> 🚀 **エンジニア共有はまず [`KICKOFF.md`](KICKOFF.md) から**（読む順番・確定/未確定事項・最初の一歩・検証手法・アクセス・ガバナンス）。機械可読の判定キー辞書は [`docs/feature_keys.json`](docs/feature_keys.json)。
+
 公開デモ: https://suguru789987.github.io/rakmy-permission-mock/
 
 ## デモモード（ヘッダー右上トグル）
