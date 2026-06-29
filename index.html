@@ -1433,7 +1433,7 @@ function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; persistColState(
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); return [{tally:true}]; }   // 表示順は選択順に従う
 function renderList(){
   const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
-  const ALL=[{key:'view',cls:'grpview',label:'＋ 表示画面権限列を追加',cats:vc},{key:'ops',cls:'grpops',label:'＋ 設定画面権限列を追加',cats:oc}];
+  const ALL=[{key:'view',cls:'grpview',label:'＋ 表示画面権限列を追加',gname:'閲覧権限（分析・レポート・管理画面の閲覧）',cats:vc},{key:'ops',cls:'grpops',label:'＋ 設定画面権限列を追加',gname:'設定画面権限（操作・設定）',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   const banner=document.getElementById('demoBanner');
   if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>権限テンプレートで推奨5権限を登録しました</b>（全権オーナー／本部管理／エリア長／店長／従業員）。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
@@ -1446,7 +1446,7 @@ function renderList(){
   // ヘッダ1段目：群バンド（クリックで展開／折りたたみ＋折りたたみ時はチェックで表示カテゴリを複数選択）
   let h=`<tr><th class="grpcol" rowspan="2">区分</th><th class="name" rowspan="2">権限名</th>`;
   grps.forEach(g=>{ const lvs=groupLeaves(g);
-    h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${g.label}</th>`;
+    h+=`<th colspan="${lvs.length}" class="grp ${g.cls} grpsum">${g.gname}</th>`;
   });
   h+=`<th class="actcol" rowspan="2">操作</th></tr>`;
   // ヘッダ2段目：各群の葉ヘッダ（カテゴリ名／内訳）
