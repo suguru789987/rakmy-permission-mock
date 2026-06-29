@@ -540,22 +540,7 @@
     </div>
   </main>
 
-  <!-- 編集 -->
-  <main id="view-edit" class="hide">
-    <div class="titlebar">
-      <h1>権限編集</h1><div class="sp"></div>
-      <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
-      <button class="btn primary" onclick="saveRole()">保存</button>
-    </div>
-    <div class="panel">
-      <div class="roleline"><span class="rn" id="roleName"></span><span class="scopechip" id="scopeChip"></span></div>
-      <div class="legend" style="margin-bottom:14px;">
-        <span><b style="background:#c33">なし</b></span><span><b style="background:#3b82f6">閲覧</b></span><span><b style="background:#1bbf73">操作/可</b></span>
-      </div>
-      <div id="editBody"></div>
-      <div id="excludedNote" class="hint" style="margin-top:16px;"></div>
-    </div>
-  </main>
+  <!-- 旧アコーディオン編集(view-edit)は統合ウィザードに一本化したため撤去 -->
 
   <!-- 指標管理（本部のみ） -->
   <main id="view-catalog" class="hide">
@@ -1748,14 +1733,7 @@ function renderSummary(){
   });
   document.getElementById('summaryTable').innerHTML=h;
 }
-function editRole(ri){
-  if(ROLES[ri].system){ toast('「オーナー（全権）」は全権固定のため編集できません'); return; }
-  const r=ROLES[ri];
-  cur={idx:ri,scope:r.scope,tier:r.tier,perm:r.perm,expanded:{},view:'cats',detailCat:null,itemFilter:{}};   // 参照で編集＝一覧に即反映（保存はトースト確認）
-  document.getElementById('roleName').textContent=r.name;
-  document.getElementById('scopeChip').textContent='対象範囲：'+(r.scope==='company'?'会社スコープ（全社）':'店舗スコープ（自店舗のみ）')+(r.tier==='company'?' ・本部ロール':'');
-  renderBody(); show('edit');
-}
+// editRole（旧アコーディオン編集の入口）は統合ウィザード(editRoleHere)へ一本化したため撤去
 const visibleCats = () => CATEGORIES.filter(c=>c.features.some(f=>featShown(f)));
 function featRange(f){ if(f.range==='shop-self') return cur.scope==='shop'?'自店舗のみ':'全社'; return ''; }
 
@@ -1931,7 +1909,7 @@ function toggleOp(cid,fi,opid){ const k=opKey(cid,fi,opid); cur.perm[k]=!cur.per
 function renderExcluded(){
   const el=document.getElementById('excludedNote'); if(el) el.innerHTML='';
 }
-function saveRole(){ ROLES[cur.idx]={...ROLES[cur.idx],perm:cur.perm}; const nm=ROLES[cur.idx].name; show('list'); toast('「'+nm+'」の権限を保存しました'); }
+// saveRole（旧アコーディオン保存）撤去：ウィザードは submitRoleModal で保存
 function toast(msg){ const t=document.getElementById('toast'); t.innerHTML='<span class="tk">✓</span>'+msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
 
 loadColState();
