@@ -3,9 +3,14 @@
 最終更新：2026-06-29 ／ 正本リポ：**`suguru789987/rakmy-permission-mock`**（自己完結。旧 `rakmy-permission-settings` は非推奨）。
 
 ## 成果物
+- **エンジニア共有の入口**：`KICKOFF.md`（読む順番・確定/未確定・最初の一歩・検証手法・アクセス・ガバナンス）。
 - **モック（動作）**：`index.html`（単一HTML。公開：https://suguru789987.github.io/rakmy-permission-mock/ ）
 - **仕様書**：`README.md`／**変更履歴**：`CHANGELOG.md`／**設計判断**：`PDM_JUDGE.md`
+- **本番設計**：`ENFORCEMENT.md`（データモデル/Pundit判定/スコープ強制/越境防御/feature_key辞書65機能/画面別実装例/移行）。
+- **実装ロードマップ**：`ROADMAP.md`（P0→P5）／`docs/P0_FOUNDATION.md`（P0詳細）。
+- **機械可読の判定キー辞書**：`docs/feature_keys.json`（27カテゴリ65機能・コード/定数生成用）。
 - 作業ディレクトリ：`/tmp/rakmy-permission-mock`（/tmp は消えやすい。.git破損時はリモートから再clone）
+- 規律：機能の増減時は **ENFORCEMENT付録Aの辞書と feature_keys.json を再生成**（カウント整合）。仕様書⇔モックは定期監査。
 
 ## 設計の核（不変条件）
 - **2層ロール**：店舗ロール（店長/従業員/エリア長）＋会社ロール（経理/人事）＋オーナー（全権固定・一覧除外、専用操作は👑オーナー操作ドロップダウン）。
