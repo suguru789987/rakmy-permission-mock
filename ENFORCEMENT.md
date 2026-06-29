@@ -126,3 +126,141 @@ end
 
 ---
 ※本書は論理設計。実本番の実テーブル/列名・DBダンプは含めない（ガバナンス）。指標↔実列の確定マッピングは private リポを参照。
+
+---
+
+## 10. feature_key 体系設計（UI ↔ バックエンド判定キー）
+モックの「カテゴリ→機能」を、永続安定な `feature_key` に1:1で写す。インデックス(fi)ではなく**意味のあるキー**で固定（画面追加・並べ替えに耐える）。
+
+### 命名規則
+- `feature_key = "<category_id>"`（単一機能カテゴリ）／`"<category_id>.<slug>"`（複数機能）。
+- カテゴリ群：`view`（一覧画面権限）/`ops`（設定画面権限）。判定の閾値はこの群に依存。
+- 例（抜粋）：
+
+| UI カテゴリ/機能 | group | feature_key | 取りうる権限 |
+|---|---|---|---|
+| ダッシュボード（閲覧） | view | `dashboard` | 閲覧固定（常時1） |
+| 売上分析 | view | `sales` | なし/閲覧（+export op） |
+| 集計・予実 | view | `report` | なし/閲覧 |
+| 従業員（閲覧） | view | `emp_view` | なし/閲覧（店長のみ・自店舗） |
+| 発注先&仕入商品 | ops | `vendor` | なし/閲覧/操作/全て |
+| 納品書 | ops | `delivery` | 〃 |
+| 棚卸（実施／商品管理） | ops | `inventory.exec` / `inventory.product` | 〃 |
+| 従業員管理（台帳/給与/勤怠…） | ops | `employees.ledger` / `employees.payroll` / … | 〃（会社ロール中心） |
+| 締め管理 | ops | `closing` | 〃（会社ロール） |
+| 予算設定 / 費用設定 | ops | `budget` / `cost` | 〃 |
+| ダッシュボード（カスタマイズ） | ops | `uicustom` | なし/操作（編集/DnD/タグ作成） |
+
+### キーの規律
+- **コントローラ/アクション側に `feature_key` を宣言**（`require_permission 'vendor', op: :create` 等）。UIの feature_key と**同一の辞書**を共有（コード生成 or 定数表）。
+- 画面新設時は **role_permissions に既定 level=0（なし）**で全ロールに並ぶ＝デフォルト拒否。付与は権限設定UIで。
+- `metric_key`（指標）は feature_key とは別系統（`metrics.key`）。指標の可否は `role_metrics`＋機密で判定。
+
+## 11. 画面別 判定実装例（Rails / Pundit 風）
+
+### 11-1. 発注先&仕入商品（`vendor`・edit・店舗スコープ）
+```ruby
+class VendorsController < ApplicationController
+  def index   # 一覧表示
+    authorize_feature! 'vendor', need_level: 1            # 閲覧
+    @vendors = Vendor.for_user(current_user)              # スコープ強制
+  end
+  def create
+    authorize_feature! 'vendor', op: :create             # 登録（案C：登録↔編集連動）
+    @vendor = Vendor.new(vendor_params.merge(store_id: scoped_store_id!))
+    ...
+  end
+  def update; authorize_feature! 'vendor', op: :update; ...; end
+  def destroy
+    authorize_feature! 'vendor', op: :delete             # 削除＝独立判定（全て相当）
+    ...
+  end
+end
+
+# 基底
+def authorize_feature!(key, need_level: 1, op: nil)
+  perm = current_user.effective_permissions[key]
+  raise Forbidden unless perm && perm.level >= need_level
+  raise Forbidden if op && !perm.ops[op]
+end
+def scoped_store_id!     # 作成時：自店舗 or 指定店舗のいずれかに属するか検証
+  sid = params[:store_id].to_i
+  ids = effective_store_ids(current_user)
+  raise Forbidden unless ids == :all || ids.include?(sid)
+  sid
+end
+```
+
+### 11-2. ダッシュボード（`dashboard`・閲覧固定＋指標 allowlist）
+```ruby
+def show
+  # 閲覧は全ロール常時可（ランディング）＝level判定不要（feature_key 'dashboard' は常時1）
+  metrics = DashboardMetric.all
+            .where(id: visible_metric_ids(current_user))   # role_metrics の allowlist
+            .reject { |m| crosses_boundary?(m, current_user) } # 機密×スコープ越境防御
+  render_dashboard(metrics)
+end
+def visible_metric_ids(user)
+  RoleMetric.where(role_id: user.role_ids, visible: true).pluck(:metric_id).uniq
+end
+def crosses_boundary?(metric, user)
+  # 全社集計/機密=company は scope all のロールが無ければ除外（多層防御をサーバ側で再現）
+  (metric.scope == 'company' || metric.sensitivity == 'company') && !user.has_company_scope?
+end
+```
+
+### 11-3. 売上分析（`sales`・閲覧＋エクスポート＋スコープ＋指標）
+```ruby
+def index
+  authorize_feature! 'sales', need_level: 1
+  @rows = Sales.for_user(current_user)            # 店舗スコープ
+            .visible_metrics_for(current_user)     # 指標 allowlist
+end
+def export
+  authorize_feature! 'sales', op: :export         # エクスポートは個別op（閲覧の付随操作）
+  send_csv(Sales.for_user(current_user))
+end
+```
+
+### 11-4. 従業員管理（`employees.*`・会社ロール中心・台帳は店長=自店舗）
+```ruby
+def index   # 従業員台帳一覧
+  authorize_feature! 'employees.ledger', need_level: 1
+  @emps = Employee.for_user(current_user)         # 店長=自店舗 / 会社ロール=全社
+end
+def payroll # 給与（会社ロールのみ＝fixed）
+  authorize_feature! 'employees.payroll', need_level: 1
+  # role_permissions に store ロールの employees.payroll が存在しない（=なし固定）
+end
+```
+
+### 11-5. 締め管理（`closing`・会社ロール操作／店舗は閲覧のみ）
+```ruby
+def index;  authorize_feature! 'closing_view', need_level: 1; end  # 締め状況＝閲覧（店舗ロール可）
+def close;  authorize_feature! 'closing',     op: :update;   end   # 締め処理＝操作（会社ロール）
+```
+
+### 共通：スコープの `for_user`
+```ruby
+module StoreScoped
+  def self.included(base)
+    base.scope :for_user, ->(user) {
+      ids = effective_store_ids(user)
+      ids == :all ? all : where(store_id: ids)     # 会社ロール=:all は無制限
+    }
+  end
+end
+# 店舗データを持つモデル(Vendor/Sales/Employee/Inventory…)に include
+```
+
+### まとめ（判定の対応表）
+| UI操作 | 判定 |
+|---|---|
+| 画面表示（閲覧） | `need_level: 1` |
+| 登録 | `op: :create`（連動で update も） |
+| 編集 | `op: :update` |
+| 削除 | `op: :delete`（独立・破壊的） |
+| エクスポート | `op: :export` |
+| 設定（管理系） | `need_level: 2`（設定可） |
+| データ範囲 | `for_user` スコープで強制 |
+| 指標 | `role_metrics` allowlist ＋ 機密×スコープ越境防御 |
