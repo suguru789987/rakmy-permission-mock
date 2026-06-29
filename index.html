@@ -102,6 +102,10 @@
   .nr-side{ flex:1; min-width:0; position:sticky; top:12px; background:#eef2f7; border:1px solid #d8e0ea; border-radius:12px; padding:14px; }
   .nr-detailpanel{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; max-height:48vh; overflow:auto; }
   .wz-l3{ margin:2px 0 12px 14px; padding:8px 12px; background:#f7f9fb; border:1px solid #eef0f2; border-radius:8px; }
+  .wzops{ display:flex; flex-direction:column; gap:6px; }
+  .wzoprow{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:5px 6px; background:#fff; border:1px solid #eef0f2; border-radius:7px; }
+  .wzoprow .wzopn{ font-size:13px; font-weight:600; color:#333; }
+  .wzoprow .opnote{ font-size:11px; color:#9aa0a6; margin-left:8px; }
   .nr-field{ margin:0 0 18px; max-width:600px; }
   .nr-field .nrl{ display:block; font-weight:700; font-size:13px; margin:0 0 7px; color:#444; }
   .nr-field .rolesel{ display:flex; gap:10px; flex-wrap:wrap; }
@@ -1592,6 +1596,7 @@ function featSeg(pr,cid,fi,f){ if(KIND[f.k].lock) return '<span class="pill pvw"
 function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeatVal(_rmBasePerm,cid,fi,c.features[fi],val); rmRefreshPanel(); }
 // ウィザード深部：操作詳細・指標を _rmBasePerm 上で編集（アコーディオン最深部の移植）
 function wzToggleOp(cid,fi,oid){ const k=opKey(cid,fi,oid); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
+function wzSetOp(cid,fi,oid,on){ _rmBasePerm[opKey(cid,fi,oid)]=on; rmRefreshPanel(); }   // 操作詳細：行ごと 許可/なし ボタン
 function wzToggleItem(cid,fi,key){ const k=opKey(cid,fi,key); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
 function wzToggleSub(cid,fi,ii,vo){ const k=opKey(cid,fi,siKey(fi,ii,vo)); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
 function wzItemsAll(cid,fi,on){ const c=CATEGORIES.find(x=>x.id===cid),f=c.features[fi]; itemKeys(f).forEach(k=>_rmBasePerm[opKey(cid,fi,k)]=on); rmRefreshPanel(); }
@@ -1605,10 +1610,12 @@ function wzFeatDeep(pr,cid,f,fi){
     inner+=`</div>`;
   }
   if(opsShow.length>0){
-    const boxes=opsShow.map(o=>{ const on=pr.perm[opKey(cid,fi,o.id)];
-      if(o.adminOnly) return `<label class="oplocked"><input type="checkbox" ${on?'checked':''} disabled> ${o.n}<span class="opnote">🔒 本部のみ</span></label>`;
-      return `<label><input type="checkbox" ${on?'checked':''} onclick="event.stopPropagation();wzToggleOp('${cid}',${fi},'${o.id}')"> ${o.n}</label>`; }).join('');
-    inner+=`<div class="l3bar opsbar"><span>⚙ 操作詳細：許可する操作を選択</span></div><div class="l3grid">${boxes}</div>`;
+    const rows=opsShow.map(o=>{ const on=!!pr.perm[opKey(cid,fi,o.id)];
+      const seg=o.adminOnly
+        ? `<span class="rmseg"><button class="${on?'on':''}" disabled>許可</button><button class="${!on?'on':''}" disabled>なし</button></span><span class="opnote">🔒 本部のみ</span>`
+        : `<span class="rmseg"><button class="${on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',true)">許可</button><button class="${!on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',false)">なし</button></span>`;
+      return `<div class="wzoprow"><span class="wzopn">${o.n}</span>${seg}</div>`; }).join('');
+    inner+=`<div class="l3bar opsbar"><span>⚙ 操作詳細：許可する操作を選択</span></div><div class="wzops">${rows}</div>`;
   }
   if(f.catalog){
     const rk=(pr.key==='__new')?(pr.tier==='company'?'keiri':'manager'):pr.key; let body='',cnt=0;
