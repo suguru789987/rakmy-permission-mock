@@ -743,8 +743,8 @@ const CATEGORIES = [
       {n:'仕入率（原価率）'},{n:'人件費率'},{n:'FL率'},{n:'固定費率'},{n:'営業利益率'},
       {n:'坪月商'},{n:'繁盛店指数'},{n:'ROI（投資回収）'},{n:'予実進捗'}]},
     {n:'お知らせ（ニュース）',k:'base'},
-    {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'view',new:true,future:true, catalog:'display'},
-    {n:'UIカスタマイズ：カスタムタグ（閲覧）',k:'view',new:true,future:true, catalog:'tags', ops:[{id:'view',n:'閲覧'}]}]},
+    {n:'UIカスタマイズ：表示項目（許可指標 allowlist）',k:'base',new:true,future:true, catalog:'display'},
+    {n:'UIカスタマイズ：カスタムタグ（閲覧）',k:'base',new:true,future:true, catalog:'tags', ops:[{id:'view',n:'閲覧'}]}]},   // ダッシュボード＝ランディング画面：全機能 閲覧固定（閲覧可否設定なし・全ロール閲覧可）
   {id:'sales', name:'売上分析', ctx:'common', features:[
     {n:'ABC分析',k:'view', items:[{n:'売上構成比'},{n:'累計構成比'},{n:'ABCランク'},{n:'売上額'},{n:'数量'}]},
     {n:'商品別分析',k:'view', items:[{n:'商品別売上'},{n:'数量'},{n:'粗利'},{n:'粗利率'},{n:'構成比'}]},
@@ -778,7 +778,7 @@ const CATEGORIES = [
     {n:'ダウンロード',k:'action',fixed:true},
     {n:'売上・仕入データ抽出',k:'view',fixed:true}]},
   // ===== ダッシュボードの「操作」系（カスタマイズ/DnD編集）は操作・設定権限グループへ分離 =====
-  {id:'uicustom', name:'UIカスタマイズ', ctx:'common', features:[
+  {id:'uicustom', name:'ダッシュボード（カスタマイズ）', ctx:'common', features:[
     {n:'ダッシュボードカスタマイズ（ウィジェット/プリセット）',k:'edit',new:true, ops:[{id:'view',n:'閲覧'},{id:'create',n:'登録'},{id:'update',n:'編集'}]},
     {n:'カスタムタグ作成・管理（本部のみ）',k:'edit',new:true,fixed:true},
     {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
@@ -1627,7 +1627,10 @@ function wzFeatDeep(pr,cid,f,fi){
 }
 let _tpdPr=null, _tpdExp={}, _tpdTarget='tplDetailBody';
 // 画面ごとの詳細：概要（画面×可否）→クリックで列（機能/項目）ごとの閲覧/操作を展開
-function screenSeg(pr,c,gk){ const st=catStatus(pr,c.id), cur=st==='no'?0:st==='vw'?1:2;
+function screenSeg(pr,c,gk){
+  const fs=c.features.filter(f=>(f.fixed?pr.tier==='company':true)&&!(f.noStaff&&pr.key==='staff')&&!f.inheritFrom);
+  if(fs.length && fs.every(f=>KIND[f.k].lock)) return '<span class="pill pvw">閲覧固定（ランディング）</span>';   // 全機能lock＝閲覧可否なし・常時閲覧（ダッシュボード等）
+  const st=catStatus(pr,c.id), cur=st==='no'?0:st==='vw'?1:2;
   const levels = gk==='view'?[[1,'閲覧'],[0,'なし']]:[[2,'操作'],[1,'閲覧'],[0,'なし']];
   return `<span class="rmseg">${levels.map(([v,l])=>`<button data-v="${v}" class="${cur===v?'on':''}" onclick="event.stopPropagation();rmEditCat('${c.id}',${v})">${l}</button>`).join('')}</span>`; }
 function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.getElementById(_tpdTarget); if(!el) return;
