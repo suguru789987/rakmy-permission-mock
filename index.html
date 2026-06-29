@@ -1563,11 +1563,18 @@ function featSeg(pr,cid,fi,f){ if(KIND[f.k].lock) return '<span class="pill pvw"
 function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeatVal(_rmBasePerm,cid,fi,c.features[fi],val); rmRefreshPanel(); }
 // ウィザード深部：操作詳細・指標を _rmBasePerm 上で編集（アコーディオン最深部の移植）
 function wzToggleOp(cid,fi,oid){ const k=opKey(cid,fi,oid); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
-function wzSetOp(cid,fi,oid,on){   // 操作詳細：許可/なし。連動＝「登録（親）ができれば編集・削除も」：登録ON/OFFで編集・削除も連動／編集・削除は個別調整
+function wzSetOp(cid,fi,oid,on){   // 操作詳細：許可/なし。案C＝登録↔編集は連動（操作=管理の一体）／削除は破壊的のため確認付きopt-in＋管理(登録/編集)も必要（4状態の操作/全てと整合）
   const f=CATEGORIES.find(c=>c.id===cid).features[fi];
-  const ord=opsOf(f).filter(o=>o.id!=='view'&&!o.adminOnly).map(o=>o.id);   // [登録(create), 編集(update), 削除(delete)]
-  if(ord.length>1 && oid===ord[0]){ ord.forEach(k=>_rmBasePerm[opKey(cid,fi,k)]=on); }   // 登録＝操作の親：ON→編集・削除もON／OFF→全てOFF
-  else { _rmBasePerm[opKey(cid,fi,oid)]=on; }   // 編集・削除・エクスポート等は個別
+  const ops=opsOf(f).filter(o=>o.id!=='view'&&!o.adminOnly).map(o=>o.id);
+  const has=k=>ops.includes(k), set=(k,v)=>{ if(has(k)) _rmBasePerm[opKey(cid,fi,k)]=v; };
+  if(oid==='delete'){
+    if(on){ if(!confirm('「削除」も許可しますか？\n削除は破壊的で元に戻せません（=「全て」相当の権限）。')){ rmRefreshPanel(); return; }
+      set('delete',true); set('create',true); set('update',true); }   // 削除＝意識的opt-in＋管理(登録/編集)も付与
+    else set('delete',false);   // 削除OFFは個別（登録/編集は維持＝操作に戻る）
+  } else if(oid==='create'||oid==='update'){
+    set('create',on); set('update',on);          // 登録↔編集は一体（操作）：どちらか操作で両方連動
+    if(!on) set('delete',false);                 // 操作をなしにしたら削除も無し（管理が無ければ削除も無い）
+  } else { _rmBasePerm[opKey(cid,fi,oid)]=on; }   // エクスポート等は個別
   rmRefreshPanel();
 }
 function wzSetItem(cid,fi,key,on){ _rmBasePerm[opKey(cid,fi,key)]=on; rmRefreshPanel(); }   // 指標項目：行ごと 表示/非表示 ボタン
@@ -1592,7 +1599,8 @@ function wzFeatDeep(pr,cid,f,fi){
       const seg=o.adminOnly
         ? `<span class="rmseg"><button data-on="yes" class="${on?'on':''}" disabled>許可</button><button data-on="no" class="${!on?'on':''}" disabled>なし</button></span><span class="opnote">🔒 本部のみ</span>`
         : `<span class="rmseg"><button data-on="yes" class="${on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',true)">許可</button><button data-on="no" class="${!on?'on':''}" onclick="event.stopPropagation();wzSetOp('${cid}',${fi},'${o.id}',false)">なし</button></span>`;
-      return `<div class="wzoprow"><span class="wzopn">${o.n}</span>${seg}</div>`; }).join('');
+      const note = o.id==='delete' ? '<span class="opnote">⚠ 破壊的・確認あり</span>' : '';
+      return `<div class="wzoprow"><span class="wzopn">${o.n}${note}</span>${seg}</div>`; }).join('');
     const eko=cid+'_'+fi, opo=_wzOpsExp[eko];
     inner+=`<div class="l3bar opsbar wztoggle" onclick="event.stopPropagation();wzToggleOps('${cid}',${fi})"><span>${opo?'▼':'▶'} ⚙ 操作詳細：許可する操作を選択</span></div>${opo?`<div class="wzops">${rows}</div>`:''}`;
   }
