@@ -1,0 +1,1623 @@
+{
+  "schema_version": "1.0",
+  "generated_from": "rakmy-permission-mock/index.html",
+  "note": "UI仕様の機械可読版。バックエンドの権限判定キー辞書。level:0=なし 1=閲覧 2=操作 3=全て。company_only=会社ロールのみ, manager_min=店長以上(店舗ロール), inherit_from=親機能に連動",
+  "kind_levels": {
+    "base": "閲覧固定(常時1)",
+    "view": "なし/閲覧",
+    "edit": "なし/閲覧/操作/全て",
+    "admin": "なし/閲覧/設定可",
+    "action": "なし/実行可"
+  },
+  "crud_linkage": "案C: 登録↔編集は連動(操作=一体), 削除は確認付きopt-in＋管理(登録/編集)も付与(=全て相当)",
+  "category_count": 27,
+  "feature_count": 65,
+  "roles": [
+    {
+      "key": "manager",
+      "name": "店長",
+      "tier": "shop",
+      "scopeType": "self",
+      "system": false
+    },
+    {
+      "key": "staff",
+      "name": "従業員",
+      "tier": "shop",
+      "scopeType": "self",
+      "system": false
+    },
+    {
+      "key": "area",
+      "name": "エリア長",
+      "tier": "shop",
+      "scopeType": "shops",
+      "system": false
+    },
+    {
+      "key": "keiri",
+      "name": "経理担当",
+      "tier": "company",
+      "scopeType": "all",
+      "system": false
+    },
+    {
+      "key": "jinji",
+      "name": "人事担当",
+      "tier": "company",
+      "scopeType": "all",
+      "system": false
+    },
+    {
+      "key": "owner",
+      "name": "オーナー（全権）",
+      "tier": "company",
+      "scopeType": "all",
+      "system": true
+    }
+  ],
+  "categories": [
+    {
+      "id": "dashboard",
+      "name": "ダッシュボード",
+      "group": "view",
+      "ctx": "common"
+    },
+    {
+      "id": "sales",
+      "name": "売上分析",
+      "group": "view",
+      "ctx": "common"
+    },
+    {
+      "id": "purchase",
+      "name": "仕入分析",
+      "group": "view",
+      "ctx": "common"
+    },
+    {
+      "id": "detail",
+      "name": "詳細分析",
+      "group": "view",
+      "ctx": "common"
+    },
+    {
+      "id": "report",
+      "name": "集計",
+      "group": "view",
+      "ctx": "common"
+    },
+    {
+      "id": "emp_view",
+      "name": "従業員（閲覧）",
+      "group": "view",
+      "ctx": "common"
+    },
+    {
+      "id": "closing_view",
+      "name": "締め状況（閲覧）",
+      "group": "view",
+      "ctx": "common"
+    },
+    {
+      "id": "data",
+      "name": "ダウンロード",
+      "group": "ops",
+      "ctx": "company"
+    },
+    {
+      "id": "uicustom",
+      "name": "ダッシュボード（カスタマイズ）",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "label",
+      "name": "ラベル",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "vendor",
+      "name": "発注先&仕入商品",
+      "group": "ops",
+      "ctx": "shop"
+    },
+    {
+      "id": "delivery",
+      "name": "納品書",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "saleslog",
+      "name": "売上",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "inventory",
+      "name": "棚卸",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "pettycash",
+      "name": "小口現金",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "employees",
+      "name": "従業員管理",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "closing",
+      "name": "締め管理",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "users",
+      "name": "ユーザー",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "transfer",
+      "name": "店舗間商品移動",
+      "group": "ops",
+      "ctx": "common"
+    },
+    {
+      "id": "shop",
+      "name": "店舗（管理）",
+      "group": "ops",
+      "ctx": "company"
+    },
+    {
+      "id": "company",
+      "name": "会社情報",
+      "group": "ops",
+      "ctx": "company"
+    },
+    {
+      "id": "billing",
+      "name": "お支払い",
+      "group": "ops",
+      "ctx": "company"
+    },
+    {
+      "id": "shopinfo",
+      "name": "店舗情報",
+      "group": "ops",
+      "ctx": "shop"
+    },
+    {
+      "id": "integration",
+      "name": "連携設定",
+      "group": "ops",
+      "ctx": "shop"
+    },
+    {
+      "id": "cost",
+      "name": "費用設定",
+      "group": "ops",
+      "ctx": "shop"
+    },
+    {
+      "id": "holiday",
+      "name": "休業日設定",
+      "group": "ops",
+      "ctx": "shop"
+    },
+    {
+      "id": "budget",
+      "name": "予算設定",
+      "group": "ops",
+      "ctx": "shop"
+    }
+  ],
+  "features": [
+    {
+      "feature_key": "dashboard.main",
+      "category_id": "dashboard",
+      "category_name": "ダッシュボード",
+      "group": "view",
+      "ui_name": "ダッシュボード",
+      "ctx": "common",
+      "kind": "base",
+      "levels": [
+        1
+      ],
+      "ops": [],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "dashboard.news",
+      "category_id": "dashboard",
+      "category_name": "ダッシュボード",
+      "group": "view",
+      "ui_name": "お知らせ（ニュース）",
+      "ctx": "common",
+      "kind": "base",
+      "levels": [
+        1
+      ],
+      "ops": [],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "sales.abc",
+      "category_id": "sales",
+      "category_name": "売上分析",
+      "group": "view",
+      "ui_name": "ABC分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "sales.product",
+      "category_id": "sales",
+      "category_name": "売上分析",
+      "group": "view",
+      "ui_name": "商品別分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "sales.hourly",
+      "category_id": "sales",
+      "category_name": "売上分析",
+      "group": "view",
+      "ui_name": "時間帯別分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "sales.weekday",
+      "category_id": "sales",
+      "category_name": "売上分析",
+      "group": "view",
+      "ui_name": "曜日別分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "sales.payment",
+      "category_id": "sales",
+      "category_name": "売上分析",
+      "group": "view",
+      "ui_name": "支払種別分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "purchase.vendor",
+      "category_id": "purchase",
+      "category_name": "仕入分析",
+      "group": "view",
+      "ui_name": "仕入先別分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "purchase.product",
+      "category_id": "purchase",
+      "category_name": "仕入分析",
+      "group": "view",
+      "ui_name": "商品別分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "purchase.costitem",
+      "category_id": "purchase",
+      "category_name": "仕入分析",
+      "group": "view",
+      "ui_name": "費目別分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "purchase.unit_price",
+      "category_id": "purchase",
+      "category_name": "仕入分析",
+      "group": "view",
+      "ui_name": "商品仕入単価",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "purchase.avg_price",
+      "category_id": "purchase",
+      "category_name": "仕入分析",
+      "group": "view",
+      "ui_name": "平均単価推移",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "detail.progress",
+      "category_id": "detail",
+      "category_name": "詳細分析",
+      "group": "view",
+      "ui_name": "進捗分析",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "detail.sensitivity",
+      "category_id": "detail",
+      "category_name": "詳細分析",
+      "group": "view",
+      "ui_name": "感度分析",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "detail.inflow",
+      "category_id": "detail",
+      "category_name": "詳細分析",
+      "group": "view",
+      "ui_name": "流入分析",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "detail.table",
+      "category_id": "detail",
+      "category_name": "詳細分析",
+      "group": "view",
+      "ui_name": "テーブル稼働分析",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "report.annual_pl",
+      "category_id": "report",
+      "category_name": "集計",
+      "group": "view",
+      "ui_name": "年間予実対比",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "report.pl",
+      "category_id": "report",
+      "category_name": "集計",
+      "group": "view",
+      "ui_name": "予実対比",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "report.monthly",
+      "category_id": "report",
+      "category_name": "集計",
+      "group": "view",
+      "ui_name": "月次集計",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "report.monthly_report",
+      "category_id": "report",
+      "category_name": "集計",
+      "group": "view",
+      "ui_name": "月次レポート",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "report.daily_report",
+      "category_id": "report",
+      "category_name": "集計",
+      "group": "view",
+      "ui_name": "日次レポート",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "report.order_report",
+      "category_id": "report",
+      "category_name": "集計",
+      "group": "view",
+      "ui_name": "発注分析レポート",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "emp_view",
+      "category_id": "emp_view",
+      "category_name": "従業員（閲覧）",
+      "group": "view",
+      "ui_name": "従業員画面の閲覧（一覧）",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": true,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "closing_view",
+      "category_id": "closing_view",
+      "category_name": "締め状況（閲覧）",
+      "group": "view",
+      "ui_name": "締め状況の閲覧",
+      "ctx": "common",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "data.download",
+      "category_id": "data",
+      "category_name": "ダウンロード",
+      "group": "ops",
+      "ui_name": "ダウンロード",
+      "ctx": "company",
+      "kind": "action",
+      "levels": [
+        0,
+        2
+      ],
+      "ops": [
+        "exec"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "data.extract",
+      "category_id": "data",
+      "category_name": "ダウンロード",
+      "group": "ops",
+      "ui_name": "売上・仕入データ抽出",
+      "ctx": "company",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "uicustom.widget",
+      "category_id": "uicustom",
+      "category_name": "ダッシュボード（カスタマイズ）",
+      "group": "ops",
+      "ui_name": "ダッシュボードカスタマイズ（ウィジェット/プリセット）",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "uicustom.tag",
+      "category_id": "uicustom",
+      "category_name": "ダッシュボード（カスタマイズ）",
+      "group": "ops",
+      "ui_name": "カスタムタグ作成・管理（本部のみ）",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "uicustom.dnd_shop",
+      "category_id": "uicustom",
+      "category_name": "ダッシュボード（カスタマイズ）",
+      "group": "ops",
+      "ui_name": "UIカスタマイズ：DnD編集（店舗画面）",
+      "ctx": "common",
+      "kind": "action",
+      "levels": [
+        0,
+        2
+      ],
+      "ops": [
+        "exec"
+      ],
+      "company_only": false,
+      "manager_min": true,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "uicustom.dnd_company",
+      "category_id": "uicustom",
+      "category_name": "ダッシュボード（カスタマイズ）",
+      "group": "ops",
+      "ui_name": "UIカスタマイズ：DnD編集（会社画面）",
+      "ctx": "common",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "label",
+      "category_id": "label",
+      "category_name": "ラベル",
+      "group": "ops",
+      "ui_name": "ラベル（登録・一覧）",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "vendor",
+      "category_id": "vendor",
+      "category_name": "発注先&仕入商品",
+      "group": "ops",
+      "ui_name": "発注先&仕入商品（一覧・登録・編集）",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "delivery",
+      "category_id": "delivery",
+      "category_name": "納品書",
+      "group": "ops",
+      "ui_name": "納品書管理（一覧・編集）",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "saleslog",
+      "category_id": "saleslog",
+      "category_name": "売上",
+      "group": "ops",
+      "ui_name": "売上（売上ログ入力・実績）",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "inventory.exec",
+      "category_id": "inventory",
+      "category_name": "棚卸",
+      "group": "ops",
+      "ui_name": "棚卸実施（棚卸履歴・実施）",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "inventory.product",
+      "category_id": "inventory",
+      "category_name": "棚卸",
+      "group": "ops",
+      "ui_name": "棚卸商品管理",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "pettycash.manage",
+      "category_id": "pettycash",
+      "category_name": "小口現金",
+      "group": "ops",
+      "ui_name": "小口現金管理（一覧・登録・締め）",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "pettycash.expense_item",
+      "category_id": "pettycash",
+      "category_name": "小口現金",
+      "group": "ops",
+      "ui_name": "経費項目設定",
+      "ctx": "common",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "employees.ledger",
+      "category_id": "employees",
+      "category_name": "従業員管理",
+      "group": "ops",
+      "ui_name": "従業員の登録・編集",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": true,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "employees.payroll",
+      "category_id": "employees",
+      "category_name": "従業員管理",
+      "group": "ops",
+      "ui_name": "給与設定・履歴",
+      "ctx": "company",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "employees.attendance",
+      "category_id": "employees",
+      "category_name": "従業員管理",
+      "group": "ops",
+      "ui_name": "勤怠データ取込（CSV/API）",
+      "ctx": "company",
+      "kind": "action",
+      "levels": [
+        0,
+        2
+      ],
+      "ops": [
+        "exec"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "employees.timerec",
+      "category_id": "employees",
+      "category_name": "従業員管理",
+      "group": "ops",
+      "ui_name": "時間記録・レイアウト設定",
+      "ctx": "company",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "employees.laborcost",
+      "category_id": "employees",
+      "category_name": "従業員管理",
+      "group": "ops",
+      "ui_name": "人件費管理（ヘルプ/概算/PA）",
+      "ctx": "company",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "employees.history",
+      "category_id": "employees",
+      "category_name": "従業員管理",
+      "group": "ops",
+      "ui_name": "従業員履歴・アーカイブ",
+      "ctx": "company",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "employees.punch",
+      "category_id": "employees",
+      "category_name": "従業員管理",
+      "group": "ops",
+      "ui_name": "打刻ステータス（漏れアラート）",
+      "ctx": "company",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "closing.close",
+      "category_id": "closing",
+      "category_name": "締め管理",
+      "group": "ops",
+      "ui_name": "締め処理（仮締め・本締め・一括）",
+      "ctx": "company",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "closing.fiscal",
+      "category_id": "closing",
+      "category_name": "締め管理",
+      "group": "ops",
+      "ui_name": "会計年度設定",
+      "ctx": "company",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "users",
+      "category_id": "users",
+      "category_name": "ユーザー",
+      "group": "ops",
+      "ui_name": "ユーザー（アカウント・招待）",
+      "ctx": "common",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "transfer",
+      "category_id": "transfer",
+      "category_name": "店舗間商品移動",
+      "group": "ops",
+      "ui_name": "店舗間商品移動",
+      "ctx": "common",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "shop",
+      "category_id": "shop",
+      "category_name": "店舗（管理）",
+      "group": "ops",
+      "ui_name": "店舗管理（一覧・登録・編集・削除）",
+      "ctx": "company",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "company.info",
+      "category_id": "company",
+      "category_name": "会社情報",
+      "group": "ops",
+      "ui_name": "会社情報",
+      "ctx": "company",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "company.setup",
+      "category_id": "company",
+      "category_name": "会社情報",
+      "group": "ops",
+      "ui_name": "初期設定（アカウント登録）",
+      "ctx": "company",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "billing",
+      "category_id": "billing",
+      "category_name": "お支払い",
+      "group": "ops",
+      "ui_name": "お支払い（請求・契約・プラン）",
+      "ctx": "company",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": true,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "shopinfo",
+      "category_id": "shopinfo",
+      "category_name": "店舗情報",
+      "group": "ops",
+      "ui_name": "店舗情報",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "integration",
+      "category_id": "integration",
+      "category_name": "連携設定",
+      "group": "ops",
+      "ui_name": "連携設定（POS／仕入／勤怠の連携先）",
+      "ctx": "shop",
+      "kind": "admin",
+      "levels": [
+        0,
+        1,
+        2
+      ],
+      "ops": [
+        "view",
+        "config"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "cost.setting",
+      "category_id": "cost",
+      "category_name": "費用設定",
+      "group": "ops",
+      "ui_name": "費用設定（費目別の費用予算・費目の追加/編集/削除）",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "cost.actual_list",
+      "category_id": "cost",
+      "category_name": "費用設定",
+      "group": "ops",
+      "ui_name": "費用実績入力・一覧（費目×月の実績入力／年間一覧表示・CSV取込）",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "holiday",
+      "category_id": "holiday",
+      "category_name": "休業日設定",
+      "group": "ops",
+      "ui_name": "休業日設定",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "budget.list",
+      "category_id": "budget",
+      "category_name": "予算設定",
+      "group": "ops",
+      "ui_name": "予算一覧",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "budget.monthly_wizard",
+      "category_id": "budget",
+      "category_name": "予算設定",
+      "group": "ops",
+      "ui_name": "月次予算設定（ウィザード）",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "budget.month_cost",
+      "category_id": "budget",
+      "category_name": "予算設定",
+      "group": "ops",
+      "ui_name": "単月費用設定",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": "月次予算設定（ウィザード）"
+    },
+    {
+      "feature_key": "budget.sales_ratio",
+      "category_id": "budget",
+      "category_name": "予算設定",
+      "group": "ops",
+      "ui_name": "売上構成比設定",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": "月次予算設定（ウィザード）"
+    },
+    {
+      "feature_key": "budget.weekday_bias",
+      "category_id": "budget",
+      "category_name": "予算設定",
+      "group": "ops",
+      "ui_name": "曜日別バイアス設定",
+      "ctx": "shop",
+      "kind": "edit",
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ops": [
+        "view",
+        "create",
+        "update",
+        "delete"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": "月次予算設定（ウィザード）"
+    },
+    {
+      "feature_key": "budget.annual_list",
+      "category_id": "budget",
+      "category_name": "予算設定",
+      "group": "ops",
+      "ui_name": "年間予算一覧",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    },
+    {
+      "feature_key": "budget.calendar",
+      "category_id": "budget",
+      "category_name": "予算設定",
+      "group": "ops",
+      "ui_name": "予実管理カレンダー（日次）",
+      "ctx": "shop",
+      "kind": "view",
+      "levels": [
+        0,
+        1
+      ],
+      "ops": [
+        "view",
+        "export"
+      ],
+      "company_only": false,
+      "manager_min": false,
+      "inherit_from": null
+    }
+  ]
+}
