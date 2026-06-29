@@ -132,11 +132,13 @@
 
 ## 公開・キャッシュ対策
 
-GitHub Pages（Actions）で push 毎に自動デプロイ。常に最新が見えるよう恒久対策を実装:
-- **ビルド版数の自動注入**：デプロイ時に Actions がコミットSHAを `__BUILD__` へ埋め込む（`pages.yml` の sed ステップ）。
+GitHub Pages（**Actions ビルド**）で push 毎に自動デプロイ。常に最新が見えるよう恒久対策を実装:
+- **Pages のビルド方式は「GitHub Actions」必須**：以前は legacy（ブランチ直配信）で **main の生ファイルが配信され、Action の sed が無視**＝`__BUILD__` が `__BUILD_PLACEHOLDER__` のまま未置換 → 自動更新が常に無効＝**全員が古いキャッシュを見続ける不具合**だった（2026-06-29 に `build_type=workflow` へ切替て解消）。**legacy に戻さないこと**。
+- **ビルド版数の自動注入**：デプロイ時に Actions がコミットSHAを `__BUILD__` へ埋め込む（`pages.yml` の sed ステップ）。ライブで `window.__BUILD__='<sha>'` が実SHAになっていることを確認（`__BUILD_PLACEHOLDER__` のままなら配信方式が誤り）。
 - **ネットワーク優先の自動更新**：起動時に最新HTMLを `no-store` 取得し、版数差があればその場で差し替え＋再初期化（1回ガードでループ防止）。
 - **Service Worker解除＋キャッシュ破棄**、no-cache メタ。
 - **右下に `build xxxxxxx`** を可視表示（最新確認用）。
+- 切替直後の旧キャッシュ版は自動更新が効かないため、利用者は**一度だけハードリロード**で実SHA版を取得 → 以後は自動更新。
 
 ---
 
