@@ -572,7 +572,7 @@
       <div class="sp"></div>
       <button class="btn ghost" onclick="show('catalog')">キャンセル</button>
       <span id="csTplBar" style="display:flex;gap:8px;align-items:center;"></span>
-      <button class="btn primary" onclick="applyCondset()">カタログへ戻る</button>
+      <button class="btn primary" onclick="applyCondset()">指標一覧へ戻る</button>
     </div>
     <div class="panel">
       <div id="condsetBody"></div>
@@ -900,7 +900,7 @@ function toggleDimRole(i,rk){ const d=CATALOG.dimensions[i]; d.roles[rk]=!d.role
 /* 現在のタブの項目集合（カタログ） */
 function curTabItems(){ if(catalogTab==='tags') return CATALOG.tags; if(catalogTab==='dims') return CATALOG.dimensions; if(catalogTab==='metrics') return CATALOG.transactions.flatMap(g=>g.items); return []; }
 /* 他ロールから現在ロールへ丸ごとコピー（全カタログ） */
-function copyFromRole(){ if(catalogRole==='all') return; const src=document.getElementById('copySrc').value; _allCat().forEach(it=>{ if(it.scope==='company'&&!roleScopeAllKey(catalogRole)){ it.roles[catalogRole]=false; return; } it.roles[catalogRole]=it.roles[src]; enforceNesting(it.roles,catalogRole); }); renderCatalog(); toast(roleLabel(src)+'のカタログをコピーしました（全社指標は自店舗ロールには含めません）'); }
+function copyFromRole(){ if(catalogRole==='all') return; const src=document.getElementById('copySrc').value; _allCat().forEach(it=>{ if(it.scope==='company'&&!roleScopeAllKey(catalogRole)){ it.roles[catalogRole]=false; return; } it.roles[catalogRole]=it.roles[src]; enforceNesting(it.roles,catalogRole); }); renderCatalog(); toast(roleLabel(src)+'の指標一覧をコピーしました（全社指標は自店舗ロールには含めません）'); }
 /* このタブを現在ロールで一括 */
 function setAllRole(on){ if(catalogRole==='all') return; curTabItems().forEach(it=>{ if(it.scope==='company'&&!roleScopeAllKey(catalogRole)) return; it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); }); renderCatalog(); }
 /* 系統（トランザクション群）単位の一括（対象ロール列ぶん） */
@@ -958,7 +958,7 @@ function setGroupOverride(cat,on){ const g=CATALOG.transactions.find(x=>x.cat===
 function setTagsOverride(on){ CATALOG.tags.forEach(t=>condOverride[t.n]=on); renderCondset(); }
 function applyCondset(){ const res=computeCond(); res.forEach(({it,on})=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); });
   computeCondTags().forEach(({t,on})=>{ t.roles[catalogRole]=on; enforceNesting(t.roles,catalogRole); });   // タグも反映（ベース＋カスタムタグ条件）
-  show('catalog'); toast('「'+roleLabel(catalogRole)+'」のカタログに条件設定を適用しました'); }
+  show('catalog'); toast('「'+roleLabel(catalogRole)+'」の指標一覧に条件設定を適用しました'); }
 /* マイテンプレート：①ベース＋②条件ルール一式を保存。保存・更新は上部バー（適用ボタンの左）に文脈で出し分け */
 let CONDTPL=[], curTplIdx=-1, condBaseline='';
 function condStateStr(){ return JSON.stringify({b:condBase,c:condRules,o:condOverride,cp:copySrc}); }
@@ -1009,7 +1009,7 @@ function renderCondset(){
     ['floor','現場スタッフ向け','🔓現場OKの指標のみ表示。利益・原価・人件費（金額）は隠す。'],
     ['manager','店長向け','🔓現場OK＋🔸店長まで表示。🔒経営機密（純利益・粗利）は隠す。'],
     ['admin','管理者・経理向け','全指標を表示（機微度の制限なし）。'],
-    ['keep','現状から（触らない）','今のカタログをそのまま土台に。条件ルールで部分的に上書き。']], du=rolePreset(catalogRole);
+    ['keep','現状から（触らない）','今の指標一覧をそのまま土台に。条件ルールで部分的に上書き。']], du=rolePreset(catalogRole);
   // ロール名に紐づく専用推奨があればそれ＋「現状から」。無ければ「現状から」のみ（新規作成へ誘導）
   const shownBases=bases.filter(([b])=> (du && b===du) || b==='keep');
   if(condBase!=='new' && !shownBases.some(([b])=>b===condBase)) condBase=du||'keep';   // 'new'(新規=まっさら)はリセットしない。専用推奨が無ければ現状から
@@ -1092,7 +1092,7 @@ const roleStats = items => roleCols().map(rk=>`<span class="stat">${roleLabel(rk
 const roleCount = items => roleCols().map(rk=>roleLabel(rk)+' '+items.filter(i=>i.roles[rk]).length).join('／');
 const roleSpan = () => roleCols().length+1;
 function renderCatalog(){
-  const tabs=[['metrics','指標（トランザクション）'],['tags','カスタムタグ']];
+  const tabs=[['metrics','指標'],['tags','カスタムタグ']];
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
   {
     const opts=shopRoleKeys().map(k=>[k,roleLabel(k)+'の指標一覧']);
@@ -1111,7 +1111,7 @@ function renderCatalog(){
 }
 function metricsCatalogHTML(){
   const all=CATALOG.transactions.flatMap(g=>g.items), total=all.length;
-  let h=`<div class="statbar"><span class="stat"><b>${total}</b> 指標（トランザクション）</span>${roleStats(all)}`
+  let h=`<div class="statbar"><span class="stat"><b>${total}</b> 指標</span>${roleStats(all)}`
     +`<span class="stat" style="color:#9aa0a6;">本番486〜737種を系統で整頓</span><span style="flex:1"></span>`
     +`<input class="itemsearch" oninput="filterCatalogT('mcTable',this.value)" placeholder="🔍 指標・系統を検索"></div>`;
   h+=`<table class="list" id="mcTable"><tr><th class="name">系統／指標</th>${roleHeaders()}</tr>`;
@@ -1167,7 +1167,7 @@ function filterCatalog(q){
   t.querySelectorAll('tr.grouprow').forEach(g=>{ let n=g.nextElementSibling,any=false; while(n&&!n.classList.contains('grouprow')){ if(n.style.display!=='none') any=true; n=n.nextElementSibling;} g.style.display=any?'':'none'; });
 }
 function tagCatalogHTML(){
-  let h=`<div class="bulkrow"><span class="bl">カスタムタグ カタログ</span><span style="color:#9aa0a6;font-size:12px;">全${CATALOG.tags.length}件／${roleCount(CATALOG.tags)}</span><span style="flex:1"></span><button class="btn primary" onclick="createTag()">＋ タグを作成</button></div>`;
+  let h=`<div class="bulkrow"><span class="bl">カスタムタグ 一覧</span><span style="color:#9aa0a6;font-size:12px;">全${CATALOG.tags.length}件／${roleCount(CATALOG.tags)}</span><span style="flex:1"></span><button class="btn primary" onclick="createTag()">＋ タグを作成</button></div>`;
   h+=`<table class="list"><tr><th class="name">カスタムタグ</th>${roleHeaders()}</tr>`;
   CATALOG.tags.forEach((t,i)=>{
     h+=`<tr><td class="name">${t.n}${t.isNew?'<span class="badge-review">新規・要確認</span>':''}</td>`
@@ -1484,7 +1484,7 @@ function renderList(){
     }));
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">指標管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
-    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
+    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧 ＞</button>`;
     else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧 ＞</button>`;
     h+=`<td class="actcol">${act}</td></tr>`;
   });
@@ -1755,7 +1755,7 @@ function featRowHTML(cid,f,fi,group){
   const hasL3 = !!f.subitems || opsShow.length>0 || hasItems(f), ek=cid+'_'+fi, exp=cur.expanded[ek];
   const caret=hasL3?`<span class="caret" onclick="toggleExp('${ek}')">${exp?'▼':'▶'}</span>`:'<span class="caret"></span>';
   let itemTag='';
-  if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(CATALOG.dimensions.length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>catItemAllowed(i,rk)).length,0)); itemTag=`<span class="kindtag">カタログ ${n}件</span>`; }
+  if(f.catalog){ const rk=ROLES[cur.idx].key; const n=f.catalog==='tags'?tagsFor(rk).length:(CATALOG.dimensions.length+CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>catItemAllowed(i,rk)).length,0)); itemTag=`<span class="kindtag">指標 ${n}件</span>`; }
   else if(hasItems(f)){ const ks=itemKeys(f), on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length; itemTag=`<span class="kindtag">指標 ${on}/${ks.length} 表示</span>`; }
   const ctxChip = f.ctx==='company'?'<span class="ctxchip cc">会社画面</span>':f.ctx==='shop'?'<span class="ctxchip cs">店舗画面</span>':'<span class="ctxchip ck">共通</span>';
   const nestChip = f.nestedUnder?`<span class="nestchip">↳「${f.nestedUnder}」に内包（モーダル）</span>`:'';
@@ -1787,15 +1787,15 @@ function featRowHTML(cid,f,fi,group){
       let body='', cnt=0;
       if(f.catalog==='tags'){ const ts=tagsFor(rk); cnt=ts.length;
         body = ts.length? `<div class="l3grid">`+ts.map(t=>`<label class="ro" data-name="${t.n}"><input type="checkbox" checked disabled> ${t.n}</label>`).join('')+`</div>`
-          : `<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログにタグがありません（本部の指標管理で追加）。</div>`;
+          : `<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限の指標一覧にタグがありません（本部の指標管理で追加）。</div>`;
       } else {  // display：ディメンション（全役割共通）＋トランザクション（役割別）
         const dims=CATALOG.dimensions; cnt+=dims.length;   // ディメンションは全役割共通＝常時全件
         if(dims.length) body+=`<div class="l3grp">ディメンション（全役割共通）</div><div class="l3grid">`+dims.map(d=>`<label class="ro" data-name="${d.n}"><input type="checkbox" checked disabled> ${d.n}</label>`).join('')+`</div>`;
         CATALOG.transactions.forEach(g=>{ const its=g.items.filter(i=>catItemAllowed(i,rk)); if(!its.length) return; cnt+=its.length;
           body+=`<div class="l3grp">${g.cat}</div><div class="l3grid">`+its.map(it=>`<label class="ro" data-name="${it.n}"><input type="checkbox" checked disabled> ${it.n}</label>`).join('')+`</div>`;});
-        if(!cnt) body=`<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログに項目がありません。</div>`;
+        if(!cnt) body=`<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限の指標一覧に項目がありません。</div>`;
       }
-      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できるカタログ（${cnt}件・${ROLES[cur.idx].name}用）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部の指標管理で設定（読み取り専用）</span></div>`;
+      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できる指標一覧（${cnt}件・${ROLES[cur.idx].name}用）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部の指標管理で設定（読み取り専用）</span></div>`;
       inner+=`<div class="viewdetail" id="vd_${ek}">${body}</div>`;
     } else if(hasItems(f)){   // 固定の表示項目（ダッシュボード指標など・編集可）
       const ks=itemKeys(f), tot=ks.length, on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length;
