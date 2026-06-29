@@ -1488,10 +1488,11 @@ function renderList(){
       if(lf.tally){ const clk=` cellclick" onclick="editRoleHere(${ri})`; h+=`<td class="sumcell${clk}">${groupTallyHTML(r,g.cats,g.key)}</td>`; }
       else { const clk=`class="cellclick" onclick="gotoCatEdit(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="クリックで詳細設定へ">${listSummary(r,lf.c.id)}</td>`; }
     }));
+    const nMet = CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>catItemAllowed(i,r.key)).length,0);   // そのロールが閲覧できる指標数＝指標一覧設定の反映
     let act;
-    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">指標管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
-    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧 ＞</button>`;
-    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧 ＞</button>`;
+    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">指標管理（全件）＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
+    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧（${nMet}）＞</button>`;
+    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧（${nMet}）＞</button>`;
     h+=`<td class="actcol">${act}</td></tr>`;
   });
   const tbl=document.getElementById('listTable');
