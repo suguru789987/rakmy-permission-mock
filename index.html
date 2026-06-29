@@ -1411,6 +1411,8 @@ const DEFAULT_COLS={ view:['dashboard','sales','purchase','detail','report'], op
 const CAT_PRIORITY={}; [...DEFAULT_COLS.view,...DEFAULT_COLS.ops].forEach((id,i)=>CAT_PRIORITY[id]=i);
 function orderedCats(gk){ return CATEGORIES.filter(c=>c.group===gk).slice().sort((a,b)=>{ const pa=CAT_PRIORITY[a.id]!=null?CAT_PRIORITY[a.id]:999, pb=CAT_PRIORITY[b.id]!=null?CAT_PRIORITY[b.id]:999; return pa!==pb?pa-pb:CATEGORIES.indexOf(a)-CATEGORIES.indexOf(b); }); }
 // カテゴリ内の機能の序列。操作=大元設定→中設定(連動)→一覧→分析(予実)／閲覧=分析→一覧→設定確認。種別は機能名＋inheritFromから推定（同種は元の順を維持＝安定ソート）
+// 範囲バッジ：店舗スコープ機能(range=shop-self)で、編集中ロールのスコープに応じ 自店舗のみ/掌握店舗/全社 を表示
+function featScopeBadge(f){ if(f.range!=='shop-self') return ''; const sc=(rmTier==='company'||rmScope==='all')?'全社':(rmScope==='shops'?'掌握店舗':'自店舗のみ'); return `<span class="range">範囲：${sc}</span>`; }
 function featTypeRank(f,group){
   const n=f.n;
   const t = /分析|予実|レポート|対比|カレンダー|集計/.test(n) ? 'analysis'
@@ -1652,7 +1654,7 @@ function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.g
       const feats=c.features.filter(f=>(f.fixed?pr.tier==='company':true)&&!(f.noStaff&&pr.key==='staff')).sort((a,b)=>featTypeRank(a,c.group)-featTypeRank(b,c.group));   // カテゴリ内の機能を序列順（操作=大元→中設定→一覧→分析／閲覧=分析→一覧→設定確認）
       const single=feats.length===1;   // 単一機能＝カテゴリ段と機能段の閲覧/なしが重複→機能段セグメントは出さずカテゴリ段に一本化、展開は操作詳細・指標のみ
       const sub=open?`<div class="tpd-detail">${feats.map(f=>{const fi=c.features.indexOf(f);
-        const head = single ? '' : `<div class="tpd-sub"><span>${f.n}</span>${edit?featSeg(pr,c.id,fi,f):featPill(featVal(pr.perm,c.id,fi,f))}</div>`;
+        const head = single ? '' : `<div class="tpd-sub"><span>${f.n}${edit?featScopeBadge(f):''}</span>${edit?featSeg(pr,c.id,fi,f):featPill(featVal(pr.perm,c.id,fi,f))}</div>`;
         return head+(edit?wzFeatDeep(pr,c.id,f,fi):'');}).join('')||'<div class="tpd-empty">機能なし</div>'}</div>`:'';
       const right = edit ? screenSeg(pr,c,gk) : lvlPill(catStatus(pr,c.id),gk);
       return `<div class="tpd-row tpd-click" data-tpdcat="${c.id}" onclick="toggleTpd('${c.id}')"><span class="tpd-name">${open?'▼':'▶'} ${c.name}</span>${right}</div>${sub}`; }).join('');
