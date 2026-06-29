@@ -1491,7 +1491,7 @@ function renderList(){
     rpanel=`<div class="rolepanel"><div class="rolefoot"><button onclick="event.stopPropagation();setRolesAll(true)">全て</button><button onclick="event.stopPropagation();setRolesAll(false)">クリア</button><button class="rf-main" onclick="event.stopPropagation();toggleRoleDD()">閉じる</button></div>${body}</div>`; }
   const roleDD=`<span class="lpb-label">👤 表示ロール：</span><div class="roleddwrap"><button class="hdd-btn" style="min-width:170px;" onclick="event.stopPropagation();toggleRoleDD()"><span>${listRolePick?`選択中 ${selKeys.length}/${allKeys.length}`:'全ロール'}</span><span class="hdd-ar">▼</span></button>${rpanel}</div><span class="ltb-note">選んだロールが両タブ（一覧／設定）に共通で適用されます</span>`;
   document.getElementById('listTopBar').innerHTML=roleDD;
-  document.getElementById('listPickBar').innerHTML='<span class="lpb-label">📌 権限列設定：</span><span style="flex:1"></span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('');
+  document.getElementById('listPickBar').innerHTML='<span style="flex:1"></span><span class="lpb-label">📌 権限列設定：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('');
   lastListLeaf=leaf; fitListWidth();
   positionPickPanels();
 }
