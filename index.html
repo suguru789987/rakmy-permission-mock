@@ -1393,9 +1393,11 @@ function catStatus(role,cid){
   const cat=CATEGORIES.find(c=>c.id===cid);
   const shown=cat.features.map((f,fi)=>({f,fi})).filter(({f})=> (f.fixed ? role.tier==='company' : true) && !(f.noStaff && role.key==='staff'));
   if(!shown.length) return 'no';
-  const vals=shown.map(({f,fi})=>({v:featVal(role.perm,cid,fi,f),k:f.k}));
-  if(vals.every(x=>x.v===maxV(x.k))) return 'op';
-  if(vals.every(x=>x.v===minV(x.k))) return 'no';
+  // 各機能を なし(0)/閲覧(1)/操作(2)以上 に正規化：操作(2)も全て(3)も「操作」。view系は最大(閲覧)が満点
+  const norm=({f,fi})=>{ const v=featVal(role.perm,cid,fi,f), mx=maxV(f.k); if(v<=0) return 'no'; if(v>=2||v===mx) return 'op'; return 'vw'; };   // v<=0=絶対なし(lockのmn=1を なし扱いしない)
+  const ns=shown.map(norm);
+  if(ns.every(s=>s==='op')) return 'op';
+  if(ns.every(s=>s==='no')) return 'no';
   return 'vw';
 }
 // 群に応じてラベルを切替：閲覧群=閲覧(全)/一部、操作群=操作(可)/閲覧(のみ)。なしは—
