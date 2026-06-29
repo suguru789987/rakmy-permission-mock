@@ -1507,8 +1507,8 @@ document.addEventListener('click',e=>{ let ch=false;
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','edit','catalog','summary','users','condset','tpllist','newrole'];
-  VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('hide', v!==x));
+  const VIEWS=['list','catalog','summary','users','condset','tpllist','newrole'];   // 'edit'(旧アコーディオン)は撤去済み
+  VIEWS.forEach(x=>{ const m=document.getElementById('view-'+x); if(m) m.classList.toggle('hide', v!==x); });   // null安全
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='list') renderList();
   if(v==='catalog') renderCatalog();
