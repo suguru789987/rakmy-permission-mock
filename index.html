@@ -1408,6 +1408,9 @@ function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 // 既定で表示する基礎列（主要画面）。導入時・運用時とも一目で権限が見えるように
 const DEFAULT_COLS={ view:['dashboard','sales','purchase','detail','report'], ops:['budget','cost','employees','vendor','delivery','pettycash','transfer'] };   // 機能の重要度順
+// 重要度順（DEFAULT_COLS）→残りはCATEGORIES順。一覧・権限編集・列ツールバーで共通の並びに使う
+const CAT_PRIORITY={}; [...DEFAULT_COLS.view,...DEFAULT_COLS.ops].forEach((id,i)=>CAT_PRIORITY[id]=i);
+function orderedCats(gk){ return CATEGORIES.filter(c=>c.group===gk).slice().sort((a,b)=>{ const pa=CAT_PRIORITY[a.id]!=null?CAT_PRIORITY[a.id]:999, pb=CAT_PRIORITY[b.id]!=null?CAT_PRIORITY[b.id]:999; return pa!==pb?pa-pb:CATEGORIES.indexOf(a)-CATEGORIES.indexOf(b); }); }
 function persistColState(){ lsSet('rakmy_col_state_v2',{expand:listExpand,pick:listPick}); }
 function loadColState(){ const s=lsGet('rakmy_col_state_v2',null);
   if(s&&s.expand&&s.pick){ listExpand=s.expand; listPick=s.pick; }
@@ -1420,7 +1423,7 @@ function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; persistColState(
 // 群の表示列（葉）：展開=全カテゴリ／折りたたみ＋選択あり=選択カテゴリ／折りたたみ＋未選択=内訳1列
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); return [{tally:true}]; }   // 表示順は選択順に従う
 function renderList(){
-  const vc=CATEGORIES.filter(c=>c.group==='view'), oc=CATEGORIES.filter(c=>c.group==='ops');
+  const vc=orderedCats('view'), oc=orderedCats('ops');
   const ALL=[{key:'view',cls:'grpview',label:'＋ 表示画面権限列を追加',gname:'閲覧権限（分析・レポート・管理画面の閲覧）',cats:vc},{key:'ops',cls:'grpops',label:'＋ 設定画面権限列を追加',gname:'設定画面権限（操作・設定）',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   const banner=document.getElementById('demoBanner');
@@ -1444,7 +1447,9 @@ function renderList(){
   const GLAB={shop:'店舗ロール（店舗現場）',owner:'オーナー（最上位・全権）',company:'会社ロール（全社・本部 ＝ 職務分掌）'};
   const GCLS={shop:'view',owner:'owner',company:'ops'};
   const SHORT={owner:'オーナー',company:'会社',shop:'店舗'};
-  let rows=ROLES.map((r,ri)=>({r,ri})).sort((a,b)=>GORDER[grp(a.r)]-GORDER[grp(b.r)]||a.ri-b.ri);
+  const SHOP_RANK={area:0,manager:1,staff:2};   // 店舗ロールは権限順（エリア長→店長→従業員）。カスタムは末尾(ri順)
+  const subRank=x=> x.r.tier==='shop' ? (SHOP_RANK[x.r.key]!=null?SHOP_RANK[x.r.key]:100+x.ri) : x.ri;
+  let rows=ROLES.map((r,ri)=>({r,ri})).sort((a,b)=>GORDER[grp(a.r)]-GORDER[grp(b.r)]||subRank(a)-subRank(b));
   rows=rows.filter(({r})=> !r.system && (!listRolePick || listRolePick.includes(r.key)));   // オーナー(全権固定)は一覧から除外＋表示ロール選択
   const gcount={}; rows.forEach(({r})=>{ const g=grp(r); gcount[g]=(gcount[g]||0)+1; });
   let lastG=null;
@@ -1635,7 +1640,7 @@ function screenSeg(pr,c,gk){
   return `<span class="rmseg">${levels.map(([v,l])=>`<button data-v="${v}" class="${cur===v?'on':''}" onclick="event.stopPropagation();rmEditCat('${c.id}',${v})">${l}</button>`).join('')}</span>`; }
 function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.getElementById(_tpdTarget); if(!el) return;
   const edit = _tpdTarget==='rmDetailPanel';
-  const sec=(gk,lab)=>{ const cats=CATEGORIES.filter(c=>c.group===gk&&catApplies(pr,c.id));
+  const sec=(gk,lab)=>{ const cats=orderedCats(gk).filter(c=>catApplies(pr,c.id));
     const rows=cats.map(c=>{ const open=_tpdExp[c.id];
       const feats=c.features.filter(f=>(f.fixed?pr.tier==='company':true)&&!(f.noStaff&&pr.key==='staff'));
       const single=feats.length===1;   // 単一機能＝カテゴリ段と機能段の閲覧/なしが重複→機能段セグメントは出さずカテゴリ段に一本化、展開は操作詳細・指標のみ
