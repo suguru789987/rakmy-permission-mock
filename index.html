@@ -473,7 +473,7 @@
       <div class="ownerwrap">
         <button class="hdd-btn ownerbtn" onclick="event.stopPropagation();toggleOwnerOps()"><span>👑 オーナー操作</span><span class="hdd-ar">▼</span></button>
         <div class="ownerpanel hide" id="ownerOpsPanel">
-          <button class="ownopt" onclick="closeOwnerOps();openCatalogAll()">📚 カタログ管理</button>
+          <button class="ownopt" onclick="closeOwnerOps();openCatalogAll()">📚 指標管理</button>
           <button class="ownopt" onclick="closeOwnerOps();openDelegate()">🛡 全権の付与先を指定</button>
         </div>
       </div>
@@ -549,10 +549,10 @@
     </div>
   </main>
 
-  <!-- カタログ管理（本部のみ） -->
+  <!-- 指標管理（本部のみ） -->
   <main id="view-catalog" class="hide">
     <div class="titlebar">
-      <h1>指標カタログ</h1>
+      <h1>指標一覧</h1>
       <span class="scopechip" id="catTitleChip" style="background:#21262b;">対象：従業員</span>
       <div class="sp"></div>
       <button class="btn ghost" onclick="show('tpllist')">マイテンプレート一覧 ＞</button>
@@ -584,7 +584,7 @@
     <div class="titlebar">
       <h1>マイテンプレート一覧</h1>
       <div class="sp"></div>
-      <button class="btn ghost" onclick="show('catalog')">← 指標カタログへ</button>
+      <button class="btn ghost" onclick="show('catalog')">← 指標一覧へ</button>
     </div>
     <div class="panel">
       <table class="list" id="tplListBody"></table>
@@ -693,7 +693,7 @@ function catVals(c){ const s=new Set(); c.features.forEach(f=>{ if(!featShown(f)
 
 /* 本部が管理する共有カタログ。roles={manager,staff}=各役割のカタログに入れるか, isNew=要確認 */
 const ROLE_KEYS=['manager','staff']; const ROLE_LABEL={manager:'店長',staff:'従業員'};
-/* 指標カタログ＝代表サンプル。本番スキーマ正本(rakmy_redash_schemas.json)の実列に基づき論理指標名で構成（実テーブル/列名は公開モックに入れない）。
+/* 指標一覧＝代表サンプル。本番スキーマ正本(rakmy_redash_schemas.json)の実列に基づき論理指標名で構成（実テーブル/列名は公開モックに入れない）。
    売上正本=head_office_connected_service_sales_logs(sales_excluded/customers/昼夜内訳) / 人件費=labor_costs_logs(labor_costs/help_costs) / 仕入=arrival_items(subtotal_tax_excluded) / 棚卸=inventories(total_cost) / 固定費=monthly_costs+monthly_cost_items(費目) / 地代家賃=shop_rents(fixed_rent/rate)。
    ※本番全指標(metric_columns 486〜737種)はDB上のデータ＝§12-8のデータ駆動で反映。本カタログはその代表サンプル。 */
 const CATALOG = {
@@ -1004,7 +1004,7 @@ function pickTpl(v){ tplDdOpen=false; onTemplatePick(v); }
 function toggleCopyMode(){ copyMode=!copyMode; if(!copyMode){ copySrc=null; condOverride={}; } markCondClean(); renderCondset(); }
 function onCopySrc(v){ copySrc=v||null; if(copySrc){ curTplIdx=-1; } condOverride={}; markCondClean(); renderCondset(); if(copySrc) toast('「'+roleLabel(copySrc)+'」の設定を土台にしました（適用で現在のロールにコピー）'); }
 function renderCondset(){
-  document.getElementById('csRole').textContent='対象：'+roleLabel(catalogRole);   // 指標カタログのチップと表記統一（編集対象ロール）
+  document.getElementById('csRole').textContent='対象：'+roleLabel(catalogRole);   // 指標一覧のチップと表記統一（編集対象ロール）
   const bases=[
     ['floor','現場スタッフ向け','🔓現場OKの指標のみ表示。利益・原価・人件費（金額）は隠す。'],
     ['manager','店長向け','🔓現場OK＋🔸店長まで表示。🔒経営機密（純利益・粗利）は隠す。'],
@@ -1086,7 +1086,7 @@ function openCatalogFor(rk){ catalogRole=rk; if(catalogTab==='features') catalog
 const shopRoleKeys = () => ROLES.filter(r=>!r.system).map(r=>r.key);   // カタログ対象＝オーナー以外の全ロール（店舗＋会社）
 const roleLabel = k => (ROLES.find(r=>r.key===k)?.name||ROLE_LABEL[k]||k).replace('権限','');
 const roleCols = () => [catalogRole];
-const roleHeaders = () => roleCols().map(rk=>`<th>${roleLabel(rk)}カタログ</th>`).join('');
+const roleHeaders = () => roleCols().map(rk=>`<th>${roleLabel(rk)}指標一覧</th>`).join('');
 function roleCells(rolesObj, onclickFn, item){ return roleCols().map(rk=>{ if(item && item.scope==='company' && !roleScopeAllKey(rk)) return `<td title="全社集計＝このロール（自店舗）には付与不可。会社ロールのみ"><span style="color:#b23b32;">🔒</span></td>`; return `<td><label class="switch"><input type="checkbox" ${rolesObj[rk]?'checked':''} onclick="${onclickFn(rk)}"><span class="track"></span></label></td>`; }).join(''); }
 const roleStats = items => roleCols().map(rk=>`<span class="stat">${roleLabel(rk)} <b style="color:#159b5d">${items.filter(i=>i.roles[rk]).length}</b></span>`).join('');
 const roleCount = items => roleCols().map(rk=>roleLabel(rk)+' '+items.filter(i=>i.roles[rk]).length).join('／');
@@ -1095,7 +1095,7 @@ function renderCatalog(){
   const tabs=[['metrics','指標（トランザクション）'],['tags','カスタムタグ']];
   let h=`<div class="ctabs">`+tabs.map(([id,nm])=>`<div class="ctab ${catalogTab===id?'active':''}" onclick="setCatalogTab('${id}')">${nm}</div>`).join('')+`</div>`;
   {
-    const opts=shopRoleKeys().map(k=>[k,roleLabel(k)+'のカタログ']);
+    const opts=shopRoleKeys().map(k=>[k,roleLabel(k)+'の指標一覧']);
     if(!shopRoleKeys().includes(catalogRole)) catalogRole=shopRoleKeys()[0];
     const nestShown=catalogRole==='manager'||catalogRole==='staff';
     h+=`<div class="rolesel"><span class="bl">対象ロール：</span>`
@@ -1483,9 +1483,9 @@ function renderList(){
       else { const clk=`class="cellclick" onclick="gotoCatEdit(${ri},'${lf.c.id}')"`; h+=`<td ${clk} title="クリックで詳細設定へ">${listSummary(r,lf.c.id)}</td>`; }
     }));
     let act;
-    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">カタログ管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
+    if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">指標管理 ＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
     else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">カタログ作成 ＞</button>`;
-    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標カタログ ＞</button>`;
+    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧 ＞</button>`;
     h+=`<td class="actcol">${act}</td></tr>`;
   });
   const tbl=document.getElementById('listTable');
@@ -1662,7 +1662,7 @@ function saveAssign(){ USERS[_assignUi].roleKeys=[...document.querySelectorAll('
 function renderSummary(){
   const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
   const allN={tx:CATALOG.transactions.flatMap(g=>g.items).length, dim:CATALOG.dimensions.length, tag:CATALOG.tags.length};
-  let h=`<tr><th class="name">権限</th><th>画面 操作可</th><th>閲覧可</th><th>なし</th><th>指標カタログ</th><th>タグ</th><th></th></tr>`;
+  let h=`<tr><th class="name">権限</th><th>画面 操作可</th><th>閲覧可</th><th>なし</th><th>指標一覧</th><th>タグ</th><th></th></tr>`;
   ROLES.forEach((r,ri)=>{
     let op=0,vw=0,no=0;
     CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ const shown=f.fixed?r.tier==='company':true; if(!shown) return;
@@ -1782,12 +1782,12 @@ function featRowHTML(cid,f,fi,group){
         return `<label class="${lv1?'lv1':''}"><input type="checkbox" ${on?'checked':''} onclick="toggleOp('${cid}',${fi},'${o.id}')"> ${o.n}</label>`;}).join('');
       inner+=`<div class="l3bar opsbar"><span>⚙ 操作詳細：許可する操作を選択</span></div><div class="l3grid">${boxes}</div>`;
     }
-    if(f.catalog){   // カタログ系：この権限のカタログ（本部がカタログ管理で設定）を読み取り表示
+    if(f.catalog){   // カタログ系：この権限のカタログ（本部が指標管理で設定）を読み取り表示
       const rk=ROLES[cur.idx].key;
       let body='', cnt=0;
       if(f.catalog==='tags'){ const ts=tagsFor(rk); cnt=ts.length;
         body = ts.length? `<div class="l3grid">`+ts.map(t=>`<label class="ro" data-name="${t.n}"><input type="checkbox" checked disabled> ${t.n}</label>`).join('')+`</div>`
-          : `<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログにタグがありません（本部のカタログ管理で追加）。</div>`;
+          : `<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログにタグがありません（本部の指標管理で追加）。</div>`;
       } else {  // display：ディメンション（全役割共通）＋トランザクション（役割別）
         const dims=CATALOG.dimensions; cnt+=dims.length;   // ディメンションは全役割共通＝常時全件
         if(dims.length) body+=`<div class="l3grp">ディメンション（全役割共通）</div><div class="l3grid">`+dims.map(d=>`<label class="ro" data-name="${d.n}"><input type="checkbox" checked disabled> ${d.n}</label>`).join('')+`</div>`;
@@ -1795,7 +1795,7 @@ function featRowHTML(cid,f,fi,group){
           body+=`<div class="l3grp">${g.cat}</div><div class="l3grid">`+its.map(it=>`<label class="ro" data-name="${it.n}"><input type="checkbox" checked disabled> ${it.n}</label>`).join('')+`</div>`;});
         if(!cnt) body=`<div style="padding:6px 30px;color:#9aa0a6;font-size:12px;">この権限のカタログに項目がありません。</div>`;
       }
-      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できるカタログ（${cnt}件・${ROLES[cur.idx].name}用）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部のカタログ管理で設定（読み取り専用）</span></div>`;
+      inner+=`<div class="l3bar viewbar" style="margin-top:8px;"><span>👁 この権限が閲覧できるカタログ（${cnt}件・${ROLES[cur.idx].name}用）</span><span style="flex:1"></span><span style="font-size:11px;color:#9aa0a6;">本部の指標管理で設定（読み取り専用）</span></div>`;
       inner+=`<div class="viewdetail" id="vd_${ek}">${body}</div>`;
     } else if(hasItems(f)){   // 固定の表示項目（ダッシュボード指標など・編集可）
       const ks=itemKeys(f), tot=ks.length, on=ks.filter(k=>cur.perm[opKey(cid,fi,k)]).length;
