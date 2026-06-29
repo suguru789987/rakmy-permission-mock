@@ -264,3 +264,83 @@ end
 | 設定（管理系） | `need_level: 2`（設定可） |
 | データ範囲 | `for_user` スコープで強制 |
 | 指標 | `role_metrics` allowlist ＋ 機密×スコープ越境防御 |
+
+---
+
+## 付録A. feature_key 辞書（全カテゴリ網羅・27カテゴリ66機能）
+UIの全カテゴリ・機能と判定キーの完全対応。`view`=一覧画面権限(なし/閲覧)、`ops`=設定画面権限(なし/閲覧/操作/全て)。単一機能カテゴリは `<category_id>`、複数は `<category_id>.<slug>`。slugは実装確定時に意味的命名を踏襲（本表は提案）。
+
+| group | feature_key | UI名 | ctx | 取りうる権限 | 備考 |
+|---|---|---|---|---|---|
+| view | `dashboard.main` | ダッシュボード | common | 閲覧固定 |  |
+| view | `dashboard.news` | お知らせ（ニュース） | common | 閲覧固定 |  |
+| view | `sales.abc` | ABC分析 | common | なし/閲覧 |  |
+| view | `sales.product` | 商品別分析 | common | なし/閲覧 |  |
+| view | `sales.hourly` | 時間帯別分析 | common | なし/閲覧 |  |
+| view | `sales.weekday` | 曜日別分析 | common | なし/閲覧 |  |
+| view | `sales.payment` | 支払種別分析 | common | なし/閲覧 |  |
+| view | `purchase.vendor` | 仕入先別分析 | common | なし/閲覧 |  |
+| view | `purchase.product` | 商品別分析 | common | なし/閲覧 |  |
+| view | `purchase.costitem` | 費目別分析 | common | なし/閲覧 |  |
+| view | `purchase.unit_price` | 商品仕入単価 | common | なし/閲覧 |  |
+| view | `purchase.avg_price` | 平均単価推移 | common | なし/閲覧 |  |
+| view | `detail.progress` | 進捗分析 | common | なし/閲覧 |  |
+| view | `detail.sensitivity` | 感度分析 | shop | なし/閲覧 |  |
+| view | `detail.inflow` | 流入分析 | shop | なし/閲覧 |  |
+| view | `detail.table` | テーブル稼働分析 | shop | なし/閲覧 |  |
+| view | `report.annual_pl` | 年間予実対比 | common | なし/閲覧 |  |
+| view | `report.pl` | 予実対比 | common | なし/閲覧 |  |
+| view | `report.monthly` | 月次集計 | shop | なし/閲覧 |  |
+| view | `report.monthly_report` | 月次レポート | common | なし/閲覧 |  |
+| view | `report.daily_report` | 日次レポート | common | なし/閲覧 |  |
+| view | `report.order_report` | 発注分析レポート | shop | なし/閲覧 |  |
+| view | `emp_view` | 従業員画面の閲覧（一覧） | common | なし/閲覧 | 店長以上 |
+| view | `closing_view` | 締め状況の閲覧 | common | なし/閲覧 |  |
+| ops | `data.download` | ダウンロード | company | なし/実行可 | 会社ロールのみ |
+| ops | `data.extract` | 売上・仕入データ抽出 | company | なし/閲覧 | 会社ロールのみ |
+| ops | `uicustom.widget` | ダッシュボードカスタマイズ（ウィジェット/プリセット） | common | なし/閲覧/操作/全て |  |
+| ops | `uicustom.tag` | カスタムタグ作成・管理（本部のみ） | common | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `uicustom.dnd_shop` | UIカスタマイズ：DnD編集（店舗画面） | common | なし/実行可 | 店長以上 |
+| ops | `uicustom.dnd_company` | UIカスタマイズ：DnD編集（会社画面） | common | なし/閲覧/設定可 | 会社ロールのみ |
+| ops | `label` | ラベル（登録・一覧） | common | なし/閲覧/操作/全て |  |
+| ops | `vendor` | 発注先&仕入商品（一覧・登録・編集） | shop | なし/閲覧/操作/全て |  |
+| ops | `delivery` | 納品書管理（一覧・編集） | common | なし/閲覧/操作/全て |  |
+| ops | `saleslog` | 売上（売上ログ入力・実績） | common | なし/閲覧/操作/全て |  |
+| ops | `inventory.exec` | 棚卸実施（棚卸履歴・実施） | common | なし/閲覧/操作/全て |  |
+| ops | `inventory.product` | 棚卸商品管理 | common | なし/閲覧/操作/全て |  |
+| ops | `pettycash.manage` | 小口現金管理（一覧・登録・締め） | common | なし/閲覧/操作/全て |  |
+| ops | `pettycash.expense_item` | 経費項目設定 | common | なし/閲覧/設定可 | 会社ロールのみ |
+| ops | `employees.ledger` | 従業員の登録・編集 | common | なし/閲覧/操作/全て | 店長以上 |
+| ops | `employees.payroll` | 給与設定・履歴 | company | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `employees.attendance` | 勤怠データ取込（CSV/API） | company | なし/実行可 | 会社ロールのみ |
+| ops | `employees.timerec` | 時間記録・レイアウト設定 | company | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `employees.laborcost` | 人件費管理（ヘルプ/概算/PA） | company | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `employees.history` | 従業員履歴・アーカイブ | company | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `employees.punch` | 打刻ステータス（漏れアラート） | company | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `closing.close` | 締め処理（仮締め・本締め・一括） | company | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `closing.fiscal` | 会計年度設定 | company | なし/閲覧/設定可 | 会社ロールのみ |
+| ops | `users` | ユーザー（アカウント・招待） | common | なし/閲覧/設定可 |  |
+| ops | `transfer` | 店舗間商品移動 | common | なし/閲覧/操作/全て |  |
+| ops | `shop` | 店舗管理（一覧・登録・編集・削除） | company | なし/閲覧/操作/全て | 会社ロールのみ |
+| ops | `company.info` | 会社情報 | company | なし/閲覧/設定可 | 会社ロールのみ |
+| ops | `company.setup` | 初期設定（アカウント登録） | company | なし/閲覧/設定可 | 会社ロールのみ |
+| ops | `billing` | お支払い（請求・契約・プラン） | company | なし/閲覧/設定可 | 会社ロールのみ |
+| ops | `shopinfo` | 店舗情報 | shop | なし/閲覧/操作/全て |  |
+| ops | `integration` | 連携設定（POS／仕入／勤怠の連携先） | shop | なし/閲覧/設定可 |  |
+| ops | `cost.setting` | 費用設定（費目別の費用予算・費目の追加/編集/削除） | shop | なし/閲覧/操作/全て |  |
+| ops | `cost.actual` | 費用実績入力（費目×月の実績入力・CSV取込） | shop | なし/閲覧/操作/全て |  |
+| ops | `cost.list` | 費用一覧（費目別・年間表示） | shop | なし/閲覧 |  |
+| ops | `holiday` | 休業日設定 | shop | なし/閲覧/操作/全て |  |
+| ops | `budget.list` | 予算一覧 | shop | なし/閲覧 |  |
+| ops | `budget.monthly_wizard` | 月次予算設定（ウィザード） | shop | なし/閲覧/操作/全て |  |
+| ops | `budget.month_cost` | 単月費用設定 | shop | なし/閲覧/操作/全て | →月次予算設定（ウィザード）連動 |
+| ops | `budget.sales_ratio` | 売上構成比設定 | shop | なし/閲覧/操作/全て | →月次予算設定（ウィザード）連動 |
+| ops | `budget.weekday_bias` | 曜日別バイアス設定 | shop | なし/閲覧/操作/全て | →月次予算設定（ウィザード）連動 |
+| ops | `budget.annual_list` | 年間予算一覧 | shop | なし/閲覧 |  |
+| ops | `budget.calendar` | 予実管理カレンダー（日次） | shop | なし/閲覧 |  |
+
+**注記**
+- `会社ロールのみ`（fixed）＝ロール tier=company のみ付与可（店舗ロールは判定キー自体が存在＝なし固定）。
+- `店長以上`（noStaff）＝店舗ロールのうち店長/エリア長のみ（従業員=不可）。
+- `→…連動`（inheritFrom）＝親機能の権限に自動追従（独立判定しない）。
+- ダッシュボード(`dashboard.*`)は閲覧固定（常時level1）。指標は `role_metrics` で別判定。
