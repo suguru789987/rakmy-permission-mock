@@ -1320,7 +1320,7 @@ function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; co
 }
 let _rmBaseTier,_rmBaseScope;
 function rmValidate(){ const nm=document.getElementById('rmName').value.trim(); const b=document.getElementById('rmCreateBtn'); if(b) b.disabled=!nm; }
-function rmCheckIntegrity(){ const w=document.getElementById('rmWarn'); if(!w) return; const changed=(rmTier!==_rmBaseTier)||(rmScope!==_rmBaseScope); w.textContent = changed?'⚠ ベースと区分／範囲が異なります（権限内容と不整合の可能性あり）':''; }
+function rmCheckIntegrity(){ const w=document.getElementById('rmWarn'); if(!w) return; const changed=(rmTier!==_rmBaseTier)||(rmScope!==_rmBaseScope); w.textContent = changed?'⚠ ベース既定と区分／範囲が異なります（意図的なら可・整合を確認）':''; }   // 区分とデータ範囲は独立＝組み合わせ自由。ブロックでなく助言
 // ロール(perm)の権限内容を一覧/設定の許可数で要約（マトリクスの語彙を流用・読み取り専用）
 function permSummaryHTML(pr){
   const row=gk=>{ const cats=CATEGORIES.filter(c=>c.group===gk); const ap=cats.filter(c=>catApplies(pr,c.id)); const t={op:0,vw:0,no:0}; ap.forEach(c=>t[catStatus(pr,c.id)]++);
