@@ -56,6 +56,7 @@
   .panel{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; }
   .hint{ color:#6b7280; font-size:12.5px; margin:6px 0 14px;}
   .badge-new{ background:var(--new); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:7px; vertical-align:middle; }
+  .scope-banner{ font-size:12px; color:#1f3b5e; background:#eef4fb; border:1px solid #cfe0f3; border-radius:8px; padding:8px 12px; margin-bottom:10px; line-height:1.5;}
   .range{ font-size:10.5px; color:#0a7a55; border:1px solid #b8e6d2; background:#f0fbf6; border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:middle;}
   table.list{ border-collapse:collapse; width:100%; font-size:13px; }
   table.list th, table.list td{ border:1px solid var(--line); padding:9px 8px; text-align:center; }
@@ -1661,7 +1662,9 @@ function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.g
     return `<div class="tpd-sec">${lab}（${cats.length}画面）</div>${rows||'<div class="tpd-empty">対象画面なし</div>'}`; };
   const summary = edit ? `<div class="rmp-h">概要（許可数）</div>${permSummaryHTML(pr)}<div class="tpd-divider"></div>` : '';
   const hint = edit ? '各画面の<b>操作/閲覧/なし</b>を直接編集できます（テンプレを土台に追加・削減）。画面名クリックで列の内訳。' : '画面名をクリックすると、その画面の<b>列（機能・項目）ごと</b>の閲覧/操作が見られます。';
-  el.innerHTML=summary+`<div class="tpd-hint">${hint}</div>`+sec('view','一覧・分析画面')+sec('ops','設定画面');
+  const scLabel=(rmTier==='company'||rmScope==='all')?'全社':(rmScope==='shops'?'指定店舗群（掌握店舗）':'自店舗のみ');
+  const scopeBanner = edit ? `<div class="scope-banner">📍 データ範囲：<b>${scLabel}</b> — 店舗データ（発注先・売上・棚卸・小口現金・予算・費用・従業員 等）の閲覧・操作は<b>全てこの範囲に限定</b>されます。会社専用機能（会社情報・お支払い・店舗管理・締め管理・ダウンロード）は対象外。範囲は②基本設定で変更。</div>` : '';
+  el.innerHTML=scopeBanner+summary+`<div class="tpd-hint">${hint}</div>`+sec('view','一覧・分析画面')+sec('ops','設定画面');
 }
 function setRoleCat(r,cid,val){ const c=CATEGORIES.find(x=>x.id===cid); if(!c) return;   // カテゴリ内の全機能を一括設定（大元スイッチ→内訳に連動）
   c.features.forEach((f,fi)=>{ if(f.fixed&&r.tier!=='company') return; if(f.noStaff&&r.key==='staff') return; if(f.inheritFrom) return; setFeatVal(r.perm,cid,fi,f,val); }); }
