@@ -1411,6 +1411,14 @@ const DEFAULT_COLS={ view:['dashboard','sales','purchase','detail','report'], op
 // 重要度順（DEFAULT_COLS）→残りはCATEGORIES順。一覧・権限編集・列ツールバーで共通の並びに使う
 const CAT_PRIORITY={}; [...DEFAULT_COLS.view,...DEFAULT_COLS.ops].forEach((id,i)=>CAT_PRIORITY[id]=i);
 function orderedCats(gk){ return CATEGORIES.filter(c=>c.group===gk).slice().sort((a,b)=>{ const pa=CAT_PRIORITY[a.id]!=null?CAT_PRIORITY[a.id]:999, pb=CAT_PRIORITY[b.id]!=null?CAT_PRIORITY[b.id]:999; return pa!==pb?pa-pb:CATEGORIES.indexOf(a)-CATEGORIES.indexOf(b); }); }
+// カテゴリ内の機能の序列。操作=大元設定→中設定(連動)→一覧→分析(予実)／閲覧=分析→一覧→設定確認。種別は機能名＋inheritFromから推定（同種は元の順を維持＝安定ソート）
+function featTypeRank(f,group){
+  const n=f.n;
+  const t = /分析|予実|レポート|対比|カレンダー|集計/.test(n) ? 'analysis'
+          : /一覧|状況/.test(n) ? 'list'
+          : (f.inheritFrom ? 'sub' : 'main');
+  return group==='view' ? ({analysis:0,list:1,sub:2,main:2}[t]) : ({main:0,sub:1,list:2,analysis:3}[t]);
+}
 function persistColState(){ lsSet('rakmy_col_state_v2',{expand:listExpand,pick:listPick}); }
 function loadColState(){ const s=lsGet('rakmy_col_state_v2',null);
   if(s&&s.expand&&s.pick){ listExpand=s.expand; listPick=s.pick; }
@@ -1642,7 +1650,7 @@ function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.g
   const edit = _tpdTarget==='rmDetailPanel';
   const sec=(gk,lab)=>{ const cats=orderedCats(gk).filter(c=>catApplies(pr,c.id));
     const rows=cats.map(c=>{ const open=_tpdExp[c.id];
-      const feats=c.features.filter(f=>(f.fixed?pr.tier==='company':true)&&!(f.noStaff&&pr.key==='staff'));
+      const feats=c.features.filter(f=>(f.fixed?pr.tier==='company':true)&&!(f.noStaff&&pr.key==='staff')).sort((a,b)=>featTypeRank(a,c.group)-featTypeRank(b,c.group));   // カテゴリ内の機能を序列順（操作=大元→中設定→一覧→分析／閲覧=分析→一覧→設定確認）
       const single=feats.length===1;   // 単一機能＝カテゴリ段と機能段の閲覧/なしが重複→機能段セグメントは出さずカテゴリ段に一本化、展開は操作詳細・指標のみ
       const sub=open?`<div class="tpd-detail">${feats.map(f=>{const fi=c.features.indexOf(f);
         const head = single ? '' : `<div class="tpd-sub"><span>${f.n}</span>${edit?featSeg(pr,c.id,fi,f):featPill(featVal(pr.perm,c.id,fi,f))}</div>`;
