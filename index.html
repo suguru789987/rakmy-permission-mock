@@ -1561,12 +1561,11 @@ function featSeg(pr,cid,fi,f){ if(KIND[f.k].lock) return '<span class="pill pvw"
 function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeatVal(_rmBasePerm,cid,fi,c.features[fi],val); rmRefreshPanel(); }
 // ウィザード深部：操作詳細・指標を _rmBasePerm 上で編集（アコーディオン最深部の移植）
 function wzToggleOp(cid,fi,oid){ const k=opKey(cid,fi,oid); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
-function wzSetOp(cid,fi,oid,on){   // 操作詳細：許可/なし。連動＝削除⊃編集⊃登録（標準CRUD・上位を許可すると下位も許可／下位をなしにすると上位もなし）
+function wzSetOp(cid,fi,oid,on){   // 操作詳細：許可/なし。連動＝「登録（親）ができれば編集・削除も」：登録ON/OFFで編集・削除も連動／編集・削除は個別調整
   const f=CATEGORIES.find(c=>c.id===cid).features[fi];
-  const ord=opsOf(f).filter(o=>o.id!=='view'&&!o.adminOnly).map(o=>o.id);   // 低→高：登録<編集<削除（OPS定義順）
-  const idx=ord.indexOf(oid); if(idx<0){ _rmBasePerm[opKey(cid,fi,oid)]=on; rmRefreshPanel(); return; }
-  if(on){ for(let i=0;i<=idx;i++) _rmBasePerm[opKey(cid,fi,ord[i])]=true; }    // 上位ON → 自分以下も全てON
-  else  { for(let i=idx;i<ord.length;i++) _rmBasePerm[opKey(cid,fi,ord[i])]=false; }   // 下位OFF → 自分以上も全てOFF
+  const ord=opsOf(f).filter(o=>o.id!=='view'&&!o.adminOnly).map(o=>o.id);   // [登録(create), 編集(update), 削除(delete)]
+  if(ord.length>1 && oid===ord[0]){ ord.forEach(k=>_rmBasePerm[opKey(cid,fi,k)]=on); }   // 登録＝操作の親：ON→編集・削除もON／OFF→全てOFF
+  else { _rmBasePerm[opKey(cid,fi,oid)]=on; }   // 編集・削除・エクスポート等は個別
   rmRefreshPanel();
 }
 function wzSetItem(cid,fi,key,on){ _rmBasePerm[opKey(cid,fi,key)]=on; rmRefreshPanel(); }   // 指標項目：行ごと 表示/非表示 ボタン
