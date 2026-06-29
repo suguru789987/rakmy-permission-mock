@@ -600,8 +600,9 @@
 
   <!-- ユーザー割当 -->
   <main id="view-users" class="hide">
-    <div class="titlebar"><h1>ユーザー割当</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
+    <div class="titlebar"><h1>ユーザー割当（管理者一覧）</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
     <div class="panel">
+      <p class="hint">経営管理に<b>ログインする管理者</b>（従業員台帳の <code>master</code> 連動アカウント）にロールを割り当てます。<b>複数ロール＝権限を合算（和集合）</b>。<b>店舗ロール</b>は対象店舗で有効範囲を限定。全従業員ではなく「ログインさせる人」が対象です。</p>
       <table class="list" id="usersTable"></table>
     </div>
   </main>
