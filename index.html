@@ -250,6 +250,12 @@
   .snsep{ width:1px; align-self:stretch; background:var(--line); margin:0 6px;}
   .snbtn{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; color:#333; cursor:pointer;}
   .snlabel{ font-size:11px; font-weight:800; color:#9aa0a6; align-self:center; margin-right:2px;}
+  .ownerwrap{ position:relative; margin-left:auto;}
+  .ownerbtn{ width:auto; background:#fffaf0; border-color:#e8c97a; color:#8a6d1f;}
+  .ownerbtn:hover{ border-color:#d4af37; color:#8a6d1f;}
+  .ownerpanel{ position:absolute; top:calc(100% + 5px); right:0; min-width:210px; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.2); z-index:90; padding:6px; display:flex; flex-direction:column; gap:3px;}
+  .ownopt{ text-align:left; border:none; background:#fff; padding:10px 12px; border-radius:7px; font-size:13px; font-weight:700; color:#1f3b5e; cursor:pointer; white-space:nowrap;}
+  .ownopt:hover{ background:#eef6fb;}
   .snbtn:hover{ border-color:#159b5d; color:#159b5d;}
   .ccat{ font-size:11px; color:#9aa0a6; margin-right:6px;}
   .rolesel{ display:flex; align-items:center; gap:8px; margin-bottom:14px;}
@@ -463,11 +469,12 @@
         <button class="snbtn" onclick="show('summary')">役割サマリ</button>
         <button class="snbtn" onclick="show('users')">ユーザー割当</button>
       </div>
-      <div class="snsep"></div>
-      <div class="snset">
-        <span class="snlabel">オーナー操作</span>
-        <button class="snbtn" onclick="openCatalogAll()">カタログ管理</button>
-        <button class="snbtn" onclick="openDelegate()">付与先を指定</button>
+      <div class="ownerwrap">
+        <button class="hdd-btn ownerbtn" onclick="event.stopPropagation();toggleOwnerOps()"><span>👑 オーナー操作</span><span class="hdd-ar">▼</span></button>
+        <div class="ownerpanel hide" id="ownerOpsPanel">
+          <button class="ownopt" onclick="closeOwnerOps();openCatalogAll()">📚 カタログ管理</button>
+          <button class="ownopt" onclick="closeOwnerOps();openDelegate()">🛡 全権の付与先を指定</button>
+        </div>
       </div>
     </div>
     <div class="panel">
@@ -1071,6 +1078,8 @@ let catalogTab='metrics', catalogRole='manager';
 function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
 function openCatalogAll(){ const ks=shopRoleKeys(); if(!ks.includes(catalogRole)) catalogRole=ks[0]; show('catalog'); }   // 既定＝先頭ロールを1ロール編集
+function toggleOwnerOps(){ document.getElementById('ownerOpsPanel').classList.toggle('hide'); }   // 👑 オーナー操作ドロップダウン
+function closeOwnerOps(){ const p=document.getElementById('ownerOpsPanel'); if(p) p.classList.add('hide'); }
 function openCatalogFor(rk){ catalogRole=rk; if(catalogTab==='features') catalogTab='metrics'; show('catalog'); }
 const shopRoleKeys = () => ROLES.filter(r=>!r.system).map(r=>r.key);   // カタログ対象＝オーナー以外の全ロール（店舗＋会社）
 const roleLabel = k => (ROLES.find(r=>r.key===k)?.name||ROLE_LABEL[k]||k).replace('権限','');
