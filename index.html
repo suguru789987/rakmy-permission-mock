@@ -603,17 +603,16 @@
       <table class="list" id="usersTable"></table>
     </div>
   </main>
-</div>
 
-<!-- ロール割当モーダル -->
-<div id="assignModal" class="modal-overlay hide">
-  <div class="modal" style="width:520px;">
-    <h3 id="amTitle">ロールを割り当て</h3>
-    <p class="modal-note" style="min-height:auto;">付与するロールを選択（複数可）。複数選ぶと権限は合算されます。</p>
-    <div id="assignList" style="margin-top:6px;"></div>
-    <div id="assignStores"></div>
-    <div class="modal-actions"><button class="btn ghost" onclick="closeAssign()">キャンセル</button><button class="btn primary" onclick="saveAssign()">保存</button></div>
-  </div>
+  <main id="view-assignedit" class="hide">
+    <div class="titlebar"><h1 id="aeTitle">ロール割当</h1><div class="sp"></div><button class="btn ghost" onclick="show('users')">← ユーザー割当へ</button></div>
+    <div class="panel">
+      <p class="hint">付与するロールを選択（複数可＝権限を合算）。<b>店舗ロール</b>を付けたら下で<b>対象店舗</b>を紐付けます（店長＝自店舗1つ／エリア長＝複数／全店も可）。</p>
+      <div id="aeRoles" style="margin-top:6px;max-width:640px;"></div>
+      <div id="aeStores" style="max-width:640px;"></div>
+      <div style="margin-top:20px;display:flex;gap:10px;"><button class="btn primary" onclick="saveAssign()">保存</button><button class="btn ghost" onclick="show('users')">キャンセル</button></div>
+    </div>
+  </main>
 </div>
 
 <!-- 権限作成モーダル -->
@@ -1527,7 +1526,7 @@ document.addEventListener('click',e=>{ let ch=false;
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','catalog','summary','users','condset','tpllist','newrole'];   // 'edit'(旧アコーディオン)は撤去済み
+  const VIEWS=['list','catalog','summary','users','condset','tpllist','newrole','assignedit'];   // 'edit'(旧アコーディオン)は撤去済み
   VIEWS.forEach(x=>{ const m=document.getElementById('view-'+x); if(m) m.classList.toggle('hide', v!==x); });   // null安全
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='list') renderList();
@@ -1708,6 +1707,7 @@ function userScopeLabel(u){
   const roles=u.roleKeys.map(roleByKey).filter(Boolean), parts=[];
   if(roles.some(r=>r.tier==='shop')){ const st=u.stores||[];
     if(!st.length) parts.push('<span style="color:#c33;">店舗未設定</span>');
+    else if(SHOPS.length&&st.length===SHOPS.length) parts.push('全店（'+st.length+'店舗）');
     else if(st.length===1) parts.push('店舗（'+shortShop(st[0])+'）');
     else parts.push('指定店舗群（'+st.length+'店舗：'+st.map(shortShop).join('・')+'）'); }
   if(roles.some(r=>r.tier==='company')) parts.push('会社（全社・本部）');
@@ -1730,28 +1730,30 @@ function renderUsers(){
   document.getElementById('usersTable').innerHTML=h;
 }
 function openAssign(ui){ _assignUi=ui; const u=USERS[ui];
-  document.getElementById('amTitle').textContent=u.name+' のロール割当';
-  document.getElementById('assignList').innerHTML=ROLES.filter(r=>!r.system).map(r=>
+  document.getElementById('aeTitle').textContent=u.name+' のロール割当';
+  document.getElementById('aeRoles').innerHTML=ROLES.filter(r=>!r.system).map(r=>
     `<label class="ro" style="display:flex;gap:8px;padding:7px 4px;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''} onchange="amRefreshStores()"> <b>${r.name}</b><span style="color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}・${scopeLabel(r)}</span></label>`).join('');
   amRefreshStores();
-  document.getElementById('assignModal').classList.remove('hide');
+  show('assignedit');
 }
-// 店舗ロールを付与した時だけ、このユーザーの対象店舗を紐付け（自店舗1つ／エリア長は複数）。実効スコープの真実はここ
+// 店舗ロールを付与した時だけ、このユーザーの対象店舗を紐付け（自店舗1つ／エリア長は複数／全店）。実効スコープの真実はここ
 function amRefreshStores(){
   const checked=[...document.querySelectorAll('.amCb:checked')].map(c=>c.value);
   const hasShop=checked.some(k=>{const r=roleByKey(k);return r&&r.tier==='shop';});
-  const box=document.getElementById('assignStores'); if(!box) return;
-  if(!hasShop){ box.innerHTML='<p class="modal-note" style="min-height:auto;color:#9aa0a6;margin-top:8px;">会社ロールのみ＝店舗の紐付けは不要（全社）。</p>'; return; }
-  const cur=USERS[_assignUi].stores||[];
-  box.innerHTML=`<div style="border-top:1px solid #eee;padding-top:10px;margin-top:8px;"><b style="font-size:13px;">対象店舗（このユーザーの有効範囲）</b>`
-    +`<p class="modal-note" style="min-height:auto;">店長＝自店舗1つ／エリア長＝複数選択。実際の担当店舗をここで紐付けます。</p>`
-    +`<div style="display:flex;flex-wrap:wrap;gap:6px;">`+SHOPS.map(sh=>`<label class="ro" style="display:inline-flex;gap:6px;padding:5px 10px;border:1px solid #e3e6ea;border-radius:6px;"><input type="checkbox" class="amShopCb" value="${sh}" ${cur.includes(sh)?'checked':''}> ${shortShop(sh)}</label>`).join('')+`</div></div>`;
+  const box=document.getElementById('aeStores'); if(!box) return;
+  if(!hasShop){ box.innerHTML='<p class="hint" style="color:#9aa0a6;margin-top:12px;">会社ロールのみ＝店舗の紐付けは不要（全社）。</p>'; return; }
+  const cur=USERS[_assignUi].stores||[], allOn=SHOPS.length>0&&SHOPS.every(sh=>cur.includes(sh));
+  box.innerHTML=`<div style="border-top:1px solid #eee;padding-top:16px;margin-top:16px;"><b style="font-size:14px;">対象店舗（このユーザーの有効範囲）</b>`
+    +`<p class="hint">店長＝自店舗1つ／エリア長＝複数選択。「全店」で全店舗を一括選択。実際の担当店舗をここで紐付けます。</p>`
+    +`<label class="ro" style="display:flex;gap:8px;padding:8px 4px;font-weight:700;border-bottom:1px solid #eee;margin-bottom:8px;max-width:180px;"><input type="checkbox" id="aeAllShops" ${allOn?'checked':''} onchange="amToggleAllShops(this.checked)"> 全店</label>`
+    +`<div style="display:flex;flex-wrap:wrap;gap:8px;">`+SHOPS.map(sh=>`<label class="ro" style="display:inline-flex;gap:6px;padding:6px 12px;border:1px solid #e3e6ea;border-radius:6px;"><input type="checkbox" class="amShopCb" value="${sh}" ${cur.includes(sh)?'checked':''} onchange="amSyncAllShops()"> ${shortShop(sh)}</label>`).join('')+`</div></div>`;
 }
-function closeAssign(){ document.getElementById('assignModal').classList.add('hide'); }
+function amToggleAllShops(on){ document.querySelectorAll('.amShopCb').forEach(c=>c.checked=on); }
+function amSyncAllShops(){ const all=[...document.querySelectorAll('.amShopCb')], m=document.getElementById('aeAllShops'); if(m) m.checked = all.length>0 && all.every(c=>c.checked); }
 function saveAssign(){ const u=USERS[_assignUi];
   u.roleKeys=[...document.querySelectorAll('.amCb:checked')].map(c=>c.value);
   u.stores=[...document.querySelectorAll('.amShopCb:checked')].map(c=>c.value);
-  closeAssign(); renderUsers(); toast(u.name+' の割当を保存しました'); }
+  show('users'); renderUsers(); toast(u.name+' の割当を保存しました'); }
 function renderSummary(){
   const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
   const allN={tx:CATALOG.transactions.flatMap(g=>g.items).length, dim:CATALOG.dimensions.length, tag:CATALOG.tags.length};
