@@ -86,6 +86,8 @@
   .rowedit{ display:block; width:100%; box-sizing:border-box; text-align:center; white-space:normal; line-height:1.2; background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 6px; cursor:pointer; font-weight:700; font-size:12px; }
   .ae-edit{ flex:0 0 auto; white-space:nowrap; background:#eef2f6; color:#33414f; border:1px solid #d6dde4; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:700; cursor:pointer; }
   .ae-edit:hover{ background:#e3e9ef; }
+  .ae-cta{ white-space:nowrap; background:var(--green); color:#fff; border:none; border-radius:8px; padding:9px 22px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  .ae-cta:hover{ background:var(--green-d); }
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
   .listpickbar{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px; background:#f5f7f9; border-radius:8px; }
@@ -544,7 +546,7 @@
         </div>
         <p class="hint" style="margin-top:6px;">📍 対象店舗は<b>ユーザー割当</b>で紐付け（ここは区分のみ）。</p>
         <div id="rmAssignPreview" style="margin-top:8px;"></div>
-        <div style="margin-top:8px;text-align:right;"><button type="button" class="ae-edit" onclick="gotoAssignFromEditor()">🔗 ユーザー割当で紐付け →</button></div></div>
+        <div id="rmAssignBtnWrap" style="margin-top:8px;text-align:left;"><button type="button" class="ae-cta" onclick="gotoAssignFromEditor()">🔗 ユーザー割当で紐付け →</button></div></div>
       <div class="modal-note" id="rmNote"></div>
       <div class="nr-actions">
         <span class="nr-warn" id="rmWarn"></span>
@@ -1354,10 +1356,12 @@ function openBaseDetail(){ const pr=rmBasePreviewRole(); const v=_rmBaseVal;
 // このロールの割当ユーザー×対象店舗のプレビュー（氏名＋掌握店舗数＋店舗名＋未設定ステータス）。遷移ボタンはプレビュー内に統一・閲覧のみ
 function renderAssignPreview(){
   const box=document.getElementById('rmAssignPreview'); if(!box) return;
-  box.innerHTML='';   // 既定は非表示（新規登録・割当なし＝プレビュー無しでボタンのみ）
+  const wrap=document.getElementById('rmAssignBtnWrap'); const align=v=>{ if(wrap) wrap.style.textAlign=v; };
+  box.innerHTML=''; align('left');   // 既定：プレビュー無し＝区分に合わせて左詰
   if(_nrMode!=='edit' || _nrEditIdx<0) return;   // 新規登録＝プレビュー無し
   const r=ROLES[_nrEditIdx], us=usersOfRole(r.key);
   if(!us.length) return;   // 割当ユーザーがいない＝プレビュー無し
+  align('right');   // プレビューあり＝枠外・右寄せ
   if(rmTier!=='shop'){   // 会社ロール＝全社（店舗紐付け不要）
     const rows = us.map(u=>`<tr><td>${u.name}</td><td>全社</td><td><span class="ap-tag ap-all">全社・本部</span></td></tr>`).join('');
     box.innerHTML=`<div class="assign-prev"><div class="ap-h">割当ユーザー</div><table class="ap-table"><tr><th>従業員名</th><th>範囲</th><th></th></tr>${rows}</table></div>`; return;
