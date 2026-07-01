@@ -1364,15 +1364,15 @@ function renderAssignPreview(){
   align('right');   // プレビューあり＝枠外・右寄せ
   if(rmTier!=='shop'){   // 会社ロール＝全社（店舗紐付け不要）
     const rows = us.map(u=>`<tr><td>${u.name}</td><td>全社</td><td><span class="ap-tag ap-all">全社・本部</span></td></tr>`).join('');
-    box.innerHTML=`<div class="assign-prev"><div class="ap-h">割当ユーザー</div><table class="ap-table"><tr><th>従業員名</th><th>範囲</th><th></th></tr>${rows}</table></div>`; return;
+    box.innerHTML=`<div class="assign-prev"><table class="ap-table"><tr><th>従業員名</th><th>範囲</th><th></th></tr>${rows}</table></div>`; return;
   }
   let unset=0;
   const rows=us.map(u=>{ const st=u.stores||[], ok=st.length>0; if(!ok) unset++;
     const cnt = ok ? (st.length===SHOPS.length? `${st.length}店舗<span class="ap-allmini">（全店）</span>` : `${st.length}店舗`) : '<span class="ap-unset">0店舗</span>';
     const names = ok ? '<div class="ap-stores">'+st.map(sh=>`<span class="ap-tag">${shortShop(sh)}</span>`).join('')+'</div>' : '<span class="ap-unset">⚠ 未設定（設定してください）</span>';
     return `<tr><td>${u.name}</td><td>${cnt}</td><td>${names}</td></tr>`; }).join('');
-  const badge = unset>0 ? `<span style="color:#c33;font-weight:700;">⚠ 未設定 ${unset}名</span>` : '<span style="color:#159b5d;font-weight:700;">✅ 全員 設定済み</span>';
-  box.innerHTML=`<div class="assign-prev"><div class="ap-h">割当ユーザー × 対象店舗　${badge}</div><table class="ap-table"><tr><th>従業員名</th><th>店舗数</th><th>店舗名</th></tr>${rows}</table></div>`;
+  const header = unset>0 ? `<div class="ap-h"><span style="color:#c33;font-weight:700;">⚠ 未設定 ${unset}名（設定してください）</span></div>` : '';   // 見出しは廃止・未設定時のみ警告
+  box.innerHTML=`<div class="assign-prev">${header}<table class="ap-table"><tr><th>従業員名</th><th>店舗数</th><th>店舗名</th></tr>${rows}</table></div>`;
 }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); renderAssignPreview();
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
@@ -1809,7 +1809,7 @@ function amRefreshStores(){
   if(!hasShop){ box.innerHTML='<p class="hint" style="color:#9aa0a6;margin-top:12px;">会社ロール＝全社（店舗紐付けなし）。</p>'; return; }
   const cur=USERS[_assignUi].stores||[], allOn=SHOPS.length>0&&SHOPS.every(sh=>cur.includes(sh));
   const warn = cur.length===0 ? '<span style="color:#c33;font-weight:700;">⚠ 店舗未設定（1つ以上選択してください）</span>' : '';
-  box.innerHTML=`<div style="border-top:1px solid #eee;padding-top:16px;margin-top:16px;"><b style="font-size:14px;">対象店舗（このユーザーの有効範囲）</b> ${warn}`
+  box.innerHTML=`<div style="border-top:1px solid #eee;padding-top:16px;margin-top:16px;"><b style="font-size:14px;">対象店舗</b> ${warn}`
     +`<p class="hint">担当店舗を選択（複数可・「全店」で一括）。</p>`
     +`<label class="ro" style="display:flex;gap:8px;padding:8px 4px;font-weight:700;border-bottom:1px solid #eee;margin-bottom:8px;max-width:180px;"><input type="checkbox" id="aeAllShops" ${allOn?'checked':''} onchange="amToggleAllShops(this.checked)"> 全店</label>`
     +`<div style="display:flex;flex-wrap:wrap;gap:8px;">`+SHOPS.map(sh=>`<label class="ro" style="display:inline-flex;gap:6px;padding:6px 12px;border:1px solid #e3e6ea;border-radius:6px;"><input type="checkbox" class="amShopCb" value="${sh}" ${cur.includes(sh)?'checked':''} onchange="amStoreToggle()"> ${shortShop(sh)}</label>`).join('')+`</div></div>`;
