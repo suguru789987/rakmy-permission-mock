@@ -519,21 +519,15 @@
       <div class="nr-step"><span id="stepnoContent">②</span> 権限内容を編集<small>画面ごとに 操作／閲覧／なし。画面名クリックで機能・操作詳細・指標まで展開</small></div>
       <div id="rmDetailPanel" class="nr-detailpanel nr-grid"></div>
 
-      <div class="nr-step"><span id="stepnoBasic">③</span> 基本設定<small>名前・区分・データ範囲</small></div>
+      <div class="nr-step"><span id="stepnoBasic">③</span> 基本設定<small>名前・区分</small></div>
       <div class="nr-field"><label class="nrl">権限名</label>
         <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" oninput="rmValidate()" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';"></div>
       <div class="nr-field"><label class="nrl">区分</label>
         <div class="rolesel" id="rmTier" style="margin:0;">
           <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
           <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
-        </div></div>
-      <div class="nr-field"><label class="nrl">データ範囲（スコープ）</label>
-        <div class="rolesel" id="rmScope" style="margin:0;">
-          <button class="rolebtn on" data-s="self" onclick="rmSetScope('self')">自店舗のみ</button>
-          <button class="rolebtn" data-s="shops" onclick="rmSetScope('shops')">指定店舗群（エリア）</button>
-          <button class="rolebtn" data-s="all" onclick="rmSetScope('all')">全社</button>
         </div>
-        <div id="rmShops" class="hide" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div></div>
+        <p class="hint" style="margin-top:6px;">📍 データ範囲（対象店舗）は<b>ユーザー割当</b>で各ユーザーに紐付けます（店舗ロール＝店舗ピッカー／会社ロール＝全社）。ここでは区分のみ。</p></div>
       <div class="modal-note" id="rmNote"></div>
       <div class="nr-actions">
         <span class="nr-warn" id="rmWarn"></span>
@@ -1227,7 +1221,7 @@ let ROLES = buildOpsRoles(); applyOpsSeed();
 function applyDemoMode(){ ROLES = (demoMode==='new')?buildNewRoles():buildOpsRoles(); if(demoMode!=='new') applyOpsSeed(); }
 function setDemoMode(m){ demoMode=m; lsSet('rakmy_demo_mode',m); applyDemoMode(); cur.idx=0; cur.view='cats'; updateDemoToggle(); show('list'); }
 function updateDemoToggle(){ document.querySelectorAll('.demo-toggle button').forEach(b=>b.classList.toggle('on',b.dataset.m===demoMode)); }
-function scopeLabel(r){ if(r.scopeType==='shops') return '指定店舗群（割当で指定）'; if(r.scopeType==='all'||r.scope==='company') return r.tier==='company'?'会社（全社・本部）':'全社'; return '自店舗（割当で指定）'; }
+function scopeLabel(r){ return r.tier==='company' ? '会社（全社・本部）' : '店舗（割当で指定）'; }   // データ範囲は割当で確定＝区分ベース表示
 const featShown = f => f.fixed ? cur.tier==='company' : true;   // 本部専用は会社ロールでのみ編集表示
 /* 全権の付与（オーナーが会社ロールへ移譲）：全機能max＋adminOnly操作も付与 */
 function grantFullPerm(){ const p={}; CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ setFeatVal(p,c.id,fi,f,maxV(f.k)); (f.ops||[]).forEach(o=>{ if(o.adminOnly) p[opKey(c.id,fi,o.id)]=true; }); })); return p; }
@@ -1321,7 +1315,7 @@ function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; co
 }
 let _rmBaseTier,_rmBaseScope;
 function rmValidate(){ const nm=document.getElementById('rmName').value.trim(); const b=document.getElementById('rmCreateBtn'); if(b) b.disabled=!nm; }
-function rmCheckIntegrity(){ const w=document.getElementById('rmWarn'); if(!w) return; const changed=(rmTier!==_rmBaseTier)||(rmScope!==_rmBaseScope); w.textContent = changed?'⚠ ベース既定と区分／範囲が異なります（意図的なら可・整合を確認）':''; }   // 区分とデータ範囲は独立＝組み合わせ自由。ブロックでなく助言
+function rmCheckIntegrity(){ const w=document.getElementById('rmWarn'); if(!w) return; const changed=(rmTier!==_rmBaseTier); w.textContent = changed?'⚠ ベース既定と区分が異なります（意図的なら可・整合を確認）':''; }   // データ範囲は割当で決まるため区分のみ確認
 // ロール(perm)の権限内容を一覧/設定の許可数で要約（マトリクスの語彙を流用・読み取り専用）
 function permSummaryHTML(pr){
   const row=gk=>{ const cats=CATEGORIES.filter(c=>c.group===gk); const ap=cats.filter(c=>catApplies(pr,c.id)); const t={op:0,vw:0,no:0}; ap.forEach(c=>t[catStatus(pr,c.id)]++);
@@ -1335,12 +1329,8 @@ function openBaseDetail(){ const pr=rmBasePreviewRole(); const v=_rmBaseVal;
   openTplDetailPr(pr, nm+'｜画面ごとの権限'); }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
-function rmSetScope(s){ rmScope=s; document.querySelectorAll('#rmScope button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
-  // 店舗の実選択はユーザー割当に一本化。権限編集は「型」のみ＝ここでは案内のみ表示
-  const box=document.getElementById('rmShops'); box.style.display = (s==='shops'||s==='self')?'block':'none';
-  box.innerHTML = s==='shops' ? '<p class="modal-note" style="min-height:auto;color:#5a6b7b;margin:0;">📍 実際の対象店舗は<b>ユーザー割当</b>で各ユーザーに紐付けます（ここは型の選択のみ）。</p>'
-                : s==='self' ? '<p class="modal-note" style="min-height:auto;color:#5a6b7b;margin:0;">📍 自店舗＝そのユーザー本人の店舗。<b>ユーザー割当</b>で紐付けます。</p>' : '';
-  rmCheckIntegrity(); }
+// データ範囲の選択UIは撤去（スコープは割当で確定）。rmScopeは区分から導出される内部値としてのみ保持
+function rmSetScope(s){ rmScope=s; rmCheckIntegrity(); }
 function submitRoleModal(){
   const nm=document.getElementById('rmName').value.trim();
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
@@ -1416,7 +1406,7 @@ const CAT_PRIORITY={}; [...DEFAULT_COLS.view,...DEFAULT_COLS.ops].forEach((id,i)
 function orderedCats(gk){ return CATEGORIES.filter(c=>c.group===gk).slice().sort((a,b)=>{ const pa=CAT_PRIORITY[a.id]!=null?CAT_PRIORITY[a.id]:999, pb=CAT_PRIORITY[b.id]!=null?CAT_PRIORITY[b.id]:999; return pa!==pb?pa-pb:CATEGORIES.indexOf(a)-CATEGORIES.indexOf(b); }); }
 // カテゴリ内の機能の序列。操作=大元設定→中設定(連動)→一覧→分析(予実)／閲覧=分析→一覧→設定確認。種別は機能名＋inheritFromから推定（同種は元の順を維持＝安定ソート）
 // 範囲バッジ：店舗スコープ機能(range=shop-self)で、編集中ロールのスコープに応じ 自店舗のみ/掌握店舗/全社 を表示
-function featScopeBadge(f){ if(f.range!=='shop-self') return ''; const sc=(rmTier==='company'||rmScope==='all')?'全社':(rmScope==='shops'?'掌握店舗':'自店舗のみ'); return `<span class="range">範囲：${sc}</span>`; }
+function featScopeBadge(f){ if(f.range!=='shop-self') return ''; const sc=(rmTier==='company')?'全社':'割当で指定'; return `<span class="range">範囲：${sc}</span>`; }
 function featTypeRank(f,group){
   const n=f.n;
   const t = /分析|予実|レポート|対比|カレンダー|集計/.test(n) ? 'analysis'
@@ -1665,8 +1655,7 @@ function renderTplDetail(){ const pr=_tpdPr; if(!pr) return; const el=document.g
     return `<div class="tpd-sec">${lab}（${cats.length}画面）</div>${rows||'<div class="tpd-empty">対象画面なし</div>'}`; };
   const summary = edit ? `<div class="rmp-h">概要（許可数）</div>${permSummaryHTML(pr)}<div class="tpd-divider"></div>` : '';
   const hint = edit ? '各画面の<b>操作/閲覧/なし</b>を直接編集できます（テンプレを土台に追加・削減）。画面名クリックで列の内訳。' : '画面名をクリックすると、その画面の<b>列（機能・項目）ごと</b>の閲覧/操作が見られます。';
-  const scLabel=(rmTier==='company'||rmScope==='all')?'全社':(rmScope==='shops'?'指定店舗群（掌握店舗）':'自店舗のみ');
-  const scopeBanner = edit ? `<div class="scope-banner">📍 データ範囲：<b>${scLabel}</b> — 店舗データ（発注先・売上・棚卸・小口現金・予算・費用・従業員 等）の閲覧・操作は<b>全てこの範囲に限定</b>されます。会社専用機能（会社情報・お支払い・店舗管理・締め管理・ダウンロード）は対象外。範囲は②基本設定で変更。</div>` : '';
+  const scopeBanner = edit ? `<div class="scope-banner">📍 データ範囲：${rmTier==='company'?'<b>全社</b>（会社ロール）':'<b>店舗</b>（店舗ロール。実際の対象店舗は<b>ユーザー割当</b>で各ユーザーに指定）'} — 店舗データ（発注先・売上・棚卸・小口現金・予算・費用・従業員 等）の閲覧・操作は<b>そのユーザーの範囲に限定</b>。会社専用機能（会社情報・お支払い・店舗管理・締め管理・ダウンロード）は会社ロールのみ。</div>` : '';
   el.innerHTML=scopeBanner+summary+`<div class="tpd-hint">${hint}</div>`+sec('view','一覧・分析画面')+sec('ops','設定画面');
 }
 function setRoleCat(r,cid,val){ const c=CATEGORIES.find(x=>x.id===cid); if(!c) return;   // カテゴリ内の全機能を一括設定（大元スイッチ→内訳に連動）
