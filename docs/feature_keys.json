@@ -11,7 +11,7 @@
   },
   "crud_linkage": "案C: 登録↔編集は連動(操作=一体), 削除は確認付きopt-in＋管理も付与(=全て相当)",
   "category_count": 27,
-  "feature_count": 54,
+  "feature_count": 53,
   "roles": [
     {
       "key": "manager",
@@ -554,11 +554,11 @@
       "inherit_from": null
     },
     {
-      "feature_key": "report.pl",
+      "feature_key": "report.pl_daily",
       "category_id": "report",
       "category_name": "集計",
       "group": "view",
-      "ui_name": "予実対比",
+      "ui_name": "予実対比（日次）",
       "ctx": "common",
       "kind": "view",
       "levels": [
@@ -1338,26 +1338,6 @@
       "category_name": "予算設定",
       "group": "ops",
       "ui_name": "予算一覧（月次・年間）",
-      "ctx": "shop",
-      "kind": "view",
-      "levels": [
-        0,
-        1
-      ],
-      "ops": [
-        "view",
-        "export"
-      ],
-      "company_only": false,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "budget.calendar",
-      "category_id": "budget",
-      "category_name": "予算設定",
-      "group": "ops",
-      "ui_name": "予実管理カレンダー（日次）",
       "ctx": "shop",
       "kind": "view",
       "levels": [

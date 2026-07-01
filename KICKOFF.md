@@ -52,5 +52,5 @@
 - push先＝GitHub `suguru789987`。
 
 ## 現状サマリ（数値）
-- **27カテゴリ・54機能**（feature_key辞書＝`ENFORCEMENT.md` 付録A／`docs/feature_keys.json`）。
+- **27カテゴリ・53機能**（feature_key辞書＝`ENFORCEMENT.md` 付録A／`docs/feature_keys.json`）。
 - 仕様書⇔モックの整合監査：13項目一致（直近で機能数ズレ1件を修正済み）。

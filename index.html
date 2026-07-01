@@ -699,7 +699,7 @@ const VTIP = {0:'すべて なし（アクセス不可）',1:'閲覧まで（見
 // 各状態ボタンの簡潔な定義（ホバー表示）
 function valTip(f,s){ const k=f.k;
   if(k==='base') return '常時閲覧（編集不可）';
-  if(k==='view') return s===0?'アクセス不可':'閲覧（エクスポートは操作詳細で個別指定）';
+  if(k==='view') return s===0?'アクセス不可':'閲覧';
   if(k==='action') return s===0?'実行不可':'実行できる';
   if(k==='admin') return s===0?'アクセス不可':s===1?'閲覧のみ（設定変更不可）':'閲覧＋設定変更ができる';
   return {0:'アクセス不可',1:'閲覧のみ（見るだけ）',2:'閲覧＋登録＋編集（削除なし）',3:'閲覧＋登録＋編集＋削除（すべて含む）'}[s]||''; }
@@ -775,7 +775,7 @@ const CATEGORIES = [
     {n:'テーブル稼働分析',k:'view',ctx:'shop'}]},
   {id:'report', name:'集計', ctx:'common', features:[
     {n:'年間予実対比',k:'view', items:[{n:'年間予算'},{n:'年間実績'},{n:'達成率'}]},
-    {n:'予実対比',k:'view', items:[{n:'予算'},{n:'実績'},{n:'差異'},{n:'達成率'}]},
+    {n:'予実対比（日次）',k:'view', items:[{n:'予算'},{n:'実績'},{n:'差異'},{n:'達成率'}]},
     {n:'月次集計',k:'view',ctx:'shop'},
     {n:'月次レポート',k:'view', items:[{n:'売上'},{n:'原価'},{n:'粗利'},{n:'人件費'},{n:'営業利益'},{n:'各種率'}]},
     {n:'日次レポート',k:'view', items:[{n:'日次売上'},{n:'客数'},{n:'客単価'}]},
@@ -832,8 +832,7 @@ const CATEGORIES = [
   {id:'holiday', name:'休業日設定', ctx:'shop', features:[{n:'休業日設定',k:'edit'}]},
   {id:'budget', name:'予算設定', ctx:'shop', features:[
     {n:'月次予算設定（ウィザード：単月費用・売上構成比・曜日別バイアス含む）',k:'edit'},   // 連動サブ設定をウィザードに内包＝1つに集約
-    {n:'予算一覧（月次・年間）',k:'view'},
-    {n:'予実管理カレンダー（日次）',k:'view'}]},
+    {n:'予算一覧（月次・年間）',k:'view'}]},
 ];
 /* ctxを各機能へ継承（機能側ctxが優先）。会社画面ctxは安全側でfixed扱い */
 CATEGORIES.forEach(c=>c.features.forEach(f=>{ if(!f.ctx) f.ctx=c.ctx; if(f.ctx==='company') f.fixed=true; }));
@@ -1675,7 +1674,7 @@ function wzToggleSub(cid,fi,ii,vo){ const k=opKey(cid,fi,siKey(fi,ii,vo)); _rmBa
 function wzItemsAll(cid,fi,on){ const c=CATEGORIES.find(x=>x.id===cid),f=c.features[fi]; itemKeys(f).forEach(k=>_rmBasePerm[opKey(cid,fi,k)]=on); rmRefreshPanel(); }
 function wzFeatDeep(pr,cid,f,fi){
   const kd=KIND[f.k]; if(f.inheritFrom||(f.noStaff&&pr.key==='staff')) return '';   // lockでも指標(閲覧詳細)は出す（操作詳細だけ抑止）
-  const opsShow=kd.lock?[]:(f.subitems?[]:opsOf(f).filter(o=>o.id!=='view')); let inner='';
+  const opsShow=kd.lock?[]:(f.subitems?[]:opsOf(f).filter(o=>o.id!=='view'&&o.id!=='export')); let inner='';   // 閲覧専用画面は操作詳細を出さない（エクスポートは「ダウンロード」カテゴリで制御）
   if(f.subitems){
     inner+=`<div class="l3bar opsbar"><span>📋 画面項目ごとの閲覧・操作</span></div><div class="subwrap"><div class="subrow subhead"><span class="sn">画面項目</span><span class="sx">閲覧</span><span class="sx">操作</span></div>`;
     f.subitems.forEach((si,ii)=>{ const sv=pr.perm[opKey(cid,fi,siKey(fi,ii,'v'))], so=pr.perm[opKey(cid,fi,siKey(fi,ii,'o'))];
