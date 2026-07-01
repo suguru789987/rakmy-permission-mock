@@ -527,7 +527,8 @@
           <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
           <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
         </div>
-        <p class="hint" style="margin-top:6px;">📍 データ範囲（対象店舗）は<b>ユーザー割当</b>で各ユーザーに紐付けます（店舗ロール＝店舗ピッカー／会社ロール＝全社）。ここでは区分のみ。</p></div>
+        <p class="hint" style="margin-top:6px;">📍 データ範囲（対象店舗）は<b>ユーザー割当</b>で各ユーザーに紐付けます（店舗ロール＝店舗ピッカー／会社ロール＝全社）。ここでは区分のみ。</p>
+        <button type="button" class="rowedit" style="margin-top:4px;" onclick="gotoAssignFromEditor()">🔗 ユーザー割当で店舗を紐付け・割当 →</button></div>
       <div class="modal-note" id="rmNote"></div>
       <div class="nr-actions">
         <span class="nr-warn" id="rmWarn"></span>
@@ -1526,6 +1527,11 @@ function show(v){
   if(v==='users') renderUsers();
   if(v==='condset') renderCondset();
   if(v==='tpllist') renderTplList();
+}
+// 権限編集/新規作成 → ユーザー割当（店舗紐付け・割当）への遷移。新規作成中は未保存破棄を確認
+function gotoAssignFromEditor(){
+  if(_nrMode==='new' && !confirm('未保存の新規権限は破棄されます。先に「作成」で保存すると割当に表示されます。\nこのままユーザー割当へ移動しますか？')) return;
+  show('users');
 }
 /* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
 const SETUP_TEMPLATES=[
