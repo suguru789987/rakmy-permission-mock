@@ -59,9 +59,12 @@
   .scope-banner{ font-size:12px; color:#1f3b5e; background:#eef4fb; border:1px solid #cfe0f3; border-radius:8px; padding:8px 12px; margin-bottom:10px; line-height:1.5;}
   .assign-prev{ border:1px solid #e3e6ea; border-radius:8px; padding:8px 10px; background:#fafbfc; margin-top:6px; max-width:560px;}
   .assign-prev .ap-h{ font-size:12px; font-weight:700; color:#5a6b7b; margin-bottom:6px;}
-  .assign-prev .ap-row{ display:flex; align-items:flex-start; gap:10px; font-size:12.5px; padding:6px 2px; border-top:1px dashed #eef0f2;}
-  .assign-prev .ap-user{ min-width:92px; font-weight:600; flex:0 0 auto;}
-  .assign-prev .ap-count{ min-width:74px; color:#5a6b7b; flex:0 0 auto;}
+  .assign-prev .ap-table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-top:2px;}
+  .assign-prev .ap-table th{ text-align:left; color:#5a6b7b; font-weight:700; font-size:11.5px; padding:4px 8px; border-bottom:1px solid #e3e6ea; white-space:nowrap;}
+  .assign-prev .ap-table td{ padding:6px 8px; border-top:1px dashed #eef0f2; vertical-align:top;}
+  .assign-prev .ap-table td:first-child{ font-weight:600; white-space:nowrap;}
+  .assign-prev .ap-table td:nth-child(2){ white-space:nowrap; color:#5a6b7b;}
+  .assign-prev .ap-allmini{ color:#0a7a55; font-weight:700;}
   .assign-prev .ap-stores{ display:flex; flex-wrap:wrap; gap:4px;}
   .assign-prev .ap-tag{ background:#eef4fb; border:1px solid #cfe0f3; color:#1f3b5e; border-radius:4px; padding:1px 7px; font-size:11.5px;}
   .assign-prev .ap-tag.ap-all{ background:#e8f7ef; border-color:#b8e6d2; color:#0a7a55; font-weight:700;}
@@ -621,7 +624,14 @@
   </main>
 </div>
 
-<!-- 権限作成モーダル -->
+<!-- 確認モーダル（ネイティブconfirmの代替・正規UI） -->
+<div id="confirmModal" class="modal-overlay hide">
+  <div class="modal" style="width:440px;">
+    <h3 id="cfmTitle" style="margin:0;">確認</h3>
+    <p id="cfmMsg" style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-line;margin-top:12px;"></p>
+    <div class="modal-actions"><button class="btn ghost" onclick="cfmCancel()">キャンセル</button><button class="btn primary" id="cfmOk" onclick="cfmOk()">OK</button></div>
+  </div>
+</div>
 <!-- トースト通知 -->
 <div id="toast" class="toast"></div>
 
@@ -1347,16 +1357,16 @@ function renderAssignPreview(){
   const r=ROLES[_nrEditIdx], us=usersOfRole(r.key);
   if(!us.length) return;   // 割当ユーザーがいない＝プレビュー無し
   if(rmTier!=='shop'){   // 会社ロール＝全社（店舗紐付け不要）
-    const rows = us.map(u=>`<div class="ap-row"><span class="ap-user">${u.name}</span><span class="ap-count">全社</span><span class="ap-stores"><span class="ap-tag ap-all">全社・本部</span></span></div>`).join('');
-    box.innerHTML=`<div class="assign-prev"><div class="ap-h">割当ユーザー（会社ロール＝全社・店舗紐付け不要）</div>${rows}</div>`; return;
+    const rows = us.map(u=>`<tr><td>${u.name}</td><td>全社</td><td><span class="ap-tag ap-all">全社・本部</span></td></tr>`).join('');
+    box.innerHTML=`<div class="assign-prev"><div class="ap-h">割当ユーザー（会社ロール＝全社・店舗紐付け不要）</div><table class="ap-table"><tr><th>従業員名</th><th>範囲</th><th>詳細</th></tr>${rows}</table></div>`; return;
   }
   let unset=0;
   const rows=us.map(u=>{ const st=u.stores||[], ok=st.length>0; if(!ok) unset++;
-    const cnt = ok ? (st.length===SHOPS.length? `${st.length}店舗（全店）` : `${st.length}店舗`) : '<span class="ap-unset">0店舗</span>';
-    const chips = ok ? st.map(sh=>`<span class="ap-tag">${shortShop(sh)}</span>`).join('') : '<span class="ap-unset">⚠ 未設定（設定してください）</span>';
-    return `<div class="ap-row"><span class="ap-user">${u.name}</span><span class="ap-count">${cnt}</span><span class="ap-stores">${chips}</span></div>`; }).join('');
+    const cnt = ok ? (st.length===SHOPS.length? `${st.length}店舗<span class="ap-allmini">（全店）</span>` : `${st.length}店舗`) : '<span class="ap-unset">0店舗</span>';
+    const names = ok ? '<div class="ap-stores">'+st.map(sh=>`<span class="ap-tag">${shortShop(sh)}</span>`).join('')+'</div>' : '<span class="ap-unset">⚠ 未設定（設定してください）</span>';
+    return `<tr><td>${u.name}</td><td>${cnt}</td><td>${names}</td></tr>`; }).join('');
   const badge = unset>0 ? `<span style="color:#c33;font-weight:700;">⚠ 未設定 ${unset}名</span>` : '<span style="color:#159b5d;font-weight:700;">✅ 全員 設定済み</span>';
-  box.innerHTML=`<div class="assign-prev"><div class="ap-h">このロールの割当ユーザー × 対象店舗（ユーザー割当で設定）　${badge}</div>${rows}</div>`;
+  box.innerHTML=`<div class="assign-prev"><div class="ap-h">このロールの割当ユーザー × 対象店舗（ユーザー割当で設定）　${badge}</div><table class="ap-table"><tr><th>従業員名</th><th>店舗数</th><th>店舗名（掌握店舗）</th></tr>${rows}</table></div>`;
 }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); renderAssignPreview();
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
@@ -1560,7 +1570,7 @@ function show(v){
 }
 // 権限編集/新規作成 → ユーザー割当（店舗紐付け・割当）への遷移。新規作成中は未保存破棄を確認
 function gotoAssignFromEditor(){
-  if(_nrMode==='new' && !confirm('未保存の新規権限は破棄されます。先に「作成」で保存すると割当に表示されます。\nこのままユーザー割当へ移動しますか？')) return;
+  if(_nrMode==='new'){ showConfirm('未保存の新規権限は破棄されます。\n先に「作成」で保存すると割当に表示されます。\n\nこのままユーザー割当へ移動しますか？', ()=>show('users'), {title:'ユーザー割当へ移動', okLabel:'移動する'}); return; }
   show('users');
 }
 /* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
@@ -1606,14 +1616,24 @@ function featSeg(pr,cid,fi,f){ if(KIND[f.k].lock) return '<span class="pill pvw"
   return `<span class="rmseg">${vals.slice().reverse().map(s=>`<button data-v="${s}" class="${((v===s)||(v===2&&s===1))?'on':''}" onclick="event.stopPropagation();rmEditFeat('${cid}',${fi},${s})">${(KIND[f.k].lab[s]!=null?KIND[f.k].lab[s]:VLAB[s])}</button>`).join('')}</span>`; }   // 操作(2)選択時は閲覧(1)も点灯＝操作⊃閲覧。全て(3)は全てのみ
 function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeatVal(_rmBasePerm,cid,fi,c.features[fi],val); rmRefreshPanel(); }
 // ウィザード深部：操作詳細・指標を _rmBasePerm 上で編集（アコーディオン最深部の移植）
+// 正規の確認モーダル（ネイティブconfirmの代替）。showConfirm(msg, onOk, {title,okLabel,onCancel})
+let _cfmOk=null, _cfmCancel=null;
+function showConfirm(msg, onOk, opt){ opt=opt||{}; _cfmOk=onOk||null; _cfmCancel=opt.onCancel||null;
+  document.getElementById('cfmTitle').textContent=opt.title||'確認';
+  document.getElementById('cfmMsg').textContent=msg;
+  document.getElementById('cfmOk').textContent=opt.okLabel||'OK';
+  document.getElementById('confirmModal').classList.remove('hide'); }
+function cfmCancel(){ document.getElementById('confirmModal').classList.add('hide'); const c=_cfmCancel; _cfmOk=_cfmCancel=null; if(c) c(); }
+function cfmOk(){ document.getElementById('confirmModal').classList.add('hide'); const c=_cfmOk; _cfmOk=_cfmCancel=null; if(c) c(); }
 function wzToggleOp(cid,fi,oid){ const k=opKey(cid,fi,oid); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
 function wzSetOp(cid,fi,oid,on){   // 操作詳細：許可/なし。案C＝登録↔編集は連動（操作=管理の一体）／削除は破壊的のため確認付きopt-in＋管理(登録/編集)も必要（4状態の操作/全てと整合）
   const f=CATEGORIES.find(c=>c.id===cid).features[fi];
   const ops=opsOf(f).filter(o=>o.id!=='view'&&!o.adminOnly).map(o=>o.id);
   const has=k=>ops.includes(k), set=(k,v)=>{ if(has(k)) _rmBasePerm[opKey(cid,fi,k)]=v; };
   if(oid==='delete'){
-    if(on){ if(!confirm('「削除」も許可しますか？\n削除は破壊的で元に戻せません（=「全て」相当の権限）。')){ rmRefreshPanel(); return; }
-      set('delete',true); set('create',true); set('update',true); }   // 削除＝意識的opt-in＋管理(登録/編集)も付与
+    if(on){ showConfirm('「削除」も許可しますか？\n削除は破壊的で元に戻せません（＝「全て」相当の権限）。',
+        ()=>{ set('delete',true); set('create',true); set('update',true); rmRefreshPanel(); },
+        {title:'削除権限の許可', okLabel:'削除も許可する', onCancel:()=>rmRefreshPanel()}); return; }   // 非同期＝コールバックで反映
     else set('delete',false);   // 削除OFFは個別（登録/編集は維持＝操作に戻る）
   } else if(oid==='create'||oid==='update'){
     set('create',on); set('update',on);          // 登録↔編集は一体（操作）：どちらか操作で両方連動
