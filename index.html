@@ -522,7 +522,7 @@
   <main id="view-newrole" class="hide">
     <div class="titlebar">
       <h1 id="nrTitle">権限を新規作成</h1><div class="sp"></div>
-      <button class="btn ghost" onclick="show('list')">一覧へ戻る</button>
+      <span id="nrBackBtns"></span>
     </div>
     <div class="panel">
       <div id="nrBaseStep">
@@ -538,7 +538,7 @@
 
       <div class="nr-step"><span id="stepnoBasic">③</span> 基本設定<small>名前・区分</small></div>
       <div class="nr-field"><label class="nrl">権限名</label>
-        <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" oninput="rmValidate()" onkeydown="if(event.key==='Enter')submitRoleModal();this.style.borderColor='';"></div>
+        <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" oninput="rmValidate()" onkeydown="if(event.key==='Enter')submitRoleAndBack();this.style.borderColor='';"></div>
       <div class="nr-field"><label class="nrl">区分</label>
         <div class="rolesel" id="rmTier" style="margin:0;">
           <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
@@ -550,8 +550,8 @@
       <div class="modal-note" id="rmNote"></div>
       <div class="nr-actions">
         <span class="nr-warn" id="rmWarn"></span>
-        <button class="btn ghost" onclick="show('list')">キャンセル</button>
-        <button class="btn primary" id="rmCreateBtn" onclick="submitRoleModal()" disabled>作成</button>
+        <button class="btn ghost" onclick="nrBack()">キャンセル</button>
+        <button class="btn primary" id="rmCreateBtn" onclick="submitRoleAndBack()" disabled>作成</button>
       </div>
     </div>
   </main>
@@ -1296,7 +1296,8 @@ function renderBaseDD(){ document.getElementById('rmBaseBtnLabel').textContent=r
 function toggleBaseDD(){ _rmBaseOpen=!_rmBaseOpen; renderBaseDD(); }
 function selectBase(v){ _rmBaseVal=v; _rmBaseOpen=false; renderBaseDD(); rmSetBase(); }
 function rmBasePreviewRole(){ const t=_rmBaseVal; if(t.startsWith('role:')){ const r=ROLES[+t.slice(5)]; return {perm:r.perm,tier:r.tier,key:r.key}; } const tpl=ROLE_TEMPLATES.find(x=>x.id===t.slice(4)); const perm=buildPerm(PRESET[tpl.preset],tpl.tier,tpl.rep); return {perm,tier:tpl.tier,key:tpl.rep,tpl}; }
-function createRole(preselect){
+function createRole(preselect, origin){
+  _editBackTo = origin||'list'; if(origin==='assignedit') _editBackUi=_assignUi; renderNrBack();
   _nrMode='new'; _nrEditIdx=-1;
   document.getElementById('nrTitle').textContent='権限を新規作成';
   document.getElementById('rmCreateBtn').textContent='作成';
@@ -1310,7 +1311,8 @@ function createRole(preselect){
   rmSetBase(); rmValidate(); renderAssignPreview(); setTimeout(()=>document.getElementById('rmName').focus(),40);
 }
 // 既存ロールをこの画面で編集（兼用）。①ベース選択は隠し、現在の権限を②で直接編集
-function editRoleHere(ri){ const r=ROLES[ri]; if(r.system){ toast('オーナー（全権）は全権固定のため編集できません'); return; }
+function editRoleHere(ri, origin){ const r=ROLES[ri]; if(r.system){ toast('オーナー（全権）は全権固定のため編集できません'); return; }
+  _editBackTo = origin||'list'; if(origin==='assignedit') _editBackUi=_assignUi; renderNrBack();
   _nrMode='edit'; _nrEditIdx=ri;
   document.getElementById('nrTitle').textContent='権限編集：'+r.name;
   document.getElementById('rmCreateBtn').textContent='保存';
@@ -1575,6 +1577,19 @@ function show(v){
 }
 // 権限編集/新規作成 → ユーザー割当（店舗紐付け・割当）への遷移。新規作成中は未保存破棄を確認
 let _hiRole=null;   // 役割サマリでハイライトするロールkey
+// 権限編集の「来た元」（戻り先）。list=権限一覧/summary=役割サマリ/assignedit=割当編集画面(そのユーザー)
+let _editBackTo='list', _editBackUi=-1;
+function nrGo(dest){ if(dest==='assignedit' && _editBackUi>=0) openAssign(_editBackUi); else show(dest||'list'); }
+function nrBack(){ nrGo(_editBackTo); }
+function submitRoleAndBack(){ const key=saveRoleData(); if(key===null) return; if(_editBackTo==='summary') _hiRole=key; nrGo(_editBackTo); }
+// タイトルバーの戻るボタン群：来た元＋「権限一覧へ」の2ボタン（listから来た時は1つ）
+function renderNrBack(){ const el=document.getElementById('nrBackBtns'); if(!el) return;
+  const btn=(t,fn)=>`<button class="btn ghost" style="margin-left:8px;" onclick="${fn}">${t}</button>`;
+  let h='';
+  if(_editBackTo==='summary') h+=btn('← 役割サマリへ',"show('summary')");
+  else if(_editBackTo==='assignedit') h+=btn('← 割当編集へ',"nrGo('assignedit')");
+  h+=btn('← 権限一覧へ',"show('list')");
+  el.innerHTML=h; }
 function gotoAssignFromEditor(){
   const roleKey = (_nrMode==='edit' && _nrEditIdx>=0) ? ROLES[_nrEditIdx].key : null;
   // 遷移先：このロールを持つユーザーがいれば その割当編集画面／いなければ役割サマリ(ハイライト)
@@ -1812,12 +1827,12 @@ function renderUsers(){
 function openAssign(ui){ _assignUi=ui; const u=USERS[ui];
   document.getElementById('aeTitle').textContent=u.name+' のロール割当';
   // 各ロール行に「権限編集 →」（既登録の権限編集画面へ遷移）。チェックのトグルと干渉しないようボタンはlabel外
-  const row=r=>{ const ri=ROLES.indexOf(r); return `<div class="ro" style="display:flex;gap:10px;padding:7px 4px;align-items:center;"><label style="display:flex;gap:8px;flex:1 1 auto;min-width:0;cursor:pointer;align-items:center;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''} onchange="amRefreshStores()"> <b style="white-space:nowrap;">${r.name}</b><span style="color:#9aa0a6;font-size:11px;white-space:nowrap;">${scopeLabel(r)}</span></label><button type="button" class="ae-edit" onclick="editRoleHere(${ri})">権限編集 →</button></div>`; };
+  const row=r=>{ const ri=ROLES.indexOf(r); return `<div class="ro" style="display:flex;gap:10px;padding:7px 4px;align-items:center;"><label style="display:flex;gap:8px;flex:1 1 auto;min-width:0;cursor:pointer;align-items:center;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''} onchange="amRefreshStores()"> <b style="white-space:nowrap;">${r.name}</b><span style="color:#9aa0a6;font-size:11px;white-space:nowrap;">${scopeLabel(r)}</span></label><button type="button" class="ae-edit" onclick="editRoleHere(${ri},'assignedit')">権限編集 →</button></div>`; };
   const grp=(label,list)=> list.length? `<div style="margin-top:4px;"><div style="font-size:12px;color:#5a6b7b;font-weight:700;margin:8px 0 2px;">${label}</div>${list.map(row).join('')}</div>` : '';
   document.getElementById('aeRoles').innerHTML =
       grp('店舗ロール', ROLES.filter(r=>!r.system&&r.tier==='shop'))
     + grp('会社ロール（本部）', ROLES.filter(r=>!r.system&&r.tier==='company'))
-    + `<div style="margin-top:12px;"><button type="button" class="ae-edit" onclick="createRole('blank')">＋ 権限を新規作成</button></div>`;
+    + `<div style="margin-top:12px;"><button type="button" class="ae-edit" onclick="createRole('blank','assignedit')">＋ 権限を新規作成</button></div>`;
   amRefreshStores();
   show('assignedit');
 }
@@ -1856,7 +1871,7 @@ function renderSummary(){
       const val=featVal(r.perm,c.id,fi,f), mx=maxV(f.k);
       if(val>=2&&mx>=2) op++; else if(val>=1) vw++; else no++; }));
     const n=r.system?allN:catN(r.key);
-    const act=r.system?`<span style="color:#9aa0a6;font-size:11px;">全権・固定</span>`:`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button>`;
+    const act=r.system?`<span style="color:#9aa0a6;font-size:11px;">全権・固定</span>`:`<button class="rowedit" onclick="editRoleHere(${ri},'summary')">権限編集</button>`;
     const us=usersOfRole(r.key), unames=us.map(u=>u.name).join('・');
     const unset = r.tier==='shop' ? us.filter(u=>!(u.stores&&u.stores.length)).length : 0;   // 店舗ロールで店舗未設定の割当ユーザー数
     const warn = unset>0 ? ` <span style="color:#c33;font-weight:700;">⚠未設定${unset}</span>` : '';
