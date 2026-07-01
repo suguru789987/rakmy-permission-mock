@@ -496,7 +496,7 @@
     <div class="screennav">
       <div class="snset">
         <button class="snbtn" onclick="show('summary')">役割サマリ</button>
-        <button class="snbtn" onclick="show('users')">ユーザー割当</button>
+        <button class="snbtn" onclick="gotoUsersAll()">ユーザー割当</button>
       </div>
       <div class="ownerwrap">
         <button class="hdd-btn ownerbtn" onclick="event.stopPropagation();toggleOwnerOps()"><span>👑 オーナー操作</span><span class="hdd-ar">▼</span></button>
@@ -613,6 +613,7 @@
     <div class="titlebar"><h1>ユーザー割当（管理者一覧）</h1><div class="sp"></div><button class="btn ghost" onclick="show('list')">← 権限設定へ</button></div>
     <div class="panel">
       <p class="hint">経営管理に<b>ログインする管理者</b>（従業員台帳の <code>master</code> 連動アカウント）にロールを割り当てます。<b>複数ロール＝権限を合算（和集合）</b>。<b>店舗ロール</b>は対象店舗で有効範囲を限定。全従業員ではなく「ログインさせる人」が対象です。</p>
+      <div id="usersFilterBanner"></div>
       <table class="list" id="usersTable"></table>
     </div>
   </main>
@@ -1780,13 +1781,25 @@ function userScopeLabel(u){
 }
 let _assignUi=-1;
 function roleByKey(k){ return ROLES.find(r=>r.key===k); }
+let _userRoleFilter=null;   // 役割サマリ「割当へ」から来た時だけ、そのロールの割当ユーザーに絞り込む
+function gotoUsersForRole(key){ _userRoleFilter=key; show('users'); }   // 役割サマリの割当へ
+function gotoUsersAll(){ _userRoleFilter=null; show('users'); }         // ナビの直接アクセス＝全件（管理者一覧はそのまま）
+function clearUserFilter(){ _userRoleFilter=null; renderUsers(); }
 function renderUsers(){
+  const fkey=_userRoleFilter, frole=fkey?roleByKey(fkey):null;
+  const holders = fkey? USERS.filter(u=>u.roleKeys.includes(fkey)).length : 0;
+  const filtering = !!(frole && holders>0);   // 保持者がいる時だけ絞り込み（0名は全員表示＝付与のため）
+  const bn=document.getElementById('usersFilterBanner');
+  if(bn) bn.innerHTML = !frole ? '' : (holders>0
+    ? `<div class="scope-banner">🔎 「<b>${frole.name}</b>」の割当ユーザー（${holders}名）を表示中。 <button class="ae-edit" onclick="clearUserFilter()">すべて表示</button></div>`
+    : `<div class="scope-banner">「<b>${frole.name}</b>」はまだ割当なし。付与するユーザーの「割当を編集」から追加できます。 <button class="ae-edit" onclick="clearUserFilter()">すべて表示</button></div>`);
+  const inScope = u => !filtering || u.roleKeys.includes(fkey);
   let h=`<tr><th class="name">ユーザー</th><th>役職（master連動）</th><th>割当ロール（複数可＝合算）</th><th>有効範囲</th><th></th></tr>`;
-  const shops=[...new Set(USERS.map(u=>u.shop))];   // 所属店舗ごとにグループ
+  const shops=[...new Set(USERS.filter(inScope).map(u=>u.shop))];   // 所属店舗ごとにグループ
   shops.forEach(sh=>{
-    h+=`<tr class="grouprow view"><td colspan="5">🏬 ${sh}（${USERS.filter(u=>u.shop===sh).length}名）</td></tr>`;
-    USERS.forEach((u,ui)=>{ if(u.shop!==sh) return;
-      const chips=u.roleKeys.length? u.roleKeys.map(k=>{const r=roleByKey(k);return `<span class="rolechip">${r?r.name:k}</span>`;}).join('') : '<span style="color:#c33;font-size:12px;font-weight:700;">未割当</span>';
+    h+=`<tr class="grouprow view"><td colspan="5">🏬 ${sh}（${USERS.filter(u=>u.shop===sh&&inScope(u)).length}名）</td></tr>`;
+    USERS.forEach((u,ui)=>{ if(u.shop!==sh||!inScope(u)) return;
+      const chips=u.roleKeys.length? u.roleKeys.map(k=>{const r=roleByKey(k);return `<span class="rolechip"${k===fkey?' style="background:#d7f0e2;border-color:#159b5d;color:#0a7a55;"':''}>${r?r.name:k}</span>`;}).join('') : '<span style="color:#c33;font-size:12px;font-weight:700;">未割当</span>';
       const eff=userScopeLabel(u);
       h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.title}</td><td>${chips}</td><td style="font-size:12px;">${eff}</td>`
         +`<td style="text-align:right;"><button class="rowedit" onclick="openAssign(${ui})">割当を編集</button></td></tr>`;
@@ -1845,7 +1858,7 @@ function renderSummary(){
     const us=usersOfRole(r.key), unames=us.map(u=>u.name).join('・');
     const unset = r.tier==='shop' ? us.filter(u=>!(u.stores&&u.stores.length)).length : 0;   // 店舗ロールで店舗未設定の割当ユーザー数
     const warn = unset>0 ? ` <span style="color:#c33;font-weight:700;">⚠未設定${unset}</span>` : '';
-    const assign=`<span title="${unames}"><b style="color:${us.length?'#159b5d':'#c33'}">${us.length}</b>名</span>${warn} <button class="rowedit" style="padding:2px 8px;font-size:11px;" onclick="show('users')">割当へ →</button>`;
+    const assign=`<span title="${unames}"><b style="color:${us.length?'#159b5d':'#c33'}">${us.length}</b>名</span>${warn} <button class="rowedit" style="padding:2px 8px;font-size:11px;" onclick="gotoUsersForRole('${r.key}')">割当へ →</button>`;
     const hi = (r.key===_hiRole) ? ' data-hirow="1" style="background:#fff7e0;"' : '';   // 保存直後の新規ロールをハイライト
     h+=`<tr${hi}><td class="name">${r.system?'👑 ':''}${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}</span></td>`
       +`<td><b style="color:#159b5d">${op}</b></td><td><b style="color:#3b82f6">${vw}</b></td><td><b style="color:#c33">${no}</b></td>`
