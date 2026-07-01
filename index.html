@@ -790,10 +790,8 @@ const CATEGORIES = [
     {n:'売上・仕入データ抽出',k:'view',fixed:true}]},
   // ===== ダッシュボードの「操作」系（カスタマイズ/DnD編集）は操作・設定権限グループへ分離 =====
   {id:'uicustom', name:'ダッシュボード（カスタマイズ）', ctx:'common', features:[
-    {n:'ダッシュボードカスタマイズ（ウィジェット/プリセット）',k:'edit',new:true, ops:[{id:'view',n:'閲覧'},{id:'create',n:'登録'},{id:'update',n:'編集'}]},
-    {n:'カスタムタグ作成・管理（本部のみ）',k:'edit',new:true,fixed:true},
-    {n:'UIカスタマイズ：DnD編集（店舗画面）',k:'action',new:true,future:true, noStaff:true},
-    {n:'UIカスタマイズ：DnD編集（会社画面）',k:'admin',new:true,future:true, fixed:true}]},
+    {n:'UIカスタマイズ（ウィジェット/プリセット・DnD編集）',k:'edit',new:true,noStaff:true, ops:[{id:'view',n:'閲覧'},{id:'create',n:'登録'},{id:'update',n:'編集'}]},   // ウィジェット＋DnD編集(店舗/会社)を1つに集約
+    {n:'カスタムタグ作成・管理（本部のみ）',k:'edit',new:true,fixed:true}]},
   // ===== 登録・管理（サイドメニュー「登録・管理」セクション準拠）=====
   {id:'label', name:'ラベル', ctx:'common', features:[{n:'ラベル（登録・一覧）',k:'edit'}]},
   {id:'vendor', name:'発注先&仕入商品', ctx:'shop', features:[
@@ -833,12 +831,8 @@ const CATEGORIES = [
     {n:'費用実績入力・一覧（費目×月の実績入力／年間一覧表示・CSV取込）',k:'edit'}]},   // 独立した費用一覧画面は無く、費用実績入力が一覧を兼ねる
   {id:'holiday', name:'休業日設定', ctx:'shop', features:[{n:'休業日設定',k:'edit'}]},
   {id:'budget', name:'予算設定', ctx:'shop', features:[
-    {n:'予算一覧',k:'view'},
-    {n:'月次予算設定（ウィザード）',k:'edit'},
-    {n:'単月費用設定',k:'edit', inheritFrom:'月次予算設定（ウィザード）'},
-    {n:'売上構成比設定',k:'edit', inheritFrom:'月次予算設定（ウィザード）'},
-    {n:'曜日別バイアス設定',k:'edit', inheritFrom:'月次予算設定（ウィザード）'},
-    {n:'年間予算一覧',k:'view'},
+    {n:'月次予算設定（ウィザード：単月費用・売上構成比・曜日別バイアス含む）',k:'edit'},   // 連動サブ設定をウィザードに内包＝1つに集約
+    {n:'予算一覧（月次・年間）',k:'view'},
     {n:'予実管理カレンダー（日次）',k:'view'}]},
 ];
 /* ctxを各機能へ継承（機能側ctxが優先）。会社画面ctxは安全側でfixed扱い */

@@ -154,11 +154,11 @@
 
 ## 本番実装の設計
 
-**`ENFORCEMENT.md`** に本番 enforcement 層の設計（データモデル・Pundit判定・スコープ強制・指標越境防御・feature_key辞書(全27カテゴリ60機能)・画面別実装例・移行・段階導入）をまとめている。
+**`ENFORCEMENT.md`** に本番 enforcement 層の設計（データモデル・Pundit判定・スコープ強制・指標越境防御・feature_key辞書(全27カテゴリ54機能)・画面別実装例・移行・段階導入）をまとめている。
 
 **`ROADMAP.md`** に実装の優先順位・段階導入（P0基盤→P1閲覧→P2操作/削除→P3スコープ→P4指標越境→P5運用機構）とリスク×工数・受入条件をまとめている。
 
-本番設計の詳細実装は `docs/P0_FOUNDATION.md`（P0）、判定キーの機械可読辞書は `docs/feature_keys.json`（27カテゴリ60機能）。エンジニア共有の入口は `KICKOFF.md`。
+本番設計の詳細実装は `docs/P0_FOUNDATION.md`（P0）、判定キーの機械可読辞書は `docs/feature_keys.json`（27カテゴリ54機能）。エンジニア共有の入口は `KICKOFF.md`。
 
 ## 公開・キャッシュ対策
 

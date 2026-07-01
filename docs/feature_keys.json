@@ -11,7 +11,7 @@
   },
   "crud_linkage": "案C: 登録↔編集は連動(操作=一体), 削除は確認付きopt-in＋管理も付与(=全て相当)",
   "category_count": 27,
-  "feature_count": 60,
+  "feature_count": 54,
   "roles": [
     {
       "key": "manager",
@@ -733,11 +733,11 @@
       "inherit_from": null
     },
     {
-      "feature_key": "uicustom.widget",
+      "feature_key": "uicustom.ui",
       "category_id": "uicustom",
       "category_name": "ダッシュボード（カスタマイズ）",
       "group": "ops",
-      "ui_name": "ダッシュボードカスタマイズ（ウィジェット/プリセット）",
+      "ui_name": "UIカスタマイズ（ウィジェット/プリセット・DnD編集）",
       "ctx": "common",
       "kind": "edit",
       "levels": [
@@ -751,7 +751,7 @@
         "update"
       ],
       "company_only": false,
-      "manager_min": false,
+      "manager_min": true,
       "inherit_from": null
     },
     {
@@ -773,46 +773,6 @@
         "create",
         "update",
         "delete"
-      ],
-      "company_only": true,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "uicustom.dnd_shop",
-      "category_id": "uicustom",
-      "category_name": "ダッシュボード（カスタマイズ）",
-      "group": "ops",
-      "ui_name": "UIカスタマイズ：DnD編集（店舗画面）",
-      "ctx": "common",
-      "kind": "action",
-      "levels": [
-        0,
-        2
-      ],
-      "ops": [
-        "exec"
-      ],
-      "company_only": false,
-      "manager_min": true,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "uicustom.dnd_company",
-      "category_id": "uicustom",
-      "category_name": "ダッシュボード（カスタマイズ）",
-      "group": "ops",
-      "ui_name": "UIカスタマイズ：DnD編集（会社画面）",
-      "ctx": "common",
-      "kind": "admin",
-      "levels": [
-        0,
-        1,
-        2
-      ],
-      "ops": [
-        "view",
-        "config"
       ],
       "company_only": true,
       "manager_min": false,
@@ -1349,31 +1309,11 @@
       "inherit_from": null
     },
     {
-      "feature_key": "budget.list",
-      "category_id": "budget",
-      "category_name": "予算設定",
-      "group": "ops",
-      "ui_name": "予算一覧",
-      "ctx": "shop",
-      "kind": "view",
-      "levels": [
-        0,
-        1
-      ],
-      "ops": [
-        "view",
-        "export"
-      ],
-      "company_only": false,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
       "feature_key": "budget.monthly_wizard",
       "category_id": "budget",
       "category_name": "予算設定",
       "group": "ops",
-      "ui_name": "月次予算設定（ウィザード）",
+      "ui_name": "月次予算設定（ウィザード：単月費用・売上構成比・曜日別バイアス含む）",
       "ctx": "shop",
       "kind": "edit",
       "levels": [
@@ -1393,83 +1333,11 @@
       "inherit_from": null
     },
     {
-      "feature_key": "budget.month_cost",
+      "feature_key": "budget.list",
       "category_id": "budget",
       "category_name": "予算設定",
       "group": "ops",
-      "ui_name": "単月費用設定",
-      "ctx": "shop",
-      "kind": "edit",
-      "levels": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "ops": [
-        "view",
-        "create",
-        "update",
-        "delete"
-      ],
-      "company_only": false,
-      "manager_min": false,
-      "inherit_from": "月次予算設定（ウィザード）"
-    },
-    {
-      "feature_key": "budget.sales_ratio",
-      "category_id": "budget",
-      "category_name": "予算設定",
-      "group": "ops",
-      "ui_name": "売上構成比設定",
-      "ctx": "shop",
-      "kind": "edit",
-      "levels": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "ops": [
-        "view",
-        "create",
-        "update",
-        "delete"
-      ],
-      "company_only": false,
-      "manager_min": false,
-      "inherit_from": "月次予算設定（ウィザード）"
-    },
-    {
-      "feature_key": "budget.weekday_bias",
-      "category_id": "budget",
-      "category_name": "予算設定",
-      "group": "ops",
-      "ui_name": "曜日別バイアス設定",
-      "ctx": "shop",
-      "kind": "edit",
-      "levels": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "ops": [
-        "view",
-        "create",
-        "update",
-        "delete"
-      ],
-      "company_only": false,
-      "manager_min": false,
-      "inherit_from": "月次予算設定（ウィザード）"
-    },
-    {
-      "feature_key": "budget.annual_list",
-      "category_id": "budget",
-      "category_name": "予算設定",
-      "group": "ops",
-      "ui_name": "年間予算一覧",
+      "ui_name": "予算一覧（月次・年間）",
       "ctx": "shop",
       "kind": "view",
       "levels": [
