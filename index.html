@@ -1361,18 +1361,15 @@ function renderAssignPreview(){
   if(_nrMode!=='edit' || _nrEditIdx<0) return;   // 新規登録＝プレビュー無し
   const r=ROLES[_nrEditIdx], us=usersOfRole(r.key);
   if(!us.length) return;   // 割当ユーザーがいない＝プレビュー無し
+  if(rmTier!=='shop') return;   // 会社ロール＝全社（店舗プレビュー不要）
   align('right');   // プレビューあり＝枠外・右寄せ
-  if(rmTier!=='shop'){   // 会社ロール＝全社（店舗紐付け不要）
-    const rows = us.map(u=>`<tr><td>${u.name}</td><td>全社</td><td><span class="ap-tag ap-all">全社・本部</span></td></tr>`).join('');
-    box.innerHTML=`<div class="assign-prev"><table class="ap-table"><tr><th>権限保持者</th><th>範囲</th><th></th></tr>${rows}</table></div>`; return;
-  }
-  let unset=0;
-  const rows=us.map(u=>{ const st=u.stores||[], ok=st.length>0; if(!ok) unset++;
-    const cnt = ok ? (st.length===SHOPS.length? `${st.length}店舗<span class="ap-allmini">（全店）</span>` : `${st.length}店舗`) : '<span class="ap-unset">0店舗</span>';
-    const names = ok ? '<div class="ap-stores">'+st.map(sh=>`<span class="ap-tag">${shortShop(sh)}</span>`).join('')+'</div>' : '<span class="ap-unset">⚠ 未設定（設定してください）</span>';
-    return `<tr><td>${u.name}</td><td>${cnt}</td><td>${names}</td></tr>`; }).join('');
-  const header = unset>0 ? `<div class="ap-h"><span style="color:#c33;font-weight:700;">⚠ 未設定 ${unset}名（設定してください）</span></div>` : '';   // 見出しは廃止・未設定時のみ警告
-  box.innerHTML=`<div class="assign-prev">${header}<table class="ap-table"><tr><th>権限保持者</th><th>店舗数</th><th>店舗名</th></tr>${rows}</table></div>`;
+  // このロールが掌握する店舗の集約（保持者ごとの担当店舗を重複排除）。人の一覧は出さず店舗数＋店舗名だけ
+  const allStores=[...new Set(us.flatMap(u=>u.stores||[]))];
+  const unset=us.filter(u=>!(u.stores&&u.stores.length)).length;
+  const cntTxt = allStores.length ? (allStores.length===SHOPS.length? `${allStores.length}店舗<span class="ap-allmini">（全店）</span>` : `${allStores.length}店舗`) : '<span class="ap-unset">0店舗</span>';
+  const chips = allStores.length ? '<div class="ap-stores">'+allStores.map(sh=>`<span class="ap-tag">${shortShop(sh)}</span>`).join('')+'</div>' : '<span class="ap-unset">未設定</span>';
+  const warn = unset>0 ? `<div style="margin-top:8px;"><span class="ap-unset">⚠ 店舗未設定の保持者 ${unset}名（ユーザー割当で設定）</span></div>` : '';
+  box.innerHTML=`<div class="assign-prev"><table class="ap-table"><tr><th>掌握店舗数</th><th>店舗名</th></tr><tr><td>${cntTxt}</td><td>${chips}</td></tr></table>${warn}</div>`;
 }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); renderAssignPreview();
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
