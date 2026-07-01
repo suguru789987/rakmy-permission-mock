@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "generated_from": "rakmy-permission-mock/index.html",
-  "note": "UI仕様の機械可読版。バックエンドの権限判定キー辞書。level:0=なし 1=閲覧 2=操作 3=全て。company_only=会社ロールのみ, manager_min=店長以上(店舗ロール), inherit_from=親機能に連動",
+  "note": "UI仕様の機械可読版。level:0=なし 1=閲覧 2=操作 3=全て。company_only=会社ロールのみ, manager_min=店長以上, inherit_from=親機能に連動",
   "kind_levels": {
     "base": "閲覧固定(常時1)",
     "view": "なし/閲覧",
@@ -9,9 +9,9 @@
     "admin": "なし/閲覧/設定可",
     "action": "なし/実行可"
   },
-  "crud_linkage": "案C: 登録↔編集は連動(操作=一体), 削除は確認付きopt-in＋管理(登録/編集)も付与(=全て相当)",
+  "crud_linkage": "案C: 登録↔編集は連動(操作=一体), 削除は確認付きopt-in＋管理も付与(=全て相当)",
   "category_count": 27,
-  "feature_count": 65,
+  "feature_count": 60,
   "roles": [
     {
       "key": "manager",
@@ -1008,11 +1008,11 @@
       "inherit_from": null
     },
     {
-      "feature_key": "employees.ledger",
+      "feature_key": "employees.manage",
       "category_id": "employees",
       "category_name": "従業員管理",
       "group": "ops",
-      "ui_name": "従業員の登録・編集",
+      "ui_name": "従業員の管理（登録・編集・勤怠・時間記録・人件費・履歴・打刻）",
       "ctx": "common",
       "kind": "edit",
       "levels": [
@@ -1037,121 +1037,6 @@
       "category_name": "従業員管理",
       "group": "ops",
       "ui_name": "給与設定・履歴",
-      "ctx": "company",
-      "kind": "edit",
-      "levels": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "ops": [
-        "view",
-        "create",
-        "update",
-        "delete"
-      ],
-      "company_only": true,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "employees.attendance",
-      "category_id": "employees",
-      "category_name": "従業員管理",
-      "group": "ops",
-      "ui_name": "勤怠データ取込（CSV/API）",
-      "ctx": "company",
-      "kind": "action",
-      "levels": [
-        0,
-        2
-      ],
-      "ops": [
-        "exec"
-      ],
-      "company_only": true,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "employees.timerec",
-      "category_id": "employees",
-      "category_name": "従業員管理",
-      "group": "ops",
-      "ui_name": "時間記録・レイアウト設定",
-      "ctx": "company",
-      "kind": "edit",
-      "levels": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "ops": [
-        "view",
-        "create",
-        "update",
-        "delete"
-      ],
-      "company_only": true,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "employees.laborcost",
-      "category_id": "employees",
-      "category_name": "従業員管理",
-      "group": "ops",
-      "ui_name": "人件費管理（ヘルプ/概算/PA）",
-      "ctx": "company",
-      "kind": "edit",
-      "levels": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "ops": [
-        "view",
-        "create",
-        "update",
-        "delete"
-      ],
-      "company_only": true,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "employees.history",
-      "category_id": "employees",
-      "category_name": "従業員管理",
-      "group": "ops",
-      "ui_name": "従業員履歴・アーカイブ",
-      "ctx": "company",
-      "kind": "edit",
-      "levels": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "ops": [
-        "view",
-        "create",
-        "update",
-        "delete"
-      ],
-      "company_only": true,
-      "manager_min": false,
-      "inherit_from": null
-    },
-    {
-      "feature_key": "employees.punch",
-      "category_id": "employees",
-      "category_name": "従業員管理",
-      "group": "ops",
-      "ui_name": "打刻ステータス（漏れアラート）",
       "ctx": "company",
       "kind": "edit",
       "levels": [

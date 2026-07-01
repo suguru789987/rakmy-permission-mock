@@ -807,13 +807,8 @@ const CATEGORIES = [
     {n:'小口現金管理（一覧・登録・締め）',k:'edit'},
     {n:'経費項目設定',k:'admin',fixed:true}]},
   {id:'employees', name:'従業員管理', features:[
-    {n:'従業員の登録・編集',k:'edit',ctx:'common',noStaff:true,range:'shop-self'},   // 会社ロール=全社員／店長=管轄店分のみ（スコープで限定）／従業員スタッフは不可。閲覧は「従業員（閲覧）」カテゴリ
-    {n:'給与設定・履歴',k:'edit',ctx:'company'},
-    {n:'勤怠データ取込（CSV/API）',k:'action',ctx:'company'},
-    {n:'時間記録・レイアウト設定',k:'edit',ctx:'company'},
-    {n:'人件費管理（ヘルプ/概算/PA）',k:'edit',ctx:'company'},
-    {n:'従業員履歴・アーカイブ',k:'edit',ctx:'company'},
-    {n:'打刻ステータス（漏れアラート）',k:'edit',ctx:'company'}]},
+    {n:'従業員の管理（登録・編集・勤怠・時間記録・人件費・履歴・打刻）',k:'edit',ctx:'common',noStaff:true,range:'shop-self'},   // 7機能を1つに集約＝設定編集の可否。会社ロール=全社員／店長=管轄店分のみ（スコープで限定）／スタッフ不可。閲覧は「従業員（閲覧）」
+    {n:'給与設定・履歴',k:'edit',ctx:'company'}]},   // 給与のみ機密のため分離
   {id:'closing', name:'締め管理', features:[
     {n:'締め処理（仮締め・本締め・一括）',k:'edit',ctx:'company'},
     {n:'会計年度設定',k:'admin',ctx:'company'}]},
