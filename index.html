@@ -1753,10 +1753,11 @@ function saveAssign(){ const u=USERS[_assignUi];
   if(hasShop && stores.length===0){ toast('店舗ロールには対象店舗を1つ以上選択してください'); amRefreshStores(); return; }   // 未設定は保存不可
   u.roleKeys=roleKeys; u.stores=stores;
   show('users'); renderUsers(); toast(u.name+' の割当を保存しました'); }
+function usersOfRole(roleKey){ return USERS.filter(u=>u.roleKeys.includes(roleKey)); }
 function renderSummary(){
   const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
   const allN={tx:CATALOG.transactions.flatMap(g=>g.items).length, dim:CATALOG.dimensions.length, tag:CATALOG.tags.length};
-  let h=`<tr><th class="name">権限</th><th>画面 操作可</th><th>閲覧可</th><th>なし</th><th>指標一覧</th><th>タグ</th><th></th></tr>`;
+  let h=`<tr><th class="name">権限</th><th>画面 操作可</th><th>閲覧可</th><th>なし</th><th>指標一覧</th><th>タグ</th><th>割当ユーザー</th><th></th></tr>`;
   ROLES.forEach((r,ri)=>{
     let op=0,vw=0,no=0;
     CATEGORIES.forEach(c=>c.features.forEach((f,fi)=>{ const shown=f.fixed?r.tier==='company':true; if(!shown) return;
@@ -1764,9 +1765,11 @@ function renderSummary(){
       if(val>=2&&mx>=2) op++; else if(val>=1) vw++; else no++; }));
     const n=r.system?allN:catN(r.key);
     const act=r.system?`<span style="color:#9aa0a6;font-size:11px;">全権・固定</span>`:`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button>`;
+    const us=usersOfRole(r.key), unames=us.map(u=>u.name).join('・');
+    const assign=`<span title="${unames}"><b style="color:${us.length?'#159b5d':'#c33'}">${us.length}</b>名</span> <button class="rowedit" style="padding:2px 8px;font-size:11px;" onclick="show('users')">割当へ →</button>`;
     h+=`<tr><td class="name">${r.system?'👑 ':''}${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}</span></td>`
       +`<td><b style="color:#159b5d">${op}</b></td><td><b style="color:#3b82f6">${vw}</b></td><td><b style="color:#c33">${no}</b></td>`
-      +`<td>${n.tx}${r.system?'（全件）':''}</td><td>${n.tag}</td><td>${act}</td></tr>`;
+      +`<td>${n.tx}${r.system?'（全件）':''}</td><td>${n.tag}</td><td style="font-size:12px;">${assign}</td><td>${act}</td></tr>`;
   });
   document.getElementById('summaryTable').innerHTML=h;
 }
