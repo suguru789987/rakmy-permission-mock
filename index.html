@@ -629,7 +629,7 @@
   <div class="modal" style="width:440px;">
     <h3 id="cfmTitle" style="margin:0;">確認</h3>
     <p id="cfmMsg" style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-line;margin-top:12px;"></p>
-    <div class="modal-actions"><button class="btn ghost" onclick="cfmCancel()">キャンセル</button><button class="btn primary" id="cfmOk" onclick="cfmOk()">OK</button></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="cfmCancel()">キャンセル</button><button class="btn ghost hide" id="cfmExtra" onclick="cfmExtra()"></button><button class="btn primary" id="cfmOk" onclick="cfmOk()">OK</button></div>
   </div>
 </div>
 <!-- トースト通知 -->
@@ -1372,20 +1372,21 @@ function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').for
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
 // データ範囲の選択UIは撤去（スコープは割当で確定）。rmScopeは区分から導出される内部値としてのみ保持
 function rmSetScope(s){ rmScope=s; rmCheckIntegrity(); }
-function submitRoleModal(){
+function submitRoleModal(afterView){   // afterView：保存後の遷移先（既定'list'）。'users'で保存して割当へ
+  const dest = afterView || 'list';
   const nm=document.getElementById('rmName').value.trim();
-  if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; return; }
+  if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; toast('権限名を入力してください'); return; }
   const tier=rmTier, scope=tier;
   const shops = undefined;   // 実店舗はユーザー割当で紐付け（ロールには持たせない＝型のみ）
   if(_nrMode==='edit' && _nrEditIdx>=0){   // 既存編集：上書き保存
     const r=ROLES[_nrEditIdx]; r.name=nm; r.tier=tier; r.scope=scope; r.scopeType=rmScope; r.shops=shops; r.perm={..._rmBasePerm};
-    show('list'); toast(`「${nm}」の権限を保存しました`); return;
+    show(dest); toast(`「${nm}」の権限を保存しました`); return;
   }
   _roleSeq++; const key='role'+_roleSeq;
   _allCat().forEach(it=>it.roles[key] = _rmBaseSrc ? !!it.roles[_rmBaseSrc] : false);   // カタログ：複製はコピー元を引継ぎ
   const perm = _rmBasePerm ? {..._rmBasePerm} : buildPerm(PRESET.blank, scope, key);
   ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm});
-  show('list'); toast(`「${nm}」を作成しました`);
+  show(dest); toast(`「${nm}」を作成しました`);
 }
 
 let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
@@ -1570,7 +1571,10 @@ function show(v){
 }
 // 権限編集/新規作成 → ユーザー割当（店舗紐付け・割当）への遷移。新規作成中は未保存破棄を確認
 function gotoAssignFromEditor(){
-  if(_nrMode==='new'){ showConfirm('未保存の新規権限は破棄されます。\n先に「作成」で保存すると割当に表示されます。\n\nこのままユーザー割当へ移動しますか？', ()=>show('users'), {title:'ユーザー割当へ移動', okLabel:'移動する'}); return; }
+  if(_nrMode==='new'){ showConfirm('この権限を保存してから割当画面に進むと、ユーザー割当に表示されます。\n保存せず移動すると、編集中の内容は破棄されます。',
+      ()=>submitRoleModal('users'),                       // OK＝保存して移動
+      {title:'ユーザー割当へ移動', okLabel:'保存して移動',
+       extraLabel:'保存せず移動', onExtra:()=>show('users')}); return; }
   show('users');
 }
 /* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
@@ -1617,14 +1621,18 @@ function featSeg(pr,cid,fi,f){ if(KIND[f.k].lock) return '<span class="pill pvw"
 function rmEditFeat(cid,fi,val){ const c=CATEGORIES.find(x=>x.id===cid); setFeatVal(_rmBasePerm,cid,fi,c.features[fi],val); rmRefreshPanel(); }
 // ウィザード深部：操作詳細・指標を _rmBasePerm 上で編集（アコーディオン最深部の移植）
 // 正規の確認モーダル（ネイティブconfirmの代替）。showConfirm(msg, onOk, {title,okLabel,onCancel})
-let _cfmOk=null, _cfmCancel=null;
-function showConfirm(msg, onOk, opt){ opt=opt||{}; _cfmOk=onOk||null; _cfmCancel=opt.onCancel||null;
+let _cfmOk=null, _cfmCancel=null, _cfmExtra=null;
+function showConfirm(msg, onOk, opt){ opt=opt||{}; _cfmOk=onOk||null; _cfmCancel=opt.onCancel||null; _cfmExtra=opt.onExtra||null;
   document.getElementById('cfmTitle').textContent=opt.title||'確認';
   document.getElementById('cfmMsg').textContent=msg;
   document.getElementById('cfmOk').textContent=opt.okLabel||'OK';
+  const ex=document.getElementById('cfmExtra');
+  if(opt.extraLabel){ ex.textContent=opt.extraLabel; ex.classList.remove('hide'); } else { ex.classList.add('hide'); }
   document.getElementById('confirmModal').classList.remove('hide'); }
-function cfmCancel(){ document.getElementById('confirmModal').classList.add('hide'); const c=_cfmCancel; _cfmOk=_cfmCancel=null; if(c) c(); }
-function cfmOk(){ document.getElementById('confirmModal').classList.add('hide'); const c=_cfmOk; _cfmOk=_cfmCancel=null; if(c) c(); }
+function cfmClose(){ document.getElementById('confirmModal').classList.add('hide'); }
+function cfmCancel(){ cfmClose(); const c=_cfmCancel; _cfmOk=_cfmCancel=_cfmExtra=null; if(c) c(); }
+function cfmOk(){ cfmClose(); const c=_cfmOk; _cfmOk=_cfmCancel=_cfmExtra=null; if(c) c(); }
+function cfmExtra(){ cfmClose(); const c=_cfmExtra; _cfmOk=_cfmCancel=_cfmExtra=null; if(c) c(); }
 function wzToggleOp(cid,fi,oid){ const k=opKey(cid,fi,oid); _rmBasePerm[k]=!_rmBasePerm[k]; rmRefreshPanel(); }
 function wzSetOp(cid,fi,oid,on){   // 操作詳細：許可/なし。案C＝登録↔編集は連動（操作=管理の一体）／削除は破壊的のため確認付きopt-in＋管理(登録/編集)も必要（4状態の操作/全てと整合）
   const f=CATEGORIES.find(c=>c.id===cid).features[fi];
