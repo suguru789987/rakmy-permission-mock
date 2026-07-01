@@ -1757,11 +1757,13 @@ function renderUsers(){
 }
 function openAssign(ui){ _assignUi=ui; const u=USERS[ui];
   document.getElementById('aeTitle').textContent=u.name+' のロール割当';
-  const row=r=>`<label class="ro" style="display:flex;gap:8px;padding:7px 4px;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''} onchange="amRefreshStores()"> <b>${r.name}</b><span style="color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></label>`;
+  // 各ロール行に「権限編集 →」（既登録の権限編集画面へ遷移）。チェックのトグルと干渉しないようボタンはlabel外
+  const row=r=>{ const ri=ROLES.indexOf(r); return `<div class="ro" style="display:flex;gap:8px;padding:7px 4px;align-items:center;"><label style="display:flex;gap:8px;flex:1;cursor:pointer;align-items:center;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''} onchange="amRefreshStores()"> <b>${r.name}</b><span style="color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></label><button type="button" class="rowedit" style="padding:2px 8px;font-size:11px;" onclick="editRoleHere(${ri})">権限編集 →</button></div>`; };
   const grp=(label,list)=> list.length? `<div style="margin-top:4px;"><div style="font-size:12px;color:#5a6b7b;font-weight:700;margin:8px 0 2px;">${label}</div>${list.map(row).join('')}</div>` : '';
   document.getElementById('aeRoles').innerHTML =
       grp('店舗ロール', ROLES.filter(r=>!r.system&&r.tier==='shop'))
-    + grp('会社ロール（本部）', ROLES.filter(r=>!r.system&&r.tier==='company'));
+    + grp('会社ロール（本部）', ROLES.filter(r=>!r.system&&r.tier==='company'))
+    + `<div style="margin-top:10px;border-top:1px solid #eee;padding-top:8px;"><button type="button" class="rowedit" onclick="createRole()">＋ 権限を新規作成 →</button></div>`;
   amRefreshStores();
   show('assignedit');
 }
