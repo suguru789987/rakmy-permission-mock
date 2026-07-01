@@ -1815,7 +1815,7 @@ function openAssign(ui){ _assignUi=ui; const u=USERS[ui];
   document.getElementById('aeRoles').innerHTML =
       grp('店舗ロール', ROLES.filter(r=>!r.system&&r.tier==='shop'))
     + grp('会社ロール（本部）', ROLES.filter(r=>!r.system&&r.tier==='company'))
-    + `<div style="margin-top:12px;"><button type="button" class="ae-edit" onclick="createRole()">＋ 権限を新規作成</button></div>`;
+    + `<div style="margin-top:12px;"><button type="button" class="ae-edit" onclick="createRole('blank')">＋ 権限を新規作成</button></div>`;
   amRefreshStores();
   show('assignedit');
 }
