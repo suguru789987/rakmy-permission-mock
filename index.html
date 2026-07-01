@@ -57,10 +57,14 @@
   .hint{ color:#6b7280; font-size:12.5px; margin:6px 0 14px;}
   .badge-new{ background:var(--new); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:7px; vertical-align:middle; }
   .scope-banner{ font-size:12px; color:#1f3b5e; background:#eef4fb; border:1px solid #cfe0f3; border-radius:8px; padding:8px 12px; margin-bottom:10px; line-height:1.5;}
-  .assign-prev{ border:1px solid #e3e6ea; border-radius:8px; padding:8px 10px; background:#fafbfc; margin-top:6px; max-width:520px;}
+  .assign-prev{ border:1px solid #e3e6ea; border-radius:8px; padding:8px 10px; background:#fafbfc; margin-top:6px; max-width:560px;}
   .assign-prev .ap-h{ font-size:12px; font-weight:700; color:#5a6b7b; margin-bottom:6px;}
-  .assign-prev .ap-row{ display:flex; justify-content:space-between; gap:12px; font-size:12.5px; padding:3px 2px; border-top:1px dashed #eef0f2;}
-  .assign-prev .ap-foot{ margin-top:6px;}
+  .assign-prev .ap-row{ display:flex; align-items:flex-start; gap:10px; font-size:12.5px; padding:6px 2px; border-top:1px dashed #eef0f2;}
+  .assign-prev .ap-user{ min-width:92px; font-weight:600; flex:0 0 auto;}
+  .assign-prev .ap-stores{ display:flex; flex-wrap:wrap; gap:4px;}
+  .assign-prev .ap-tag{ background:#eef4fb; border:1px solid #cfe0f3; color:#1f3b5e; border-radius:4px; padding:1px 7px; font-size:11.5px;}
+  .assign-prev .ap-tag.ap-all{ background:#e8f7ef; border-color:#b8e6d2; color:#0a7a55; font-weight:700;}
+  .assign-prev .ap-unset{ color:#c33; font-weight:700;}
   .range{ font-size:10.5px; color:#0a7a55; border:1px solid #b8e6d2; background:#f0fbf6; border-radius:5px; padding:1px 6px; margin-left:8px; vertical-align:middle;}
   table.list{ border-collapse:collapse; width:100%; font-size:13px; }
   table.list th, table.list td{ border:1px solid var(--line); padding:9px 8px; text-align:center; }
@@ -1339,13 +1343,13 @@ function renderAssignPreview(){
   if(rmTier!=='shop'){ box.innerHTML='<p class="hint" style="margin:6px 0 0;color:#9aa0a6;">会社ロール＝全社（店舗紐付け不要）。</p>'; return; }
   if(_nrMode!=='edit' || _nrEditIdx<0){ box.innerHTML='<p class="hint" style="margin:6px 0 0;color:#9aa0a6;">新規作成中。保存後に<b>ユーザー割当</b>で付与・店舗紐付けを行ってください。</p>'; return; }
   const r=ROLES[_nrEditIdx], us=usersOfRole(r.key);
-  if(!us.length){ box.innerHTML='<div class="assign-prev"><div class="ap-h">このロールの割当ユーザー × 対象店舗</div><p class="hint" style="margin:4px 0 0;">まだ割当なし → <button type="button" class="rowedit" onclick="gotoAssignFromEditor()">ユーザー割当で付与 →</button></p></div>'; return; }
+  if(!us.length){ box.innerHTML='<div class="assign-prev"><div class="ap-h">このロールの割当ユーザー × 対象店舗</div><p class="hint" style="margin:4px 0 0;">まだ割当なし（上のボタンからユーザー割当で付与）。</p></div>'; return; }
   let unset=0;
   const rows=us.map(u=>{ const st=u.stores||[], ok=st.length>0; if(!ok) unset++;
-    const label = ok ? (st.length===1?'店舗（'+shortShop(st[0])+'）':st.length===SHOPS.length?'全店':'指定店舗群（'+st.length+'店舗：'+st.map(shortShop).join('・')+'）') : '⚠ 未設定（設定してください）';
-    return `<div class="ap-row"><span>${u.name}</span><span style="color:${ok?'#159b5d':'#c33'};font-weight:${ok?400:700};">${label}</span></div>`; }).join('');
+    const chips = ok ? ((st.length===SHOPS.length?'<span class="ap-tag ap-all">全店</span>':'')+st.map(sh=>`<span class="ap-tag">${shortShop(sh)}</span>`).join('')) : '<span class="ap-unset">⚠ 未設定（設定してください）</span>';
+    return `<div class="ap-row"><span class="ap-user">${u.name}</span><span class="ap-stores">${chips}</span></div>`; }).join('');
   const badge = unset>0 ? `<span style="color:#c33;font-weight:700;">⚠ 未設定 ${unset}名</span>` : '<span style="color:#159b5d;font-weight:700;">✅ 全員 設定済み</span>';
-  box.innerHTML=`<div class="assign-prev"><div class="ap-h">このロールの割当ユーザー × 対象店舗（ユーザー割当で設定）　${badge}</div>${rows}<div class="ap-foot"><button type="button" class="rowedit" onclick="gotoAssignFromEditor()">ユーザー割当で編集 →</button></div></div>`;
+  box.innerHTML=`<div class="assign-prev"><div class="ap-h">このロールの割当ユーザー × 対象店舗（ユーザー割当で設定）　${badge}</div>${rows}</div>`;
 }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); renderAssignPreview();
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
