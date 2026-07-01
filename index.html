@@ -610,7 +610,7 @@
 
   <!-- ユーザー割当 -->
   <main id="view-users" class="hide">
-    <div class="titlebar"><h1>ユーザー割当（管理者一覧）</h1><div class="sp"></div><button class="btn ghost" id="usersBackBtn" onclick="usersBack()">← 権限設定へ</button></div>
+    <div class="titlebar"><h1>ユーザー割当（管理者一覧）</h1><div class="sp"></div><button class="btn ghost hide" id="usersBackSummary" onclick="show('summary')">← 役割サマリへ</button><button class="btn ghost" onclick="show('list')">← 権限一覧へ</button></div>
     <div class="panel">
       <p class="hint">経営管理に<b>ログインする管理者</b>（従業員台帳の <code>master</code> 連動アカウント）にロールを割り当てます。<b>複数ロール＝権限を合算（和集合）</b>。<b>店舗ロール</b>は対象店舗で有効範囲を限定。全従業員ではなく「ログインさせる人」が対象です。</p>
       <div id="usersFilterBanner"></div>
@@ -1787,7 +1787,7 @@ function gotoUsersAll(){ _userRoleFilter=null; _usersBackTo='list'; show('users'
 function usersBack(){ show(_usersBackTo); }   // 来た元へ戻る（役割サマリ or 権限一覧）
 function clearUserFilter(){ _userRoleFilter=null; renderUsers(); }
 function renderUsers(){
-  const bb=document.getElementById('usersBackBtn'); if(bb) bb.textContent = _usersBackTo==='summary' ? '← 役割サマリへ' : '← 権限設定へ';   // 来た元に応じて戻り先ラベル
+  const bs=document.getElementById('usersBackSummary'); if(bs) bs.classList.toggle('hide', _usersBackTo!=='summary');   // 役割サマリ経由の時だけ「役割サマリへ」を追加表示（権限一覧へは常時）
   const fkey=_userRoleFilter, frole=fkey?roleByKey(fkey):null;
   const holders = fkey? USERS.filter(u=>u.roleKeys.includes(fkey)).length : 0;
   const filtering = !!(frole && holders>0);   // 保持者がいる時だけ絞り込み（0名は全員表示＝付与のため）
