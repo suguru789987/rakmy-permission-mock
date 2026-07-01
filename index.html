@@ -1375,22 +1375,22 @@ function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').for
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
 // データ範囲の選択UIは撤去（スコープは割当で確定）。rmScopeは区分から導出される内部値としてのみ保持
 function rmSetScope(s){ rmScope=s; rmCheckIntegrity(); }
-function submitRoleModal(afterView){   // afterView：保存後の遷移先（既定'list'）。'users'で保存して割当へ
-  const dest = afterView || 'list';
+// 保存のみ（遷移しない）。成功でroleKey・失敗でnullを返す
+function saveRoleData(){
   const nm=document.getElementById('rmName').value.trim();
-  if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; toast('権限名を入力してください'); return; }
-  const tier=rmTier, scope=tier;
-  const shops = undefined;   // 実店舗はユーザー割当で紐付け（ロールには持たせない＝型のみ）
+  if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; toast('権限名を入力してください'); return null; }
+  const tier=rmTier, scope=tier, shops=undefined;   // 実店舗はユーザー割当で紐付け（型のみ）
   if(_nrMode==='edit' && _nrEditIdx>=0){   // 既存編集：上書き保存
     const r=ROLES[_nrEditIdx]; r.name=nm; r.tier=tier; r.scope=scope; r.scopeType=rmScope; r.shops=shops; r.perm={..._rmBasePerm};
-    show(dest); toast(`「${nm}」の権限を保存しました`); return;
+    toast(`「${nm}」の権限を保存しました`); return r.key;
   }
   _roleSeq++; const key='role'+_roleSeq;
   _allCat().forEach(it=>it.roles[key] = _rmBaseSrc ? !!it.roles[_rmBaseSrc] : false);   // カタログ：複製はコピー元を引継ぎ
   const perm = _rmBasePerm ? {..._rmBasePerm} : buildPerm(PRESET.blank, scope, key);
   ROLES.push({name:nm, key, tier, scope, scopeType:rmScope, shops, perm});
-  show(dest); toast(`「${nm}」を作成しました`);
+  toast(`「${nm}」を作成しました`); return key;
 }
+function submitRoleModal(afterView){ const key=saveRoleData(); if(key===null) return; show(afterView||'list'); }
 
 let cur = { idx:0, scope:'shop', tier:'shop', perm:{}, expanded:{}, view:'cats', detailCat:null, itemFilter:{} };
 
@@ -1573,12 +1573,16 @@ function show(v){
   if(v==='tpllist') renderTplList();
 }
 // 権限編集/新規作成 → ユーザー割当（店舗紐付け・割当）への遷移。新規作成中は未保存破棄を確認
+let _hiRole=null;   // 役割サマリでハイライトするロールkey
 function gotoAssignFromEditor(){
-  if(_nrMode==='new'){ showConfirm('この権限を保存してから割当画面に進むと、ユーザー割当に表示されます。\n保存せず移動すると、編集中の内容は破棄されます。',
-      ()=>submitRoleModal('users'),                       // OK＝保存して移動
-      {title:'ユーザー割当へ移動', okLabel:'保存して移動',
-       extraLabel:'保存せず移動', onExtra:()=>show('users')}); return; }
-  show('users');
+  const roleKey = (_nrMode==='edit' && _nrEditIdx>=0) ? ROLES[_nrEditIdx].key : null;
+  // 遷移先：このロールを持つユーザーがいれば その割当編集画面／いなければ役割サマリ(ハイライト)
+  const navTo = (rk) => { const ui = rk ? USERS.findIndex(u=>u.roleKeys.includes(rk)) : -1;
+    if(ui>=0) openAssign(ui); else { _hiRole=rk; show('summary'); } };
+  showConfirm('編集中の内容を保存して移動しますか？\n保存せず移動すると変更は破棄されます。',
+    ()=>{ const key=saveRoleData(); if(key===null) return; navTo(key); },   // 保存して移動
+    {title:'割当へ移動', okLabel:'保存して移動', extraLabel:'保存せず移動', onExtra:()=>navTo(roleKey)});
+  return;
 }
 /* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
 const SETUP_TEMPLATES=[
@@ -1838,11 +1842,13 @@ function renderSummary(){
     const unset = r.tier==='shop' ? us.filter(u=>!(u.stores&&u.stores.length)).length : 0;   // 店舗ロールで店舗未設定の割当ユーザー数
     const warn = unset>0 ? ` <span style="color:#c33;font-weight:700;">⚠未設定${unset}</span>` : '';
     const assign=`<span title="${unames}"><b style="color:${us.length?'#159b5d':'#c33'}">${us.length}</b>名</span>${warn} <button class="rowedit" style="padding:2px 8px;font-size:11px;" onclick="show('users')">割当へ →</button>`;
-    h+=`<tr><td class="name">${r.system?'👑 ':''}${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}</span></td>`
+    const hi = (r.key===_hiRole) ? ' data-hirow="1" style="background:#fff7e0;"' : '';   // 保存直後の新規ロールをハイライト
+    h+=`<tr${hi}><td class="name">${r.system?'👑 ':''}${r.name}<br><span style="font-weight:400;color:#9aa0a6;font-size:11px;">${r.tier==='shop'?'店舗':'会社'}</span></td>`
       +`<td><b style="color:#159b5d">${op}</b></td><td><b style="color:#3b82f6">${vw}</b></td><td><b style="color:#c33">${no}</b></td>`
       +`<td>${n.tx}${r.system?'（全件）':''}</td><td>${n.tag}</td><td style="font-size:12px;">${assign}</td><td>${act}</td></tr>`;
   });
   document.getElementById('summaryTable').innerHTML=h;
+  if(_hiRole){ setTimeout(()=>{ const el=document.querySelector('[data-hirow="1"]'); if(el) el.scrollIntoView({block:'center',behavior:'smooth'}); },60); _hiRole=null; }   // 一度ハイライトしたらクリア
 }
 // editRole（旧アコーディオン編集の入口）は統合ウィザード(editRoleHere)へ一本化したため撤去
 // 旧アコーディオン本体描画群(visibleCats/featRange/catSel/renderBody/setEditTab/renderCatList/renderCatDetail/featRowHTML/openCat/filterItems/applyFilters/closeCat/toggleExp/setFeat/toggleOp/renderExcluded)を撤去＝統合ウィザードに一本化
