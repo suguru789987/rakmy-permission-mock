@@ -84,6 +84,8 @@
   .cellpills{ display:inline-flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; white-space:nowrap; }
   .cellpills .pill{ min-width:36px; padding:3px 8px; }
   .rowedit{ display:block; width:100%; box-sizing:border-box; text-align:center; white-space:normal; line-height:1.2; background:var(--green); color:#fff; border:none; border-radius:6px; padding:7px 6px; cursor:pointer; font-weight:700; font-size:12px; }
+  .ae-edit{ flex:0 0 auto; white-space:nowrap; background:#eef2f6; color:#33414f; border:1px solid #d6dde4; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:700; cursor:pointer; }
+  .ae-edit:hover{ background:#e3e9ef; }
   table.list td:last-child{ text-align:right; white-space:nowrap; }
   /* 権限一覧：表は内容幅(引き伸ばさない)。権限名・操作列は固定幅でロックし列数で動かさない。カテゴリ列は固定幅で増えたら横スクロール */
   .listpickbar{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px; background:#f5f7f9; border-radius:8px; }
@@ -1786,12 +1788,12 @@ function renderUsers(){
 function openAssign(ui){ _assignUi=ui; const u=USERS[ui];
   document.getElementById('aeTitle').textContent=u.name+' のロール割当';
   // 各ロール行に「権限編集 →」（既登録の権限編集画面へ遷移）。チェックのトグルと干渉しないようボタンはlabel外
-  const row=r=>{ const ri=ROLES.indexOf(r); return `<div class="ro" style="display:flex;gap:8px;padding:7px 4px;align-items:center;"><label style="display:flex;gap:8px;flex:1;cursor:pointer;align-items:center;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''} onchange="amRefreshStores()"> <b>${r.name}</b><span style="color:#9aa0a6;font-size:11px;">${scopeLabel(r)}</span></label><button type="button" class="rowedit" style="padding:2px 8px;font-size:11px;" onclick="editRoleHere(${ri})">権限編集 →</button></div>`; };
+  const row=r=>{ const ri=ROLES.indexOf(r); return `<div class="ro" style="display:flex;gap:10px;padding:7px 4px;align-items:center;"><label style="display:flex;gap:8px;flex:1 1 auto;min-width:0;cursor:pointer;align-items:center;"><input type="checkbox" class="amCb" value="${r.key}" ${u.roleKeys.includes(r.key)?'checked':''} onchange="amRefreshStores()"> <b style="white-space:nowrap;">${r.name}</b><span style="color:#9aa0a6;font-size:11px;white-space:nowrap;">${scopeLabel(r)}</span></label><button type="button" class="ae-edit" onclick="editRoleHere(${ri})">権限編集 →</button></div>`; };
   const grp=(label,list)=> list.length? `<div style="margin-top:4px;"><div style="font-size:12px;color:#5a6b7b;font-weight:700;margin:8px 0 2px;">${label}</div>${list.map(row).join('')}</div>` : '';
   document.getElementById('aeRoles').innerHTML =
       grp('店舗ロール', ROLES.filter(r=>!r.system&&r.tier==='shop'))
     + grp('会社ロール（本部）', ROLES.filter(r=>!r.system&&r.tier==='company'))
-    + `<div style="margin-top:10px;border-top:1px solid #eee;padding-top:8px;"><button type="button" class="rowedit" onclick="createRole()">＋ 権限を新規作成 →</button></div>`;
+    + `<div style="margin-top:12px;"><button type="button" class="ae-edit" onclick="createRole()">＋ 権限を新規作成</button><span style="color:#9aa0a6;font-size:11px;margin-left:8px;">（権限設定側で作るのが基本。ここからも作成可）</span></div>`;
   amRefreshStores();
   show('assignedit');
 }
