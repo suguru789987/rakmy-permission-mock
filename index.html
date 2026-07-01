@@ -633,7 +633,7 @@
   <div class="modal" style="width:440px;">
     <h3 id="cfmTitle" style="margin:0;">確認</h3>
     <p id="cfmMsg" style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-line;margin-top:12px;"></p>
-    <div class="modal-actions"><button class="btn ghost" onclick="cfmCancel()">キャンセル</button><button class="btn ghost hide" id="cfmExtra" onclick="cfmExtra()"></button><button class="btn primary" id="cfmOk" onclick="cfmOk()">OK</button></div>
+    <div class="modal-actions"><button class="btn ghost" id="cfmCancelBtn" onclick="cfmCancel()">キャンセル</button><button class="btn ghost hide" id="cfmExtra" onclick="cfmExtra()"></button><button class="btn primary" id="cfmOk" onclick="cfmOk()">OK</button></div>
   </div>
 </div>
 <!-- トースト通知 -->
@@ -1580,7 +1580,8 @@ function gotoAssignFromEditor(){
   const navTo = (rk) => { const ui = rk ? USERS.findIndex(u=>u.roleKeys.includes(rk)) : -1;
     if(ui>=0) openAssign(ui); else { _hiRole=rk; show('summary'); } };
   showConfirm('編集中の内容を保存して移動しますか？\n保存せず移動すると変更は破棄されます。',
-    ()=>{ const key=saveRoleData(); if(key===null) return; navTo(key); },   // 保存して移動
+    ()=>{ if(!document.getElementById('rmName').value.trim()){ showAlert('権限名を記入してください。\n「保存して移動」には権限名が必要です。','権限名が未入力', ()=>{document.getElementById('rmName').focus();document.getElementById('rmName').style.borderColor='#cc3333';}); return; }   // 名前未入力は先へ進めない
+      const key=saveRoleData(); if(key===null) return; navTo(key); },   // 保存して移動
     {title:'割当へ移動', okLabel:'保存して移動', extraLabel:'保存せず移動', onExtra:()=>navTo(roleKey)});
   return;
 }
@@ -1635,7 +1636,10 @@ function showConfirm(msg, onOk, opt){ opt=opt||{}; _cfmOk=onOk||null; _cfmCancel
   document.getElementById('cfmOk').textContent=opt.okLabel||'OK';
   const ex=document.getElementById('cfmExtra');
   if(opt.extraLabel){ ex.textContent=opt.extraLabel; ex.classList.remove('hide'); } else { ex.classList.add('hide'); }
+  document.getElementById('cfmCancelBtn').classList.toggle('hide', !!opt.alert);   // alert時はキャンセル非表示
   document.getElementById('confirmModal').classList.remove('hide'); }
+// 単一OKのアラート（正規UI）。onOk後にフォーカス等したい場合はonOk指定
+function showAlert(msg, title, onOk){ showConfirm(msg, onOk||null, {title:title||'確認', okLabel:'OK', alert:true}); }
 function cfmClose(){ document.getElementById('confirmModal').classList.add('hide'); }
 function cfmCancel(){ cfmClose(); const c=_cfmCancel; _cfmOk=_cfmCancel=_cfmExtra=null; if(c) c(); }
 function cfmOk(){ cfmClose(); const c=_cfmOk; _cfmOk=_cfmCancel=_cfmExtra=null; if(c) c(); }
