@@ -348,8 +348,8 @@
   .tpldel{ border:none; background:#c0573a; color:#fff; border-radius:9px; font-size:10px; font-weight:700; padding:2px 8px; margin-left:6px; cursor:pointer;}
   .crow{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px; padding:10px; border:1px solid #eef0f3; border-radius:8px; margin-bottom:7px; background:#fafbfc; transition:background .3s,border-color .3s;}
   .crow.hl{ background:#e8f5ee; border-color:#7bc79c; box-shadow:0 0 0 2px rgba(15,125,73,.18);}
-  .crow-modal{ display:flex; flex-wrap:nowrap; align-items:flex-end; gap:12px; overflow-x:auto; padding:4px 2px 6px;}
-  .crow-modal .cfield{ flex:1 1 auto; min-width:120px;}
+  .crow-modal{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 14px; padding:4px 2px 6px;}
+  .crow-modal .cfield{ flex:1 1 150px; min-width:140px;}
   .crow-modal .condsel{ width:100%;}
   .crow .condw{ padding-bottom:7px;}
   .rulenum{ display:inline-grid; place-items:center; width:20px; height:20px; border-radius:50%; background:#2c5d9e; color:#fff; font-size:11px; font-weight:700; margin-right:4px; align-self:center;}
@@ -661,7 +661,7 @@
 </div>
 
 <div id="condRuleModal" class="modal-overlay hide">
-  <div class="modal" style="max-width:720px;">
+  <div class="modal" style="width:720px;max-width:92vw;">
     <h3>条件ルールを追加</h3>
     <p class="modal-note" style="min-height:auto;">対象の系統/タグをまとめて表示・非表示。追加すると下段のルール一覧の<b>末尾</b>に入り、<b>後の行が前を上書き</b>します。</p>
     <div id="condRuleModalBody" style="margin:10px 0;"></div>
