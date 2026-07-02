@@ -769,12 +769,12 @@ const CATALOG = {
 };
 const _allCat=()=>[...CATALOG.dimensions,...CATALOG.transactions.flatMap(g=>g.items),...CATALOG.tags];
 _allCat().forEach(it=>it.roles={manager:true,staff:true,area:true,keiri:true,jinji:true});   // 既定は各ロールのカタログに入れる（本部が後で外す）
-// 全社集計（scope:company）の指標は店舗スコープのロール（店長/従業員/エリア）には初期から付与しない（誤露出防止）
-// 全社集計指標の既定可視性（店舗ロール）：バッジ意味に合わせる。経営機密(exec)＝全店舗ロールOFF／店長まで(mgr)＝店長・エリア長はON・従業員(現場)はOFF。会社ロール(keiri/jinji)は常にON。いずれも管理者が後から変更可
-CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ if(it.scope==='company'){ const s=it.sens||'open';
+// 指標の既定可視性（店舗ロール）を機密バッジ基準で統一（店舗指標・会社指標とも同じロジック）。
+// 🔒経営機密(exec)＝全店舗ロールOFF／🔸店長まで(mgr)＝店長・エリア長はON・従業員(現場)はOFF／🔓現場OK(open)＝全員ON。会社ロール(keiri/jinji)は常にON。いずれも管理者が後から変更可。
+CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ const s=it.sens||'open';
   if(s==='exec'){ it.roles.manager=false; it.roles.area=false; it.roles.staff=false; }   // 経営機密：店舗ロールは既定OFF
-  else { it.roles.staff=false; }   // 店長まで(ベンチマーク)：現場(従業員)のみOFF、店長・エリア長は既定ON
-} }));
+  else if(s==='mgr'){ it.roles.staff=false; }   // 店長まで：現場(従業員)のみOFF、店長・エリア長は既定ON
+}));
 // 指標がこのロールのスコープで許可されるか（全社集計は全社スコープのロールのみ）
 function roleScopeAllKey(k){ const r=ROLES.find(x=>x.key===k); return !!(r&&r.scopeType==='all'); }
 function catItemAllowed(it,rk){ return !!it.roles[rk]; }   // 付与=許可。会社指標も店舗ロールに付与可(初期OFF・機密含む、後から変更可)
