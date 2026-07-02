@@ -164,7 +164,8 @@
   .setup-card-act{ margin-top:10px; display:flex; flex-direction:column; gap:6px; } .setup-card-act .btn{ width:100%; }
   .tpd-sec{ font-size:13px; font-weight:800; color:#1f3b5e; margin:14px 0 6px; padding-bottom:5px; border-bottom:2px solid #e3e8ee; }
   .tpd-sec:first-child{ margin-top:0; }
-  .tpd-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 4px; border-bottom:1px solid #f0f2f4; font-size:13px; }
+  .tpd-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 4px; border-bottom:1px solid #f0f2f4; font-size:13px; transition:background .3s,box-shadow .3s; }
+  .tpd-row.cat-hl{ background:#fff3d6; box-shadow:0 0 0 2px #f0c14b inset; border-radius:6px; }
   .tpd-name{ font-weight:700; color:#333; }
   .tpd-empty{ font-size:12px; color:#9aa0a6; padding:6px 4px; }
   .tpd-hint{ font-size:12px; color:#6b7280; margin:0 0 6px; }
@@ -1391,7 +1392,7 @@ function gotoCatEdit(ri,cid){ if(ROLES[ri].system){ toast('オーナー（全権
   editRoleHere(ri);
   _tpdExp={}; _tpdExp[cid]=true;
   rmRefreshPanel();
-  setTimeout(()=>{ const el=document.querySelector('[data-tpdcat="'+cid+'"]'); if(el) el.scrollIntoView({block:'center',behavior:'smooth'}); },60);
+  setTimeout(()=>{ const el=document.querySelector('[data-tpdcat="'+cid+'"]'); if(el){ el.scrollIntoView({block:'center',behavior:'smooth'}); el.classList.add('cat-hl'); setTimeout(()=>el.classList.remove('cat-hl'),1800); } },80);   // 該当カテゴリへスクロール＋一時ハイライト
 }
 function rmSetBase(){ const pr=rmBasePreviewRole(); _rmBasePerm={...pr.perm}; const v=_rmBaseVal; _rmBaseSrc = v.startsWith('role:')?ROLES[+v.slice(5)].key:null;
   // ベースに応じて区分・スコープの既定を反映（後から変更可）
