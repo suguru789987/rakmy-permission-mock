@@ -745,7 +745,7 @@ _allCat().forEach(it=>it.roles={manager:true,staff:true,area:true,keiri:true,jin
 CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ if(it.scope==='company'){ it.roles.manager=false; it.roles.staff=false; it.roles.area=false; } }));
 // 指標がこのロールのスコープで許可されるか（全社集計は全社スコープのロールのみ）
 function roleScopeAllKey(k){ const r=ROLES.find(x=>x.key===k); return !!(r&&r.scopeType==='all'); }
-function catItemAllowed(it,rk){ return !!it.roles[rk] && !(it.scope==='company' && !roleScopeAllKey(rk)); }
+function catItemAllowed(it,rk){ return !!it.roles[rk]; }   // 付与=許可。会社指標も店舗ロールに付与可(初期OFF・機密含む、後から変更可)
 const tagsFor = rk => CATALOG.tags.filter(t=>t.roles[rk]);
 const dimsFor = rk => CATALOG.dimensions.filter(d=>d.roles[rk]);
 
@@ -891,16 +891,16 @@ function enforceNesting(roles,rk){
   if(rk==='manager' && !roles.manager && roles.staff) roles.staff=false;
 }
 function toggleTagRole(i,rk){ const t=CATALOG.tags[i]; t.roles[rk]=!t.roles[rk]; enforceNesting(t.roles,rk); if(t.roles.manager||t.roles.staff) t.isNew=false; renderCatalog(); }
-function toggleTxRole(gi,ii,rk){ const it=CATALOG.transactions[gi].items[ii]; if(it.scope==='company'&&!roleScopeAllKey(rk)){ toast('全社集計指標は、このロール（自店舗スコープ）には付与できません。会社ロールのみ可'); return; } it.roles[rk]=!it.roles[rk]; enforceNesting(it.roles,rk); renderCatalog(); }
+function toggleTxRole(gi,ii,rk){ const it=CATALOG.transactions[gi].items[ii]; it.roles[rk]=!it.roles[rk]; enforceNesting(it.roles,rk); renderCatalog(); }   // 会社指標も店舗ロールに付与可(ブロック解除)
 function toggleDimRole(i,rk){ const d=CATALOG.dimensions[i]; d.roles[rk]=!d.roles[rk]; enforceNesting(d.roles,rk); renderCatalog(); }
 /* 現在のタブの項目集合（カタログ） */
 function curTabItems(){ if(catalogTab==='tags') return CATALOG.tags; if(catalogTab==='dims') return CATALOG.dimensions; if(catalogTab==='metrics') return CATALOG.transactions.flatMap(g=>g.items); return []; }
 /* 他ロールから現在ロールへ丸ごとコピー（全カタログ） */
-function copyFromRole(){ if(catalogRole==='all') return; const src=document.getElementById('copySrc').value; _allCat().forEach(it=>{ if(it.scope==='company'&&!roleScopeAllKey(catalogRole)){ it.roles[catalogRole]=false; return; } it.roles[catalogRole]=it.roles[src]; enforceNesting(it.roles,catalogRole); }); renderCatalog(); toast(roleLabel(src)+'の指標一覧をコピーしました（全社指標は自店舗ロールには含めません）'); }
+function copyFromRole(){ if(catalogRole==='all') return; const src=document.getElementById('copySrc').value; _allCat().forEach(it=>{ it.roles[catalogRole]=it.roles[src]; enforceNesting(it.roles,catalogRole); }); renderCatalog(); toast(roleLabel(src)+'の指標一覧をコピーしました'); }
 /* このタブを現在ロールで一括 */
-function setAllRole(on){ if(catalogRole==='all') return; curTabItems().forEach(it=>{ if(it.scope==='company'&&!roleScopeAllKey(catalogRole)) return; it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); }); renderCatalog(); }
+function setAllRole(on){ if(catalogRole==='all') return; curTabItems().forEach(it=>{ it.roles[catalogRole]=on; enforceNesting(it.roles,catalogRole); }); renderCatalog(); }
 /* 系統（トランザクション群）単位の一括（対象ロール列ぶん） */
-function setGroupRole(gi,on){ CATALOG.transactions[gi].items.forEach(it=>roleCols().forEach(rk=>{ if(it.scope==='company'&&!roleScopeAllKey(rk)) return; it.roles[rk]=on; enforceNesting(it.roles,rk); })); renderCatalog(); }
+function setGroupRole(gi,on){ CATALOG.transactions[gi].items.forEach(it=>roleCols().forEach(rk=>{ it.roles[rk]=on; enforceNesting(it.roles,rk); })); renderCatalog(); }
 /* ユースケース別 推奨プリセット（機微度ベースで一括設定） */
 const USECASE={ floor:{label:'現場スタッフ向け', sub:'売上・客数中心／利益・人件費は隠す', allow:s=>s==='open', tags:false}, manager:{label:'店長向け', sub:'運営に必要／純利益・粗利は隠す', allow:s=>s!=='exec', tags:true}, admin:{label:'管理者・経理向け', sub:'全指標', allow:()=>true, tags:true} };
 function defaultUseCase(){ const r=ROLES.find(x=>x.key===catalogRole); if(!r) return 'floor'; if(r.key==='staff') return 'floor'; if(r.key==='manager'||r.key==='area') return 'manager'; if(r.tier==='company') return 'admin'; return r.tier==='shop'?'floor':'admin'; }
@@ -936,9 +936,9 @@ function roleScopeAll(){ const r=ROLES.find(x=>x.key===catalogRole); return !!(r
 /* 推奨案：機微度（機密レベル）はハードロックせずソフト分類（テンプレ既定のみ）。選択肢は全レベル表示 */
 function condSensOptions(){ return ['すべて','🔓現場OK','🔸店長まで','🔒経営機密']; }
 /* プレビュー＝土台＋条件＋個別上書き。全社集計指標は自店舗ロールではロック（スコープ制限） */
-function computeCond(){ const allScope=roleScopeAll(); return CATALOG.transactions.flatMap(g=>g.items).map(it=>{ let on=(it.n in condOverride)?condOverride[it.n]:condItemOn(it); const locked=(it.scope==='company')&&!allScope; if(locked) on=false; return {it,on,locked}; }); }
+function computeCond(){ const allScope=roleScopeAll(); return CATALOG.transactions.flatMap(g=>g.items).map(it=>{ let on=(it.n in condOverride)?condOverride[it.n]:condItemOn(it); return {it,on,locked:false}; }); }
 function computeCondTags(){ return CATALOG.tags.map(t=>({t, on:(t.n in condOverride)?condOverride[t.n]:condTagOn(t), locked:false})); }
-function toggleCondItem(name){ const it=CATALOG.transactions.flatMap(g=>g.items).find(x=>x.n===name); if(!it) return; if(it.scope==='company'&&!roleScopeAll()){ toast('全社集計のため、このロール（自店舗）では表示できません'); return; } const eff=(name in condOverride)?condOverride[name]:condItemOn(it); condOverride[name]=!eff; renderCondset(); }
+function toggleCondItem(name){ const it=CATALOG.transactions.flatMap(g=>g.items).find(x=>x.n===name); if(!it) return; const eff=(name in condOverride)?condOverride[name]:condItemOn(it); condOverride[name]=!eff; renderCondset(); }
 function toggleCondTag(name){ const t=CATALOG.tags.find(x=>x.n===name); if(!t) return; const eff=(name in condOverride)?condOverride[name]:condTagOn(t); condOverride[name]=!eff; renderCondset(); }
 let condAdvOpen=false;
 function openCondset(){ condBase=rolePreset(catalogRole)||'keep'; condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; condNew=false; copyMode=false; tplDdOpen=false; markCondClean(); show('condset'); }
@@ -1039,13 +1039,11 @@ function renderCondset(){
   h+=`<div class="editsub-h">指標を個別に編集（カードをクリック）</div>`
     +`<div class="clickhint">👆 各カードを<b>クリック</b>すると <b style="color:#0f7d49">◯ 表示</b> ⇄ <b style="color:#b23b32">✕ 非表示</b> が切り替わります。系統ごとの<b>「全表示／全非表示」</b>でまとめて切替も可。</div>`
     +`<div class="prevbar"><span class="prevon">◯ 表示 ${on}</span><span class="prevoff">✕ 非表示 ${res.length-on}</span><span style="color:#9aa0a6;font-size:12px;">／ 全${res.length}指標</span></div>`;
-  // 店舗/会社タブ（会社ロール=両タブ／店舗ロール=店舗タブのみ）。指標一覧と統一
-  const isCompany=roleScopeAllKey(catalogRole);
-  if(!isCompany) catalogScope='store';
+  // 店舗/会社タブ（全ロールで両タブ表示。会社指標は店舗ロールでも付与可＝既定OFF）。指標一覧と統一
   const _cr=ROLES.find(x=>x.key===catalogRole), _csc=_cr?_cr.scopeType:'self';
   const storeLbl='店舗指標（'+(_csc==='all'?'全店・店舗別':_csc==='shops'?'管轄店・店舗別':'自店舗')+'）';
   h+=`<div class="scopetabs"><button class="sctab ${catalogScope==='store'?'on':''}" onclick="setCondScope('store')">🏬 ${storeLbl}</button>`
-    +(isCompany?`<button class="sctab ${catalogScope==='company'?'on':''}" onclick="setCondScope('company')">🏢 会社指標（全社集計）</button>`:`<span class="sctab-note">🏢 会社指標（全社集計）は会社ロールのみ</span>`)+`</div>`;
+    +`<button class="sctab ${catalogScope==='company'?'on':''}" onclick="setCondScope('company')">🏢 会社指標（全社集計）</button></div>`;
   CATALOG.transactions.filter(g=>(g.cscope||'store')===catalogScope).forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
     h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}） <button class="mini" onclick="setGroupOverride('${g.cat}',true)">全表示</button><button class="mini" onclick="setGroupOverride('${g.cat}',false)">全非表示</button></div><div class="prevlist">`+items.map(x=> x.locked
       ? `<span class="prevchip locked" title="全社集計のため、このロール（自店舗スコープ）では表示できません。会社ロール/オーナーで閲覧可">🔒 ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`
@@ -1086,7 +1084,7 @@ const shopRoleKeys = () => ROLES.filter(r=>!r.system).map(r=>r.key);   // カタ
 const roleLabel = k => (ROLES.find(r=>r.key===k)?.name||ROLE_LABEL[k]||k).replace('権限','');
 const roleCols = () => [catalogRole];
 const roleHeaders = () => roleCols().map(rk=>`<th>${roleLabel(rk)}指標一覧</th>`).join('');
-function roleCells(rolesObj, onclickFn, item){ return roleCols().map(rk=>{ if(item && item.scope==='company' && !roleScopeAllKey(rk)) return `<td title="全社集計＝このロール（自店舗）には付与不可。会社ロールのみ"><span style="color:#b23b32;">🔒</span></td>`; return `<td><label class="switch"><input type="checkbox" ${rolesObj[rk]?'checked':''} onclick="${onclickFn(rk)}"><span class="track"></span></label></td>`; }).join(''); }
+function roleCells(rolesObj, onclickFn, item){ return roleCols().map(rk=>`<td><label class="switch"><input type="checkbox" ${rolesObj[rk]?'checked':''} onclick="${onclickFn(rk)}"><span class="track"></span></label></td>`).join(''); }   // 会社指標も店舗ロールにトグル可(ロック解除・初期OFF)
 const roleStats = items => roleCols().map(rk=>`<span class="stat">${roleLabel(rk)} <b style="color:#159b5d">${items.filter(i=>i.roles[rk]).length}</b></span>`).join('');
 const roleCount = items => roleCols().map(rk=>roleLabel(rk)+' '+items.filter(i=>i.roles[rk]).length).join('／');
 const roleSpan = () => roleCols().length+1;
@@ -1109,17 +1107,15 @@ function renderCatalog(){
   const chip=document.getElementById('catTitleChip'); if(chip) chip.textContent='対象：'+roleLabel(catalogRole);   // タイトルチップ＝編集対象ロール（操作者でなく対象に連動）
 }
 function metricsCatalogHTML(){
-  const isCompany=roleScopeAllKey(catalogRole);   // 会社ロール（全社スコープ）＝両タブ／店舗ロール＝店舗タブのみ
-  if(!isCompany) catalogScope='store';
+  // 全ロールで両タブ表示（会社指標は店舗ロールにも付与可＝既定OFF・後から変更可）
   const scopeTabs=`<div class="scopetabs">`
     +`<button class="sctab ${catalogScope==='store'?'on':''}" onclick="setCatalogScope('store')">🏬 店舗指標</button>`
-    +(isCompany?`<button class="sctab ${catalogScope==='company'?'on':''}" onclick="setCatalogScope('company')">🏢 会社指標（全社集計）</button>`
-               :`<span class="sctab-note">🏢 会社指標（全社集計）は会社ロールのみ</span>`)
+    +`<button class="sctab ${catalogScope==='company'?'on':''}" onclick="setCatalogScope('company')">🏢 会社指標（全社集計）</button>`
     +`</div>`;
   const groups=CATALOG.transactions.filter(g=>(g.cscope||'store')===catalogScope);
   const all=groups.flatMap(g=>g.items), total=all.length;
   let h=scopeTabs+`<div class="statbar"><span class="stat"><b>${total}</b> 指標</span>${roleStats(all)}`
-    +`<span class="stat" style="color:#9aa0a6;">${catalogScope==='store'?'自店舗で見る指標':'全社集計の指標（会社ロールのみ）'}</span><span style="flex:1"></span>`
+    +`<span class="stat" style="color:#9aa0a6;">${catalogScope==='store'?'自店舗で見る指標':'全社集計の指標（既定OFF・付与可）'}</span><span style="flex:1"></span>`
     +`<input class="itemsearch" oninput="filterCatalogT('mcTable',this.value)" placeholder="🔍 指標・系統を検索"></div>`;
   h+=`<table class="list" id="mcTable"><tr><th class="name">系統／指標</th>${roleHeaders()}</tr>`;
   groups.forEach(g=>{ const gi=CATALOG.transactions.indexOf(g);
