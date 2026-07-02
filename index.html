@@ -348,6 +348,9 @@
   .tpldel{ border:none; background:#c0573a; color:#fff; border-radius:9px; font-size:10px; font-weight:700; padding:2px 8px; margin-left:6px; cursor:pointer;}
   .crow{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px; padding:10px; border:1px solid #eef0f3; border-radius:8px; margin-bottom:7px; background:#fafbfc; transition:background .3s,border-color .3s;}
   .crow.hl{ background:#e8f5ee; border-color:#7bc79c; box-shadow:0 0 0 2px rgba(15,125,73,.18);}
+  .crow-modal{ display:flex; flex-wrap:nowrap; align-items:flex-end; gap:12px; overflow-x:auto; padding:4px 2px 6px;}
+  .crow-modal .cfield{ flex:1 1 auto; min-width:120px;}
+  .crow-modal .condsel{ width:100%;}
   .crow .condw{ padding-bottom:7px;}
   .rulenum{ display:inline-grid; place-items:center; width:20px; height:20px; border-radius:50%; background:#2c5d9e; color:#fff; font-size:11px; font-weight:700; margin-right:4px; align-self:center;}
   .crow .mini{ margin-bottom:1px;}
@@ -658,7 +661,7 @@
 </div>
 
 <div id="condRuleModal" class="modal-overlay hide">
-  <div class="modal" style="max-width:520px;">
+  <div class="modal" style="max-width:720px;">
     <h3>条件ルールを追加</h3>
     <p class="modal-note" style="min-height:auto;">対象の系統/タグをまとめて表示・非表示。追加すると下段のルール一覧の<b>末尾</b>に入り、<b>後の行が前を上書き</b>します。</p>
     <div id="condRuleModalBody" style="margin:10px 0;"></div>
@@ -983,9 +986,9 @@ function renderCondRuleModal(){ const r=_crmDraft; if(!r) return;
   const sel=(arr,val,f)=>`<select class="condsel" onchange="setCrmField('${f}',this.value)">${arr.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
   const fld=(lab,s)=>`<div class="cfield"><span class="cflab">${lab}</span>${s}</div>`;
   const isTag=r.grp==='カスタムタグ';
-  document.getElementById('condRuleModalBody').innerHTML=`<div class="crow" style="flex-wrap:wrap;">${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
-    +(isTag?`<span class="condw">（タグ全体・種別/機密レベルは対象外）</span>`:`<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機密レベル（誰まで）',sel(condSensOptions(),r.sens,'sens'))}<span class="condw">）</span>`)
-    +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}</div>`;
+  document.getElementById('condRuleModalBody').innerHTML=`<div class="crow-modal">${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
+    +(isTag?`<div class="cfield"><span class="cflab">&nbsp;</span><span class="condw" style="padding-bottom:6px;">タグ全体（種別・機密は対象外）</span></div>`:`${fld('種別',sel(COND_TYPE,r.type,'type'))}${fld('機密レベル（誰まで）',sel(condSensOptions(),r.sens,'sens'))}`)
+    +`${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}</div>`;
 }
 function submitCondRuleModal(){ if(!_crmDraft) return; condRules.push({..._crmDraft}); const idx=condRules.length; closeCondRuleModal(); renderCondset();
   setTimeout(()=>{ const row=document.querySelector(`.crow[data-cri="${idx-1}"]`); if(row){ row.scrollIntoView({behavior:'smooth',block:'center'}); row.classList.add('hl'); setTimeout(()=>row.classList.remove('hl'),1600); } },60);
