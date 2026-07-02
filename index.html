@@ -1650,13 +1650,20 @@ function renderNrBack(){ const el=document.getElementById('nrBackBtns'); if(!el)
   h+=btn('← 権限一覧へ',"show('list')");
   el.innerHTML=h; }
 function gotoAssignFromEditor(){
-  const roleKey = (_nrMode==='edit' && _nrEditIdx>=0) ? ROLES[_nrEditIdx].key : null;
+  const isEdit = (_nrMode==='edit' && _nrEditIdx>=0);
+  const roleKey = isEdit ? ROLES[_nrEditIdx].key : null;
   // 遷移先：ロール起点の一括割当画面（新規＝空から複数人＋店舗／既存＝現メンバーと店舗をプリセットして修正）
   const navTo = (rk) => { openRoleAssign(rk); };
-  showConfirm('編集中の内容を保存して移動しますか？\n保存せず移動すると変更は破棄されます。',
-    ()=>{ if(!document.getElementById('rmName').value.trim()){ showAlert('権限名を記入してください。\n「保存して移動」には権限名が必要です。','権限名が未入力', ()=>{document.getElementById('rmName').focus();document.getElementById('rmName').style.borderColor='#cc3333';}); return; }   // 名前未入力は先へ進めない
-      const key=saveRoleData(); if(key===null) return; navTo(key); },   // 保存して移動
-    {title:'割当へ移動', okLabel:'保存して移動', extraLabel:'保存せず移動', onExtra:()=>navTo(roleKey)});
+  const onOk = ()=>{ if(!document.getElementById('rmName').value.trim()){ showAlert('権限名を記入してください。\n割当へ移動するには権限名が必要です。','権限名が未入力', ()=>{document.getElementById('rmName').focus();document.getElementById('rmName').style.borderColor='#cc3333';}); return; }   // 名前未入力は先へ進めない
+    const key=saveRoleData(); if(key===null) return; navTo(key); };
+  // 新規＝まだ権限が無いので「保存せず移動」は出さない（保存して移動 or キャンセルのみ）。既存＝変更の破棄を選べる
+  const opt = isEdit
+    ? {title:'割当へ移動', okLabel:'保存して移動', extraLabel:'保存せず移動', onExtra:()=>navTo(roleKey)}
+    : {title:'割当へ移動', okLabel:'保存して割当へ'};
+  const msg = isEdit
+    ? '編集中の内容を保存して移動しますか？\n保存せず移動すると変更は破棄されます。'
+    : 'この権限を保存して、割当画面（人に付与＋店舗紐付け）へ移動します。';
+  showConfirm(msg, onOk, opt);
   return;
 }
 /* ===== 初期設定（推奨ロール一括作成・下書き→適用） ===== */
