@@ -625,6 +625,16 @@
     </div>
   </main>
 
+  <!-- ロール起点の一括割当（権限編集/新規作成③→紐付け）：複数人＋各人の店舗を一度に -->
+  <main id="view-roleassign" class="hide">
+    <div class="titlebar"><h1 id="raTitle">ロールの割当</h1><div class="sp"></div><button class="btn ghost" onclick="raBack()">← 権限一覧へ</button></div>
+    <div class="panel">
+      <p class="hint" id="raHint"></p>
+      <div id="raBody"></div>
+      <div style="margin-top:20px;display:flex;gap:10px;"><button class="btn primary" onclick="saveRoleAssign()">保存</button><button class="btn ghost" onclick="raBack()">キャンセル</button></div>
+    </div>
+  </main>
+
   <main id="view-assignedit" class="hide">
     <div class="titlebar"><h1 id="aeTitle">ロール割当</h1><div class="sp"></div><button class="btn ghost" onclick="show('users')">← ユーザー割当へ</button></div>
     <div class="panel">
@@ -1613,7 +1623,7 @@ document.addEventListener('click',e=>{ let ch=false;
 
 /* ===== 切替 ===== */
 function show(v){
-  const VIEWS=['list','catalog','summary','users','condset','tpllist','newrole','assignedit'];   // 'edit'(旧アコーディオン)は撤去済み
+  const VIEWS=['list','catalog','summary','users','condset','tpllist','newrole','assignedit','roleassign'];   // 'edit'(旧アコーディオン)は撤去済み
   VIEWS.forEach(x=>{ const m=document.getElementById('view-'+x); if(m) m.classList.toggle('hide', v!==x); });   // null安全
   VIEWS.forEach(x=>{ const n=document.getElementById('nav-'+x); if(n) n.classList.toggle('active', v===x); });
   if(v==='list') renderList();
@@ -1622,6 +1632,7 @@ function show(v){
   if(v==='users') renderUsers();
   if(v==='condset') renderCondset();
   if(v==='tpllist') renderTplList();
+  if(v==='roleassign') renderRoleAssign();
 }
 // 権限編集/新規作成 → ユーザー割当（店舗紐付け・割当）への遷移。新規作成中は未保存破棄を確認
 let _hiRole=null;   // 役割サマリでハイライトするロールkey
@@ -1640,9 +1651,8 @@ function renderNrBack(){ const el=document.getElementById('nrBackBtns'); if(!el)
   el.innerHTML=h; }
 function gotoAssignFromEditor(){
   const roleKey = (_nrMode==='edit' && _nrEditIdx>=0) ? ROLES[_nrEditIdx].key : null;
-  // 遷移先：このロールを持つユーザーがいれば その割当編集画面／いなければ役割サマリ(ハイライト)
-  const navTo = (rk) => { const ui = rk ? USERS.findIndex(u=>u.roleKeys.includes(rk)) : -1;
-    if(ui>=0) openAssign(ui); else { _hiRole=rk; show('summary'); } };
+  // 遷移先：ロール起点の一括割当画面（新規＝空から複数人＋店舗／既存＝現メンバーと店舗をプリセットして修正）
+  const navTo = (rk) => { openRoleAssign(rk); };
   showConfirm('編集中の内容を保存して移動しますか？\n保存せず移動すると変更は破棄されます。',
     ()=>{ if(!document.getElementById('rmName').value.trim()){ showAlert('権限名を記入してください。\n「保存して移動」には権限名が必要です。','権限名が未入力', ()=>{document.getElementById('rmName').focus();document.getElementById('rmName').style.borderColor='#cc3333';}); return; }   // 名前未入力は先へ進めない
       const key=saveRoleData(); if(key===null) return; navTo(key); },   // 保存して移動
@@ -1839,8 +1849,8 @@ function userScopeLabel(u){
 let _assignUi=-1;
 function roleByKey(k){ return ROLES.find(r=>r.key===k); }
 let _userRoleFilter=null, _usersBackTo='list';   // 役割サマリ「割当へ」から来た時だけ、そのロールの割当ユーザーに絞り込む＋戻り先を記憶
-function gotoUsersForRole(key){ _userRoleFilter=key; _usersBackTo='summary'; show('users'); }   // 役割サマリの割当へ
-function gotoUsersAll(){ _userRoleFilter=null; _usersBackTo='list'; show('users'); }             // ナビの直接アクセス＝全件（管理者一覧はそのまま）
+function gotoUsersForRole(key){ _userRoleFilter=key; _usersBackTo='summary'; show('users'); }   // 役割サマリの割当へ（権限起点＝入口3）
+function gotoUsersAll(){ _userRoleFilter=null; _usersBackTo='list'; show('users'); }             // ナビの直接アクセス＝全件（人起点＝入口2）
 function usersBack(){ show(_usersBackTo); }   // 来た元へ戻る（役割サマリ or 権限一覧）
 function clearUserFilter(){ _userRoleFilter=null; renderUsers(); }
 function renderUsers(){
@@ -1902,6 +1912,48 @@ function saveAssign(){ const u=USERS[_assignUi];
   if(hasShop && stores.length===0){ toast('店舗ロールには対象店舗を1つ以上選択してください'); amRefreshStores(); return; }   // 未設定は保存不可
   u.roleKeys=roleKeys; u.stores=stores;
   show('users'); renderUsers(); toast(u.name+' の割当を保存しました'); }
+
+// ===== 入口1：ロール起点の一括割当（権限編集/新規作成③→紐付け）。複数人＋各人の店舗を一度に =====
+let _raRole=null;
+function openRoleAssign(rk){ _raRole=rk; show('roleassign'); }
+function raBack(){ show('list'); }
+function renderRoleAssign(){ const rk=_raRole, r=roleByKey(rk); if(!r){ show('list'); return; }
+  const isShop = r.tier==='shop';
+  const holders = USERS.filter(u=>u.roleKeys.includes(rk)).length;
+  document.getElementById('raTitle').textContent = `「${r.name}」の割当`;
+  document.getElementById('raHint').innerHTML = holders>0
+    ? `現在 <b>${holders}名</b>に割当済み（既存の修正）。含める人${isShop?'・各人の対象店舗':''}を直して保存。チェックを外すとその人からこの権限を解除します。`
+    : `この新しい権限を割り当てる人に「含める」をチェックし${isShop?'、各人の対象店舗を指定':'（会社ロール＝全社）'}して保存。<b>複数人を一度に</b>登録できます。`;
+  let h=`<table class="list"><tr><th class="name">管理者（管理者一覧）</th><th>役職</th><th style="width:64px;text-align:center;">含める</th><th>${isShop?'対象店舗':'範囲'}</th></tr>`;
+  [...new Set(USERS.map(u=>u.shop))].forEach(sh=>{
+    h+=`<tr class="grouprow view"><td colspan="4">🏬 ${sh}</td></tr>`;
+    USERS.forEach((u,ui)=>{ if(u.shop!==sh) return;
+      const inc=u.roleKeys.includes(rk), st=u.stores||[];
+      const stCells = isShop
+        ? `<div class="raStores" data-ui="${ui}" style="display:flex;flex-wrap:wrap;gap:6px;${inc?'':'opacity:.35;'}">`
+          + `<label class="ro" style="display:inline-flex;gap:5px;padding:4px 9px;border:1px solid #e3e6ea;border-radius:6px;font-weight:700;"><input type="checkbox" class="raAll" data-ui="${ui}" ${st.length&&SHOPS.every(s=>st.includes(s))?'checked':''} onchange="raToggleAll(${ui},this.checked)"> 全店</label>`
+          + SHOPS.map(s=>`<label class="ro" style="display:inline-flex;gap:5px;padding:4px 9px;border:1px solid #e3e6ea;border-radius:6px;"><input type="checkbox" class="raShop" data-ui="${ui}" value="${s}" ${st.includes(s)?'checked':''} onchange="raStoreChg(${ui})"> ${shortShop(s)}</label>`).join('')
+          + `</div>`
+        : `<span style="color:#9aa0a6;font-size:12px;">全社（店舗紐付けなし）</span>`;
+      h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.title}</td>`
+        +`<td style="text-align:center;"><input type="checkbox" class="raInc" data-ui="${ui}" ${inc?'checked':''} onchange="raIncChg(${ui},this.checked)"></td>`
+        +`<td>${stCells}</td></tr>`;
+    });
+  });
+  h+=`</table>`;
+  document.getElementById('raBody').innerHTML=h;
+}
+function raIncChg(ui,on){ const box=document.querySelector('.raStores[data-ui="'+ui+'"]'); if(box) box.style.opacity=on?'1':'.35'; }
+function raToggleAll(ui,on){ document.querySelectorAll('.raShop[data-ui="'+ui+'"]').forEach(c=>c.checked=on); }
+function raStoreChg(ui){ const all=[...document.querySelectorAll('.raShop[data-ui="'+ui+'"]')], m=document.querySelector('.raAll[data-ui="'+ui+'"]'); if(m) m.checked=all.length>0&&all.every(c=>c.checked); }
+function saveRoleAssign(){ const rk=_raRole, r=roleByKey(rk); if(!r) return; const isShop=r.tier==='shop';
+  const incs=[...document.querySelectorAll('.raInc')];
+  for(const c of incs){ const ui=+c.dataset.ui; if(c.checked && isShop){ const st=[...document.querySelectorAll('.raShop[data-ui="'+ui+'"]:checked')]; if(st.length===0){ toast(USERS[ui].name+' の対象店舗を1つ以上選択してください'); return; } } }   // 含める＆店舗ロール＆店舗0はNG
+  let cnt=0;
+  incs.forEach(c=>{ const ui=+c.dataset.ui, u=USERS[ui];
+    if(c.checked){ if(!u.roleKeys.includes(rk)) u.roleKeys.push(rk); if(isShop){ u.stores=[...document.querySelectorAll('.raShop[data-ui="'+ui+'"]:checked')].map(x=>x.value); } cnt++; }
+    else { u.roleKeys=u.roleKeys.filter(k=>k!==rk); } });
+  show('list'); toast('「'+r.name+'」を '+cnt+'名に割当てました'); }
 function usersOfRole(roleKey){ return USERS.filter(u=>u.roleKeys.includes(roleKey)); }
 function renderSummary(){
   const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
