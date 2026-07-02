@@ -984,6 +984,8 @@ function toggleCondTag(name){ const t=CATALOG.tags.find(x=>x.n===name); if(!t) r
 let condAdvOpen=false;
 function openCondset(){ condBase=rolePreset(catalogRole)||'keep'; condRules=[]; condOverride={}; curTplIdx=-1; condAdvOpen=false; copySrc=null; condNew=false; copyMode=false; tplDdOpen=false; markCondClean(); show('condset'); }
 document.addEventListener('click', function(e){ if(tplDdOpen){ const inside=e.target.closest&&e.target.closest('.hdd'); if(!inside){ tplDdOpen=false; const v=document.getElementById('view-condset'); if(v&&!v.classList.contains('hide')) renderCondset(); } } });
+// 👑 オーナー操作ドロップダウン：パネル外クリックで閉じる（トグルボタンはstopPropagation済みなので即閉じしない）
+document.addEventListener('click', function(e){ const p=document.getElementById('ownerOpsPanel'); if(p && !p.classList.contains('hide')){ const inside=e.target.closest&&e.target.closest('.ownerwrap'); if(!inside) p.classList.add('hide'); } });
 function toggleCondAdv(){ condAdvOpen=!condAdvOpen; renderCondset(); }
 function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; condOverride={}; condNew=false; copyMode=false; markCondClean(); renderCondset(); }   // 土台変更で個別上書きはリセット
 // 「＋条件を追加」＝上下ボタンとも共通のモーダル入力（末尾追加＋トースト＋該当行ハイライト）。既存ルールの編集/削除は下段のインライン行
