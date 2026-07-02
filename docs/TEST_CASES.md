@@ -89,15 +89,16 @@
 | TC-P3-05 | 兼務の和集合 | U-multi（店長@S2＋経理all） | GET /vendors | all優先で全店表示（和集合） |
 | TC-P3-06 | 作成時の店舗検証 | U-manager1（店長@S1） | POST /vendors {store_id:S2} | 403（自店舗外への作成不可） |
 
-### P4 指標カタログ＋越境防御
+### P4 指標カタログの可視性（role_metrics）＋行スコープ独立
 | ID | 画面/操作 | 実行ユーザー(設定) | 入力 | 期待結果 |
 |---|---|---|---|---|
 | TC-P4-01 | ダッシュボード指標 | U-manager1（店長） | GET /dashboard/metrics | sales_excluded, op_profit_store を含む |
-| TC-P4-02 | 全社指標の越境 | U-manager1（店長） | 同上 | op_profit_company, labor_cost_company を**含まない**（機密company＝全社scopeロールのみ） |
-| TC-P4-03 | allowlist外 | U-staff1（従業員・op_profit_store=非表示） | GET /dashboard/metrics | op_profit_store を含まない |
-| TC-P4-04 | 会社ロール | U-keiri1（経理all） | GET /dashboard/metrics | op_profit_company を含む |
-| TC-P4-05 | 直接API越境試行 | U-manager1（店長） | GET /metrics?key=op_profit_company | 403 or 空（allowlist＋機密で二重ブロック） |
-| TC-P4-06 | 新規指標fail-closed | sensitivity未設定の新指標 | 店長で取得 | 含まれない（既定company扱い） |
+| TC-P4-02 | 会社指標の既定OFF | U-manager1（店長・op_profit_company未付与＝既定OFF） | 同上 | op_profit_company, labor_cost_company を**含まない**（role_metrics.visible=false） |
+| TC-P4-02b | 会社指標の管理者オプトイン | U-manager1（店長・op_profit_company を role_metrics で付与） | 同上 | op_profit_company を**含む**（付与すれば店舗ロールでも可視＝ハードブロックしない） |
+| TC-P4-03 | 可視性OFF（店舗指標） | U-staff1（従業員・op_profit_store=非表示） | GET /dashboard/metrics | op_profit_store を含まない |
+| TC-P4-04 | 会社ロール既定ON | U-keiri1（経理all） | GET /dashboard/metrics | op_profit_company を含む（既定ON） |
+| TC-P4-05 | 会社指標付与でも行スコープは遮断 | U-manager1（店長@S1・op_profit_company を付与） | GET /sales?store_id=S2（他店明細） | 403 or 空（可視性付与≠行スコープ解放。他店の生データ行は `for_user` で遮断） |
+| TC-P4-06 | 新規指標fail-closed | sensitivity未設定の新指標 | 店長で取得 | 含まれない（既定company扱い＝既定OFF・付与で可視化） |
 
 ### P5 運用機構
 | ID | 操作 | 実行ユーザー | 入力 | 期待結果 |

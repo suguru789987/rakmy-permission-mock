@@ -754,7 +754,7 @@ const CATALOG = {
     {cat:'人件費系（全社集計）', cscope:'company', items:[
       {n:'人件費（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'},{n:'人件費率（全社）',sens:'exec',g:'コスト',t:'率',scope:'company'},{n:'総労働時間（全社）',sens:'mgr',g:'コスト',t:'時間',scope:'company'},{n:'人時売上高（全社）',sens:'mgr',g:'コスト',t:'金額',scope:'company'}]},
     {cat:'固定費系（全社集計）', cscope:'company', items:[
-      {n:'地代家賃（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'},{n:'販促費（全社）',sens:'mgr',g:'コスト',t:'金額',scope:'company'},{n:'固定費合計（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'}]},
+      {n:'地代家賃（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'},{n:'販促費（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'},{n:'固定費合計（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'}]},
     {cat:'利益系（全社集計）', cscope:'company', items:[
       {n:'粗利（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'粗利率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'},{n:'FL率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'},{n:'FLR率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'},
       {n:'営業利益（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'営業利益率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'}]},
@@ -766,7 +766,11 @@ const CATALOG = {
 const _allCat=()=>[...CATALOG.dimensions,...CATALOG.transactions.flatMap(g=>g.items),...CATALOG.tags];
 _allCat().forEach(it=>it.roles={manager:true,staff:true,area:true,keiri:true,jinji:true});   // 既定は各ロールのカタログに入れる（本部が後で外す）
 // 全社集計（scope:company）の指標は店舗スコープのロール（店長/従業員/エリア）には初期から付与しない（誤露出防止）
-CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ if(it.scope==='company'){ it.roles.manager=false; it.roles.staff=false; it.roles.area=false; } }));
+// 全社集計指標の既定可視性（店舗ロール）：バッジ意味に合わせる。経営機密(exec)＝全店舗ロールOFF／店長まで(mgr)＝店長・エリア長はON・従業員(現場)はOFF。会社ロール(keiri/jinji)は常にON。いずれも管理者が後から変更可
+CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ if(it.scope==='company'){ const s=it.sens||'open';
+  if(s==='exec'){ it.roles.manager=false; it.roles.area=false; it.roles.staff=false; }   // 経営機密：店舗ロールは既定OFF
+  else { it.roles.staff=false; }   // 店長まで(ベンチマーク)：現場(従業員)のみOFF、店長・エリア長は既定ON
+} }));
 // 指標がこのロールのスコープで許可されるか（全社集計は全社スコープのロールのみ）
 function roleScopeAllKey(k){ const r=ROLES.find(x=>x.key===k); return !!(r&&r.scopeType==='all'); }
 function catItemAllowed(it,rk){ return !!it.roles[rk]; }   // 付与=許可。会社指標も店舗ロールに付与可(初期OFF・機密含む、後から変更可)
@@ -1085,9 +1089,8 @@ function renderCondset(){
   h+=`<div class="scopetabs"><button class="sctab ${catalogScope==='store'?'on':''}" onclick="setCondScope('store')">🏬 ${storeLbl}</button>`
     +`<button class="sctab ${catalogScope==='company'?'on':''}" onclick="setCondScope('company')">🏢 会社指標（全社集計）</button></div>`;
   CATALOG.transactions.filter(g=>(g.cscope||'store')===catalogScope).forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
-    h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}） <button class="mini" onclick="setGroupOverride('${g.cat}',true)">全表示</button><button class="mini" onclick="setGroupOverride('${g.cat}',false)">全非表示</button></div><div class="prevlist">`+items.map(x=> x.locked
-      ? `<span class="prevchip locked" title="全社集計のため、このロール（自店舗スコープ）では表示できません。会社ロール/オーナーで閲覧可">🔒 ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`
-      : `<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
+    h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}） <button class="mini" onclick="setGroupOverride('${g.cat}',true)">全表示</button><button class="mini" onclick="setGroupOverride('${g.cat}',false)">全非表示</button></div><div class="prevlist">`+items.map(x=>
+      `<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
   const tres=computeCondTags();
   if(catalogScope==='store' && tres.length) h+=`<div class="prevgrp">カスタムタグ（表示 ${tres.filter(x=>x.on).length}／${tres.length}） <button class="mini" onclick="setTagsOverride(true)">全表示</button><button class="mini" onclick="setTagsOverride(false)">全非表示</button></div><div class="prevlist">`+tres.map(x=>`<span class="prevchip clk ${x.on?'on':'off'}${(x.t.n in condOverride)?' ov':''}" onclick="toggleCondTag('${x.t.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.t.n}</span>`).join('')+`</div>`;
   // 条件ルール（一括上書き）＝指標表示項目の下に配置。後の行が前の行を上書き、個別クリックが最優先

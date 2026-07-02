@@ -73,7 +73,7 @@ end
 ## 3. スコープ強制（最重要・性能と安全の肝）
 「店長＝自店舗 / エリア長＝管轄店 / 会社ロール＝全社」を**クエリで強制**。
 
-**区分(tier)とスコープは独立・スコープは割当(user_roles)で束縛**：ロール定義の区分・範囲は既定値で、実効スコープは `user_roles.scope_type`＋`store_ids`（割当時）で決まる。同一人物でも割当で複数店舗/全社を持てる（従業員が複数店舗所属・従業員に会社ロール・データ範囲=会社 等を許容）。区分×範囲は自由に組み合わせ可。**越境防御はロール区分でなく指標の機密(sensitivity)×実効スコープでゲート**（§4）するため、店舗ロール＋全社にしても全社集計/機密company指標は除外され漏洩しない。
+**区分(tier)とスコープは独立・スコープは割当(user_roles)で束縛**：ロール定義の区分・範囲は既定値で、実効スコープは `user_roles.scope_type`＋`store_ids`（割当時）で決まる。同一人物でも割当で複数店舗/全社を持てる（従業員が複数店舗所属・従業員に会社ロール・データ範囲=会社 等を許容）。区分×範囲は自由に組み合わせ可。**指標カタログの可視性は `role_metrics`（既定OFF＋管理者オプトイン）で制御**（§4）＝店舗ロールにも会社指標を付与できる（機密company指標は既定OFF）。一方で**行データのスコープ遮断（`for_user`）はこれと独立にハード強制**＝他店の生データ行は付与状態に関わらず遮断される。
 
 ```ruby
 def effective_store_ids(user)
@@ -89,13 +89,14 @@ def effective_store_ids(user)
 end
 ```
 - **店舗スコープのモデルには共通スコープを適用**：`Model.for_user(user)` → `where(store_id: ids)`（`:all` なら無制限）。default_scope ではなく**明示的な query object / scope** にし、バッチ等の例外を制御。
-- **全社集計指標（metrics.scope=company）は会社ロール（scope all）のみ**。店舗ロールには集計APIの段階でクランプ（越境防御 L6相当）。
+- **全社集計指標（metrics.scope=company）は `role_metrics` の可視性で制御（既定OFF＋管理者オプトイン）**。会社ロールは既定ON、店舗ロールは既定OFFだが管理者が `role_metrics.visible=true` にすれば付与できる（ハードブロックしない）。**行データのスコープ遮断（`for_user`）はこれと独立にハード強制**＝店舗ロールに会社指標を付与しても、その指標の裏付けとなる他店の生データ行は `where(store_id: ids)` で依然遮断される（付与＝集計値の閲覧許可であって行スコープの解放ではない）。
 - 直クエリ常用を避け、**集計バッチ/リードレプリカ/指標API**経由（CLAUDE.md ガバナンス）。
 
-## 4. 指標カタログ＋越境防御
-- ダッシュボード/分析の**指標応答を `role_metrics.visible` でフィルタ**（allowlist）。
-- 加えて**機密×スコープの二重チェック**：`metrics.sensitivity=company` or `metrics.scope=company` の指標は、scope=all を持たないロールには**シード段階で付与しない＋応答でも除外**（多層防御 L1〜L8 をサーバ側で再現）。
-- 新規/AI生成指標は **sensitivity を fail-closed（既定 company 扱い）**、緩めるのは人の承認後（§12-7）。
+## 4. 指標カタログの可視性（role_metrics）＋行スコープ遮断
+- ダッシュボード/分析の**指標応答を `role_metrics.visible` でフィルタ**（allowlist）。可視性はロール単位で管理者が設定でき、**店舗ロールにも会社指標を付与可能（既定OFF＋管理者オプトイン）**。ハードブロックはしない。
+- **既定値のシード**：`metrics.scope=company`（全社集計）は会社ロール＝既定ON、店舗ロール＝既定OFF。機密（`sensitivity=company`＝経営機密）の会社指標は特に既定OFF。以後は管理者が `role_metrics.visible` を切り替える。
+- **行スコープ遮断は独立にハード強制**：`role_metrics` は「どの集計指標を見せるか」の制御であり、行データのスコープ（`for_user`＝`where(store_id: ids)`）は別レイヤで常に効く。店舗ロールに会社指標を付与しても、他店の生データ行（明細）は取得できない。＝**付与できるのは全社集計値の閲覧であって、他店明細の解放ではない**。
+- 新規/AI生成指標は **sensitivity を fail-closed（既定 company 扱い＝既定OFF）**、緩めるのは人の承認後（§12-7）。
 
 ## 5. 適用タイミング・キャッシュ
 - `effective_permissions` / `effective_store_ids` は**ユーザー単位でキャッシュ**（Redis等）。権限/割当変更時に**該当ユーザーのキャッシュを invalidate**。
