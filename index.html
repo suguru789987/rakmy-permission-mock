@@ -1417,23 +1417,19 @@ function permSummaryHTML(pr){
 function openBaseDetail(){ const pr=rmBasePreviewRole(); const v=_rmBaseVal;
   const nm = v.startsWith('role:') ? ROLES[+v.slice(5)].name+'（複製元）' : ((ROLE_TEMPLATES.find(x=>x.id===v.slice(4))||{}).name||'')+'（雛形）';
   openTplDetailPr(pr, nm+'｜画面ごとの権限'); }
-// このロールの割当ユーザー×対象店舗のプレビュー（氏名＋掌握店舗数＋店舗名＋未設定ステータス）。遷移ボタンはプレビュー内に統一・閲覧のみ
+// 権限編集③はスコープ（店舗）を扱わない＝掌握店舗数/店舗名の"情報表示"は出さない（店舗の実態は役割サマリ/ユーザー割当で確認）。
+// ここに残すのは「次アクションへのCTA」と「ガバナンス上の警告（店舗未設定の保持者）」のみ。
 function renderAssignPreview(){
   const box=document.getElementById('rmAssignPreview'); if(!box) return;
   const wrap=document.getElementById('rmAssignBtnWrap'); const align=v=>{ if(wrap) wrap.style.textAlign=v; };
-  box.innerHTML=''; align('left');   // 既定：プレビュー無し＝区分に合わせて左詰
-  if(_nrMode!=='edit' || _nrEditIdx<0) return;   // 新規登録＝プレビュー無し
+  box.innerHTML=''; align('left');
+  if(_nrMode!=='edit' || _nrEditIdx<0) return;   // 新規登録＝警告なし
   const r=ROLES[_nrEditIdx], us=usersOfRole(r.key);
-  if(!us.length) return;   // 割当ユーザーがいない＝プレビュー無し
-  if(rmTier!=='shop') return;   // 会社ロール＝全社（店舗プレビュー不要）
-  align('right');   // プレビューあり＝枠外・右寄せ
-  // このロールが掌握する店舗の集約（保持者ごとの担当店舗を重複排除）。人の一覧は出さず店舗数＋店舗名だけ
-  const allStores=[...new Set(us.flatMap(u=>u.stores||[]))];
+  if(!us.length) return;
+  if(rmTier!=='shop') return;   // 会社ロール＝全社（店舗未設定の概念なし）
   const unset=us.filter(u=>!(u.stores&&u.stores.length)).length;
-  const cntTxt = allStores.length ? (allStores.length===SHOPS.length? `${allStores.length}店舗<span class="ap-allmini">（全店）</span>` : `${allStores.length}店舗`) : '<span class="ap-unset">0店舗</span>';
-  const chips = allStores.length ? '<div class="ap-stores">'+allStores.map(sh=>`<span class="ap-tag">${shortShop(sh)}</span>`).join('')+'</div>' : '<span class="ap-unset">未設定</span>';
-  const warn = unset>0 ? `<div style="margin-top:8px;"><span class="ap-unset">⚠ 店舗未設定の保持者 ${unset}名（ユーザー割当で設定）</span></div>` : '';
-  box.innerHTML=`<div class="assign-prev"><table class="ap-table"><tr><th>掌握店舗数</th><th>店舗名</th></tr><tr><td>${cntTxt}</td><td>${chips}</td></tr></table>${warn}</div>`;
+  if(!unset) return;   // 警告が無ければ何も出さない（店舗詳細の陳列はしない）
+  box.innerHTML=`<div class="assign-prev"><span class="ap-unset">⚠ このロールの保持者のうち ${unset}名が店舗未設定です（ユーザー割当で対象店舗を設定してください）</span></div>`;
 }
 function rmSetTier(t){ rmTier=t; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); renderAssignPreview();
   rmSetScope(t==='company'?'all':'self'); rmCheckIntegrity(); if(document.getElementById('rmDetailPanel')) rmRefreshPanel(); }
