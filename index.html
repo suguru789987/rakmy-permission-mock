@@ -976,8 +976,7 @@ function openCondset(){ condBase=rolePreset(catalogRole)||'keep'; condRules=[]; 
 document.addEventListener('click', function(e){ if(tplDdOpen){ const inside=e.target.closest&&e.target.closest('.hdd'); if(!inside){ tplDdOpen=false; const v=document.getElementById('view-condset'); if(v&&!v.classList.contains('hide')) renderCondset(); } } });
 function toggleCondAdv(){ condAdvOpen=!condAdvOpen; renderCondset(); }
 function setCondBase(b){ condBase=b; curTplIdx=-1; copySrc=null; condOverride={}; condNew=false; copyMode=false; markCondClean(); renderCondset(); }   // 土台変更で個別上書きはリセット
-function addCondRule(){ condRules.push({grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}); renderCondset(); }
-// 上部「＋条件を追加」＝モーダル入力（末尾追加＋トースト＋該当行ハイライト）。最下段ボタンは従来どおりインライン追加
+// 「＋条件を追加」＝上下ボタンとも共通のモーダル入力（末尾追加＋トースト＋該当行ハイライト）。既存ルールの編集/削除は下段のインライン行
 let _crmDraft=null;
 function openCondRuleModal(){ _crmDraft={grp:'コスト',type:'金額（合計）',sens:'すべて',act:'表示しない'}; renderCondRuleModal(); document.getElementById('condRuleModal').classList.remove('hide'); }
 function closeCondRuleModal(){ document.getElementById('condRuleModal').classList.add('hide'); _crmDraft=null; }
@@ -1105,7 +1104,7 @@ function renderCondset(){
     h+=`<div class="crow" data-cri="${i}"><span class="rulenum">${i+1}</span>${fld('対象（系統/タグ）',sel(COND_GRP,r.grp,'grp'))}`
       +(isTag?`<span class="condw">（タグ全体・種別/機密レベルは対象外）</span>`:`<span class="condw">の</span>${fld('種別',sel(COND_TYPE,r.type,'type'))}<span class="condw">（</span>${fld('機密レベル（誰まで）',sel(condSensOptions(),r.sens,'sens'))}<span class="condw">）</span>`)
       +`<span class="condw">を</span>${fld('表示/非表示',sel(COND_ACT,r.act,'act'))}<button class="mini" onclick="delCondRule(${i})">削除</button></div>`; });
-  h+=`<div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn ghost" onclick="addCondRule()">＋ 条件を追加</button>`
+  h+=`<div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn ghost" onclick="openCondRuleModal()">＋ 条件を追加</button>`
     +((condRules.length||Object.keys(condOverride).length)?`<button class="btn ghost" style="color:#c0573a;border-color:#e3b4a6;" onclick="clearAllCond()">全条件をクリア</button><span style="color:#9aa0a6;font-size:11px;">※条件ルール＋個別クリック上書きを両方クリア（土台テンプレは維持）</span>`:'')
     +`</div></div>`;
   // 逆算ガード（最下段に表示）：金額(非表示) が 率×母数 で逆算できる組合せを警告
