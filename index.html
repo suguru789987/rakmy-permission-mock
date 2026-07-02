@@ -746,9 +746,20 @@ const CATALOG = {
     {cat:'利益系', cscope:'store', items:[
       {n:'粗利（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'粗利率',sens:'mgr',g:'利益',t:'率'},{n:'FL率',sens:'mgr',g:'利益',t:'率'},{n:'FLR率',sens:'mgr',g:'利益',t:'率'},
       {n:'営業利益（自店舗）',sens:'mgr',g:'利益',t:'金額'},{n:'営業利益率',sens:'mgr',g:'利益',t:'率'}]},
-    {cat:'売上（全社集計）', cscope:'company', items:[{n:'売上（全社）',sens:'exec',g:'売上',t:'金額',scope:'company'}]},
-    {cat:'人件費（全社集計）', cscope:'company', items:[{n:'人件費（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'}]},
-    {cat:'利益（全社集計）', cscope:'company', items:[{n:'粗利（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'営業利益（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'}]}
+    {cat:'売上系（全社集計）', cscope:'company', items:[
+      {n:'売上（全社）',sens:'exec',g:'売上',t:'金額',scope:'company'},{n:'売上前年比（全社）',sens:'mgr',g:'売上',t:'前年比',scope:'company'},
+      {n:'客数（全社）',sens:'mgr',g:'売上',t:'件数',scope:'company'},{n:'客単価（全社）',sens:'mgr',g:'売上',t:'金額',scope:'company'},{n:'来店組数（全社）',sens:'mgr',g:'売上',t:'件数',scope:'company'}]},
+    {cat:'仕入・原価系（全社集計）', cscope:'company', items:[
+      {n:'仕入額（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'},{n:'原価率（全社）',sens:'exec',g:'コスト',t:'率',scope:'company'},{n:'廃棄ロス（全社）',sens:'mgr',g:'コスト',t:'金額',scope:'company'}]},
+    {cat:'人件費系（全社集計）', cscope:'company', items:[
+      {n:'人件費（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'},{n:'人件費率（全社）',sens:'exec',g:'コスト',t:'率',scope:'company'},{n:'総労働時間（全社）',sens:'mgr',g:'コスト',t:'時間',scope:'company'},{n:'人時売上高（全社）',sens:'mgr',g:'コスト',t:'金額',scope:'company'}]},
+    {cat:'固定費系（全社集計）', cscope:'company', items:[
+      {n:'地代家賃（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'},{n:'販促費（全社）',sens:'mgr',g:'コスト',t:'金額',scope:'company'},{n:'固定費合計（全社）',sens:'exec',g:'コスト',t:'金額',scope:'company'}]},
+    {cat:'利益系（全社集計）', cscope:'company', items:[
+      {n:'粗利（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'粗利率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'},{n:'FL率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'},{n:'FLR率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'},
+      {n:'営業利益（全社）',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'営業利益率（全社）',sens:'exec',g:'利益',t:'率',scope:'company'}]},
+    {cat:'店舗横断（全社ならでは）', cscope:'company', items:[
+      {n:'店舗別売上ランキング',sens:'exec',g:'売上',t:'金額',scope:'company'},{n:'店舗別営業利益ランキング',sens:'exec',g:'利益',t:'金額',scope:'company'},{n:'業態別売上構成比',sens:'exec',g:'売上',t:'構成比',scope:'company'},{n:'全店平均客単価',sens:'mgr',g:'売上',t:'金額',scope:'company'}]}
   ],
   tags:[{n:'重点商品'},{n:'高粗利メニュー'},{n:'新メニュー'},{n:'曜日キャンペーン'},{n:'ランチ／ディナー区分'}]
 };
