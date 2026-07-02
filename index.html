@@ -588,7 +588,7 @@
       <div class="sp"></div>
       <button class="btn ghost" onclick="show('catalog')">キャンセル</button>
       <span id="csTplBar" style="display:flex;gap:8px;align-items:center;"></span>
-      <button class="btn primary" onclick="applyCondset()">指標一覧へ戻る</button>
+      <button class="btn primary" onclick="applyCondset()">適用して指標一覧へ</button>
     </div>
     <div class="panel">
       <div id="condsetBody"></div>
@@ -1953,7 +1953,7 @@ function saveRoleAssign(){ const rk=_raRole, r=roleByKey(rk); if(!r) return; con
   incs.forEach(c=>{ const ui=+c.dataset.ui, u=USERS[ui];
     if(c.checked){ if(!u.roleKeys.includes(rk)) u.roleKeys.push(rk); if(isShop){ u.stores=[...document.querySelectorAll('.raShop[data-ui="'+ui+'"]:checked')].map(x=>x.value); } cnt++; }
     else { u.roleKeys=u.roleKeys.filter(k=>k!==rk); } });
-  show('list'); toast('「'+r.name+'」を '+cnt+'名に割当てました'); }
+  _hiRole=rk; show('summary'); toast('「'+r.name+'」を '+cnt+'名に割当てました（役割サマリで確認）'); }   // 保存後は役割サマリに着地＝割当ユーザー数の更新を確認できる
 function usersOfRole(roleKey){ return USERS.filter(u=>u.roleKeys.includes(roleKey)); }
 function renderSummary(){
   const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
