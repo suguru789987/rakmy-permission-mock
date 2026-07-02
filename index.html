@@ -942,7 +942,6 @@ function applyRecommend(uc){ if(catalogRole==='all') return; const c=USECASE[uc]
   CATALOG.transactions.forEach(g=>g.items.forEach(it=>{ it.roles[catalogRole]=c.allow(it.sens||'open'); enforceNesting(it.roles,catalogRole); }));
   CATALOG.tags.forEach(t=>{ t.roles[catalogRole]=c.tags; enforceNesting(t.roles,catalogRole); });
   renderCatalog(); toast('推奨（'+c.label+'）を適用しました。必要に応じ個別調整できます'); }
-const sensBadge = s => s==='exec'?'<span class="sens exec">🔒経営機密</span>':s==='mgr'?'<span class="sens mgr">🔸店長まで</span>':'<span class="sens open">🔓現場OK</span>';
 /* 条件文ビルダー：［系統］の［種別］（［機微度］）を［表示する/しない］ */
 const T_MAP={'金額（合計）':'金額','率（％）':'率','構成比':'構成比','前年比':'前年比','件数':'件数','時間':'時間'};
 /* 逆算ガード：金額 = 率 × 母数 で逆算できる組合せ（金額非表示＋率表示＋母数表示で警告） */
@@ -1093,7 +1092,7 @@ function renderCondset(){
     +`<button class="sctab ${catalogScope==='company'?'on':''}" onclick="setCondScope('company')">🏢 会社指標（全社集計）</button></div>`;
   CATALOG.transactions.filter(g=>(g.cscope||'store')===catalogScope).forEach(g=>{ const items=res.filter(x=>g.items.includes(x.it));
     h+=`<div class="prevgrp">${g.cat}（表示 ${items.filter(x=>x.on).length}／${items.length}） <button class="mini" onclick="setGroupOverride('${g.cat}',true)">全表示</button><button class="mini" onclick="setGroupOverride('${g.cat}',false)">全非表示</button></div><div class="prevlist">`+items.map(x=>
-      `<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.it.n} ${sensBadge(x.it.sens||'open')}</span>`).join('')+`</div>`; });
+      `<span class="prevchip clk ${x.on?'on':'off'}${(x.it.n in condOverride)?' ov':''}" onclick="toggleCondItem('${x.it.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.it.n}</span>`).join('')+`</div>`; });
   const tres=computeCondTags();
   if(catalogScope==='store' && tres.length) h+=`<div class="prevgrp">カスタムタグ（表示 ${tres.filter(x=>x.on).length}／${tres.length}） <button class="mini" onclick="setTagsOverride(true)">全表示</button><button class="mini" onclick="setTagsOverride(false)">全非表示</button></div><div class="prevlist">`+tres.map(x=>`<span class="prevchip clk ${x.on?'on':'off'}${(x.t.n in condOverride)?' ov':''}" onclick="toggleCondTag('${x.t.n}')" title="クリックで表示⇄非表示">${x.on?'◯':'✕'} ${x.t.n}</span>`).join('')+`</div>`;
   // 条件ルール（一括上書き）＝指標表示項目の下に配置。後の行が前の行を上書き、個別クリックが最優先
@@ -1174,7 +1173,7 @@ function metricsCatalogHTML(){
   groups.forEach(g=>{ const gi=CATALOG.transactions.indexOf(g);
     h+=`<tr class="grouprow view"><td colspan="${roleSpan()}"><span class="catmain">${g.cat}</span>（${roleCount(g.items)}／全${g.items.length}）${isOwnerCat()?'':` <button class="mini" onclick="setGroupRole(${gi},true)">系統 全ON</button><button class="mini" onclick="setGroupRole(${gi},false)">全OFF</button>`}</td></tr>`;
     g.items.forEach((it,ii)=>{
-      h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n}${isOwnerCat()?'':' '+sensBadge(it.sens||'open')}</td>`
+      h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n}</td>`
         +roleCells(it.roles, rk=>`toggleTxRole(${gi},${ii},'${rk}')`, it)+`</tr>`;
     });
   });
