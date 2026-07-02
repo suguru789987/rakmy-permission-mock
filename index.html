@@ -1168,13 +1168,13 @@ function metricsCatalogHTML(){
   const groups=CATALOG.transactions.filter(g=>(g.cscope||'store')===catalogScope);
   const all=groups.flatMap(g=>g.items), total=all.length;
   let h=scopeTabs+`<div class="statbar"><span class="stat"><b>${total}</b> 指標</span>${roleStats(all)}`
-    +`<span class="stat" style="color:#9aa0a6;">${catalogScope==='store'?'自店舗で見る指標':'全社集計の指標（既定OFF・付与可）'}</span><span style="flex:1"></span>`
+    +`<span class="stat" style="color:#9aa0a6;">${isOwnerCat()?'👑 全権＝全指標を閲覧（読取）':(catalogScope==='store'?'自店舗で見る指標':'全社集計の指標（既定OFF・付与可）')}</span><span style="flex:1"></span>`
     +`<input class="itemsearch" oninput="filterCatalogT('mcTable',this.value)" placeholder="🔍 指標・系統を検索"></div>`;
   h+=`<table class="list" id="mcTable"><tr><th class="name">系統／指標</th>${roleHeaders()}</tr>`;
   groups.forEach(g=>{ const gi=CATALOG.transactions.indexOf(g);
     h+=`<tr class="grouprow view"><td colspan="${roleSpan()}"><span class="catmain">${g.cat}</span>（${roleCount(g.items)}／全${g.items.length}）${isOwnerCat()?'':` <button class="mini" onclick="setGroupRole(${gi},true)">系統 全ON</button><button class="mini" onclick="setGroupRole(${gi},false)">全OFF</button>`}</td></tr>`;
     g.items.forEach((it,ii)=>{
-      h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n} ${sensBadge(it.sens||'open')}</td>`
+      h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n}${isOwnerCat()?'':' '+sensBadge(it.sens||'open')}</td>`
         +roleCells(it.roles, rk=>`toggleTxRole(${gi},${ii},'${rk}')`, it)+`</tr>`;
     });
   });
