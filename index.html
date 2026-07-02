@@ -1921,32 +1921,48 @@ function saveAssign(){ const u=USERS[_assignUi];
   show('users'); renderUsers(); toast(u.name+' の割当を保存しました'); }
 
 // ===== 入口1：ロール起点の一括割当（権限編集/新規作成③→紐付け）。複数人＋各人の店舗を一度に =====
-let _raRole=null;
-function openRoleAssign(rk){ _raRole=rk; show('roleassign'); }
+let _raRole=null, _raShowAll=false;
+function openRoleAssign(rk){ _raRole=rk; _raShowAll=false; show('roleassign'); }
 function raBack(){ show('list'); }
+function raToggleShowAll(){ _raShowAll=!_raShowAll; renderRoleAssign(); }
+// 区分による事故防止フィルタ（役職には依存しない）：店舗ロール＝店舗所属者/店舗ロール保持者、会社ロール＝本部所属者/会社ロール保持者。兼務は両方に出る
+function raEligible(u,r){ if(_raShowAll) return true; const tiers=new Set(u.roleKeys.map(k=>{const rr=roleByKey(k);return rr&&rr.tier;}).filter(Boolean));
+  return r.tier==='shop' ? (u.shop!=='本部'||tiers.has('shop')) : (u.shop==='本部'||tiers.has('company')); }
+// このロールと競合しうる既存の店舗ロール（別の店舗ロールを既に保持＝重複はミスの可能性）
+function raConflictRoles(u,r){ if(r.tier!=='shop') return []; return u.roleKeys.filter(k=>k!==r.key).map(k=>roleByKey(k)).filter(rr=>rr&&rr.tier==='shop'); }
 function renderRoleAssign(){ const rk=_raRole, r=roleByKey(rk); if(!r){ show('list'); return; }
   const isShop = r.tier==='shop';
   const holders = USERS.filter(u=>u.roleKeys.includes(rk)).length;
   document.getElementById('raTitle').textContent = `「${r.name}」の割当`;
-  document.getElementById('raHint').innerHTML = holders>0
+  const hint = holders>0
     ? `現在 <b>${holders}名</b>に割当済み（既存の修正）。含める人${isShop?'・各人の対象店舗':''}を直して保存。チェックを外すとその人からこの権限を解除します。`
     : `この新しい権限を割り当てる人に「含める」をチェックし${isShop?'、各人の対象店舗を指定':'（会社ロール＝全社）'}して保存。<b>複数人を一度に</b>登録できます。`;
-  let h=`<table class="list"><tr><th class="name">管理者（管理者一覧）</th><th>役職</th><th style="width:64px;text-align:center;">含める</th><th>${isShop?'対象店舗':'範囲'}</th></tr>`;
+  document.getElementById('raHint').innerHTML = hint
+    + `<div style="margin-top:8px;padding:8px 10px;background:#eef4fb;border:1px solid #cfe0f2;border-radius:6px;font-size:12px;">🛡 事故防止：<b>${isShop?'店舗ロール':'会社ロール'}</b>のため${_raShowAll?'<b>全員</b>を表示中':`<b>${isShop?'店舗所属者':'本部所属者'}のみ</b>表示中`}。役職名は判断に使わず<b>「現在のロール」</b>列で確認を。 <button class="ae-edit" style="margin-left:6px;" onclick="raToggleShowAll()">${_raShowAll?'区分で絞り込む':'すべて表示'}</button></div>`;
+  let h=`<table class="list"><tr><th class="name">管理者</th><th>現在のロール</th><th style="width:64px;text-align:center;">含める</th><th>${isShop?'対象店舗':'範囲'}</th></tr>`;
+  let shown=0;
   [...new Set(USERS.map(u=>u.shop))].forEach(sh=>{
+    const grp=USERS.map((u,ui)=>({u,ui})).filter(x=>x.u.shop===sh && raEligible(x.u,r));
+    if(!grp.length) return;
     h+=`<tr class="grouprow view"><td colspan="4">🏬 ${sh}</td></tr>`;
-    USERS.forEach((u,ui)=>{ if(u.shop!==sh) return;
+    grp.forEach(({u,ui})=>{ shown++;
       const inc=u.roleKeys.includes(rk), st=u.stores||[];
+      const cur = u.roleKeys.length ? u.roleKeys.map(k=>{const rr=roleByKey(k);return `<span class="rolechip">${rr?rr.name:k}</span>`;}).join(' ') : '<span style="color:#9aa0a6;font-size:11px;">なし</span>';
+      const conf = raConflictRoles(u,r);
+      const warn = (conf.length && !inc) ? `<div style="margin-top:3px;"><span style="color:#c0573a;font-size:11px;font-weight:700;">⚠ 既に店舗ロール（${conf.map(c=>c.name).join('・')}）を保持。重複注意</span></div>` : '';
       const stCells = isShop
         ? `<div class="raStores" data-ui="${ui}" style="display:flex;flex-wrap:wrap;gap:6px;${inc?'':'opacity:.35;'}">`
           + `<label class="ro" style="display:inline-flex;gap:5px;padding:4px 9px;border:1px solid #e3e6ea;border-radius:6px;font-weight:700;"><input type="checkbox" class="raAll" data-ui="${ui}" ${st.length&&SHOPS.every(s=>st.includes(s))?'checked':''} onchange="raToggleAll(${ui},this.checked)"> 全店</label>`
           + SHOPS.map(s=>`<label class="ro" style="display:inline-flex;gap:5px;padding:4px 9px;border:1px solid #e3e6ea;border-radius:6px;"><input type="checkbox" class="raShop" data-ui="${ui}" value="${s}" ${st.includes(s)?'checked':''} onchange="raStoreChg(${ui})"> ${shortShop(s)}</label>`).join('')
           + `</div>`
         : `<span style="color:#9aa0a6;font-size:12px;">全社（店舗紐付けなし）</span>`;
-      h+=`<tr><td class="name">${u.name}</td><td style="font-size:12px;color:#666;">${u.title}</td>`
+      h+=`<tr><td class="name">${u.name}<div style="font-size:11px;color:#9aa0a6;font-weight:400;">役職：${u.title}</div></td>`
+        +`<td>${cur}${warn}</td>`
         +`<td style="text-align:center;"><input type="checkbox" class="raInc" data-ui="${ui}" ${inc?'checked':''} onchange="raIncChg(${ui},this.checked)"></td>`
         +`<td>${stCells}</td></tr>`;
     });
   });
+  if(!shown) h+=`<tr><td colspan="4" style="color:#9aa0a6;padding:12px;">区分に該当する所属者がいません。「すべて表示」で全員を表示できます。</td></tr>`;
   h+=`</table>`;
   document.getElementById('raBody').innerHTML=h;
 }
@@ -1956,11 +1972,15 @@ function raStoreChg(ui){ const all=[...document.querySelectorAll('.raShop[data-u
 function saveRoleAssign(){ const rk=_raRole, r=roleByKey(rk); if(!r) return; const isShop=r.tier==='shop';
   const incs=[...document.querySelectorAll('.raInc')];
   for(const c of incs){ const ui=+c.dataset.ui; if(c.checked && isShop){ const st=[...document.querySelectorAll('.raShop[data-ui="'+ui+'"]:checked')]; if(st.length===0){ toast(USERS[ui].name+' の対象店舗を1つ以上選択してください'); return; } } }   // 含める＆店舗ロール＆店舗0はNG
-  let cnt=0;
-  incs.forEach(c=>{ const ui=+c.dataset.ui, u=USERS[ui];
-    if(c.checked){ if(!u.roleKeys.includes(rk)) u.roleKeys.push(rk); if(isShop){ u.stores=[...document.querySelectorAll('.raShop[data-ui="'+ui+'"]:checked')].map(x=>x.value); } cnt++; }
-    else { u.roleKeys=u.roleKeys.filter(k=>k!==rk); } });
-  _hiRole=rk; show('summary'); toast('「'+r.name+'」を '+cnt+'名に割当てました（役割サマリで確認）'); }   // 保存後は役割サマリに着地＝割当ユーザー数の更新を確認できる
+  const doSave=()=>{ let cnt=0;
+    incs.forEach(c=>{ const ui=+c.dataset.ui, u=USERS[ui];
+      if(c.checked){ if(!u.roleKeys.includes(rk)) u.roleKeys.push(rk); if(isShop){ u.stores=[...document.querySelectorAll('.raShop[data-ui="'+ui+'"]:checked')].map(x=>x.value); } cnt++; }
+      else { u.roleKeys=u.roleKeys.filter(k=>k!==rk); } });
+    _hiRole=rk; show('summary'); toast('「'+r.name+'」を '+cnt+'名に割当てました（役割サマリで確認）'); };   // 保存後は役割サマリに着地
+  // 競合警告：新たに店舗ロールを付ける相手が既に別の店舗ロールを持つ場合（重複＝ミスの可能性）は確認
+  const conflicts = incs.filter(c=>c.checked).map(c=>USERS[+c.dataset.ui]).filter(u=>!u.roleKeys.includes(rk) && raConflictRoles(u,r).length);
+  if(conflicts.length){ showConfirm('次の方は既に別の店舗ロールを持っています：\n'+conflicts.map(u=>`・${u.name}（${raConflictRoles(u,r).map(c=>c.name).join('・')}）`).join('\n')+'\n\nこのまま「'+r.name+'」も追加しますか？店舗ロールの重複は割当ミスの可能性があります。', doSave, {title:'店舗ロールの重複を確認', okLabel:'このまま追加する'}); return; }
+  doSave(); }
 function usersOfRole(roleKey){ return USERS.filter(u=>u.roleKeys.includes(roleKey)); }
 function renderSummary(){
   const catN=key=>({tx:CATALOG.transactions.flatMap(g=>g.items).filter(i=>i.roles[key]).length, dim:dimsFor(key).length, tag:tagsFor(key).length});
