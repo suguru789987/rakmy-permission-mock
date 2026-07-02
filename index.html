@@ -259,6 +259,10 @@
   .ctabs{ display:flex; gap:6px; margin-bottom:16px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
   .ctab{ padding:9px 16px; font-size:13px; cursor:pointer; border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; background:#f3f5f7; color:#555; position:relative; top:2px;}
   .ctab.active{ background:#fff; color:var(--green-d); font-weight:700; border-color:var(--green); border-bottom:2px solid #fff;}
+  .scopetabs{ display:flex; gap:8px; margin:10px 0 4px; align-items:center;}
+  .scopetabs .sctab{ padding:7px 16px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--line); border-radius:8px; background:#f3f5f7; color:#555;}
+  .scopetabs .sctab.on{ background:var(--green); color:#fff; border-color:var(--green);}
+  .scopetabs .sctab-note{ font-size:12px; color:#9aa0a6;}
   .statbar{ display:flex; align-items:center; gap:18px; margin-bottom:12px; flex-wrap:wrap;}
   .stat{ font-size:12.5px; color:#555;} .stat b{ font-size:18px; margin-right:3px;}
   table.list tr.grouprow td{ background:#eef0f3; font-weight:700; font-size:12px; text-align:left;}
@@ -1030,7 +1034,7 @@ function renderCondset(){
   // ② 編集画面（条件ルール一括 ＋ 指標の個別ON/OFF を統合）
   const res=computeCond(), on=res.filter(x=>x.on).length;
   const ovN=Object.keys(condOverride).length;
-  h+=`<div class="csec"><div class="csec-h">② 編集（条件ルール＋指標の個別ON/OFF）${ovN?` <span class="ovbadge">個別調整 ${ovN}件</span> <button class="mini" onclick="clearCondOverride()">調整をクリア</button>`:''}</div>`;
+  h+=`<div class="csec"><div class="csec-h" style="display:flex;align-items:center;">② 編集（条件ルール＋指標の個別ON/OFF）${ovN?` <span class="ovbadge">個別調整 ${ovN}件</span> <button class="mini" onclick="clearCondOverride()">調整をクリア</button>`:''}<span style="flex:1"></span><button class="btn ghost" style="font-size:12px;padding:5px 12px;" onclick="addCondRule()">＋ 条件を追加</button></div>`;
   // 指標（クリックで個別ON/OFF）を先に表示
   h+=`<div class="editsub-h">指標を個別に編集（カードをクリック）</div>`
     +`<div class="clickhint">👆 各カードを<b>クリック</b>すると <b style="color:#0f7d49">◯ 表示</b> ⇄ <b style="color:#b23b32">✕ 非表示</b> が切り替わります。系統ごとの<b>「全表示／全非表示」</b>でまとめて切替も可。</div>`
@@ -1068,8 +1072,9 @@ function renderCondset(){
   document.getElementById('condsetBody').innerHTML=h;
   document.getElementById('csTplBar').innerHTML=tplBarHTML();
 }
-let catalogTab='metrics', catalogRole='manager';
+let catalogTab='metrics', catalogRole='manager', catalogScope='store';   // catalogScope=店舗/会社タブ
 function setCatalogTab(t){ catalogTab=t; renderCatalog(); }
+function setCatalogScope(s){ catalogScope=s; renderCatalog(); }
 function setCatalogRole(r){ catalogRole=r; renderCatalog(); }
 function openCatalogAll(){ const ks=shopRoleKeys(); if(!ks.includes(catalogRole)) catalogRole=ks[0]; show('catalog'); }   // 既定＝先頭ロールを1ロール編集
 function toggleOwnerOps(){ document.getElementById('ownerOpsPanel').classList.toggle('hide'); }   // 👑 オーナー操作ドロップダウン
@@ -1102,12 +1107,20 @@ function renderCatalog(){
   const chip=document.getElementById('catTitleChip'); if(chip) chip.textContent='対象：'+roleLabel(catalogRole);   // タイトルチップ＝編集対象ロール（操作者でなく対象に連動）
 }
 function metricsCatalogHTML(){
-  const all=CATALOG.transactions.flatMap(g=>g.items), total=all.length;
-  let h=`<div class="statbar"><span class="stat"><b>${total}</b> 指標</span>${roleStats(all)}`
-    +`<span class="stat" style="color:#9aa0a6;">本番486〜737種を系統で整頓</span><span style="flex:1"></span>`
+  const isCompany=roleScopeAllKey(catalogRole);   // 会社ロール（全社スコープ）＝両タブ／店舗ロール＝店舗タブのみ
+  if(!isCompany) catalogScope='store';
+  const scopeTabs=`<div class="scopetabs">`
+    +`<button class="sctab ${catalogScope==='store'?'on':''}" onclick="setCatalogScope('store')">🏬 店舗指標</button>`
+    +(isCompany?`<button class="sctab ${catalogScope==='company'?'on':''}" onclick="setCatalogScope('company')">🏢 会社指標（全社集計）</button>`
+               :`<span class="sctab-note">🏢 会社指標（全社集計）は会社ロールのみ</span>`)
+    +`</div>`;
+  const groups=CATALOG.transactions.filter(g=>(g.cscope||'store')===catalogScope);
+  const all=groups.flatMap(g=>g.items), total=all.length;
+  let h=scopeTabs+`<div class="statbar"><span class="stat"><b>${total}</b> 指標</span>${roleStats(all)}`
+    +`<span class="stat" style="color:#9aa0a6;">${catalogScope==='store'?'自店舗で見る指標':'全社集計の指標（会社ロールのみ）'}</span><span style="flex:1"></span>`
     +`<input class="itemsearch" oninput="filterCatalogT('mcTable',this.value)" placeholder="🔍 指標・系統を検索"></div>`;
   h+=`<table class="list" id="mcTable"><tr><th class="name">系統／指標</th>${roleHeaders()}</tr>`;
-  CATALOG.transactions.forEach((g,gi)=>{
+  groups.forEach(g=>{ const gi=CATALOG.transactions.indexOf(g);
     h+=`<tr class="grouprow view"><td colspan="${roleSpan()}"><span class="catmain">${g.cat}</span>（${roleCount(g.items)}／全${g.items.length}） <button class="mini" onclick="setGroupRole(${gi},true)">系統 全ON</button><button class="mini" onclick="setGroupRole(${gi},false)">全OFF</button></td></tr>`;
     g.items.forEach((it,ii)=>{
       h+=`<tr data-name="${(g.cat+' '+it.n).toLowerCase()}"><td class="name">${it.n} ${sensBadge(it.sens||'open')}</td>`
