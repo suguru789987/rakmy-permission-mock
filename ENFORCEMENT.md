@@ -18,10 +18,10 @@ roles                      -- ロール定義（経理/店長/エリア長/カ�
   is_system       bool,           -- オーナー等の固定ロール
   created_by, created_at, updated_at
 
-role_permissions           -- ロール×機能の権限（モックの「機能レベル＋操作詳細」）
+role_permissions           -- ロール×機能の権限（モックの「機能レベル」＝3状態）
   id, role_id, feature_key,        -- feature_key = カテゴリ.機能の安定キー
-  level           int,            -- 0=なし 1=閲覧 2=操作 3=全て（4状態）
-  ops             jsonb,          -- 操作詳細 {create,update,delete,export,...}（levelの内訳・微調整）
+  level           int,            -- 0=なし 1=閲覧 2=操作（3状態。操作=登録・編集・削除を含む書き込み全般）
+  ops             jsonb,          -- （任意）監査用の内訳記録 {create,update,delete,export,...}。権限判定は level ベース・削除は実行時確認
   unique(role_id, feature_key)
 
 role_feature_items         -- 機能内の指標/画面項目の表示可否（任意・粒度が要る機能のみ）
@@ -61,14 +61,13 @@ audit_logs                 -- 監査
 def allow?(feature_key, need_level: 1, op: nil)
   perm = current_user.effective_permissions[feature_key]   # キャッシュ
   return false unless perm
-  return false if perm.level < need_level                  # 4状態の閾値
-  return false if op && !perm.ops[op]                      # 操作詳細(create/update/delete/export)
+  return false if perm.level < need_level                  # 3状態の閾値（0=なし/1=閲覧/2=操作）
   true
 end
 ```
-- 画面表示＝`need_level: 1(閲覧)`、登録/編集＝`op: :create/:update`、削除＝`op: :delete`（破壊的＝level 3相当）。
-- **UI と同じ feature_key 体系**を使い、モックの「操作/閲覧/なし・操作詳細」がそのまま判定に対応。
-- **削除はポリシーでも別扱い**（案C：操作と分離。`op: :delete` を明示要求）。
+- 画面表示/参照＝`need_level: 1(閲覧)`、書き込み全般（登録・編集・削除）＝`need_level: 2(操作)`。
+- **UI と同じ feature_key 体系**を使い、モックの「操作/閲覧/なし（3状態）」がそのまま判定に対応（`levels[0,1,2]`）。
+- **削除は独立した権限ではない**：level 2（操作）に登録・編集・削除を**一体で含む**。破壊的な削除は**実行時の確認ダイアログ**で担保する（旧案Cの「削除=別opt-in権限／`op: :delete`明示要求」はUIの3状態化で不採用）。`ops` jsonb を残す場合は**監査ログ用の内訳記録**に留め、権限判定は level ベース。
 
 ## 3. スコープ強制（最重要・性能と安全の肝）
 「店長＝自店舗 / エリア長＝管轄店 / 会社ロール＝全社」を**クエリで強制**。
@@ -124,7 +123,7 @@ end
 ## 9. 未決・要確認
 - feature_key の**安定キー体系**（UIのカテゴリ/機能と1:1で永続化）。画面追加時の付与既定＝なし。
 - scope の**多階層**（エリア→店舗の包含、将来のマルチテナント親子）。
-- 操作詳細(ops) を role_permissions.jsonb に持つか別テーブルか（監査・索引の要件次第）。
+- 削除の担保（UIは3状態＝操作に削除を含み実行時確認）。バックエンドで delete を監査用に別記録するか・その保持先（jsonb/別テーブル）は要件次第。権限判定は level ベース。
 - 指標メタ（sensitivity/scope/category）の**整備主体と運用**（誰がいつ付与・AI分類の承認フロー）。
 
 ---
@@ -169,13 +168,13 @@ class VendorsController < ApplicationController
     @vendors = Vendor.for_user(current_user)              # スコープ強制
   end
   def create
-    authorize_feature! 'vendor', op: :create             # 登録（案C：登録↔編集連動）
+    authorize_feature! 'vendor', need_level: 2           # 登録＝操作(level2)。登録・編集・削除は一体
     @vendor = Vendor.new(vendor_params.merge(store_id: scoped_store_id!))
     ...
   end
-  def update; authorize_feature! 'vendor', op: :update; ...; end
+  def update; authorize_feature! 'vendor', need_level: 2; ...; end
   def destroy
-    authorize_feature! 'vendor', op: :delete             # 削除＝独立判定（全て相当）
+    authorize_feature! 'vendor', need_level: 2           # 削除も操作(level2)。破壊性は実行時の確認ダイアログで担保（別権限にしない）
     ...
   end
 end
@@ -260,10 +259,8 @@ end
 | UI操作 | 判定 |
 |---|---|
 | 画面表示（閲覧） | `need_level: 1` |
-| 登録 | `op: :create`（連動で update も） |
-| 編集 | `op: :update` |
-| 削除 | `op: :delete`（独立・破壊的） |
-| エクスポート | `op: :export` |
+| 登録・編集・削除（書き込み全般） | `need_level: 2`（操作＝3状態。削除も一体・破壊性は実行時の確認ダイアログで担保） |
+| エクスポート／抽出 | 「ダウンロード」カテゴリで一括制御（画面別exportは持たない） |
 | 設定（管理系） | `need_level: 2`（設定可） |
 | データ範囲 | `for_user` スコープで強制 |
 | 指標 | `role_metrics` allowlist ＋ 機密×スコープ越境防御 |

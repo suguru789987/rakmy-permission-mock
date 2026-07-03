@@ -16,7 +16,7 @@
 - **フィクスチャ（`TEST_CASES.md` §1 を正とし、機能型を網羅）**：
   - 店舗 S1/S2/S3、ユーザー6（店長@S1・従業員@S1・エリア長[S1,S2]・経理(all)・オーナー・兼務）。
   - ロール権限：代表だけでなく**機能型を1つ以上含む**：
-    - edit＋削除あり（vendor）／edit＋削除なし／**inheritFrom連動**（budget.monthly_wizard＋month_cost）／**noStaff**（emp_view・uicustom.dnd_shop）／**action**（data.download・dnd）／**admin**（company・link）／**fixed会社専用**（employees.payroll・closing）。
+    - edit(操作＝登録・編集・削除一体)（vendor）／**inheritFrom連動**（budget.monthly_wizard＋month_cost）／**noStaff**（emp_view・uicustom.dnd_shop）／**action**（data.download・dnd）／**admin**（company・link）／**fixed会社専用**（employees.payroll・closing）。
   - 指標：open/store/company × allowlist 有無（TEST_CASES §1）。
 - **店舗スコープ対象モデル一覧**（越境を全モデルで検証する母集合）：Vendor / Delivery / Sales / Purchase / Employee / Inventory / PettyCash / Budget / Cost …（`for_user` を当てる全モデル）。
 
@@ -33,8 +33,8 @@
 ## 3. カバレッジ方針（網羅の担保）
 - **原則：全 feature_key × その機能が適用される全ロール を最低1ケース**。`feature_keys.json` を読み、`(feature_key, role)` の組を生成→各組に「閲覧/操作/削除/越境」の該当ケースが存在することを CI で検査（未カバー=fail）。
 - **必須の境界ケース**（取りこぼしやすい）：
-  1. **削除境界**：操作(登録+編集) と 全て(+削除) の差（TC-P2-05/06）。
-  2. **案C連動**：登録↔編集連動・操作なし→削除off（TC-P2-03/04）。
+  1. **削除は操作に含む**：操作あり→削除可（実行時確認）／操作なし→削除403 の差（TC-P2-05/06）。
+  2. **操作=一体**：操作(level2)で登録・編集・削除が一括許可／なし→すべてoff（TC-P2-03/04）。
   3. **noStaff**：従業員は emp_view/dnd_shop を取得不可。
   4. **fixed会社専用**：店舗ロールで employees.payroll/closing=403。
   5. **inheritFrom**：親(月次予算設定)の権限に子(単月費用設定)が追従。
@@ -70,7 +70,7 @@ bundle exec rake permissions:migration_diff   # master/manager/shop_manager→�
 |---|---|---|---|---|
 | **P0** | ①保存往復テスト結果 ②実効権限テスト結果 ③**シャドー集計レポート**（画面別 過剰ブロック件数の14日推移） ④回帰結果 | 保存往復100%一致／実効権限テスト全green／**過剰ブロック 主要画面=0・全体≤合意閾値（例:日次5件以下が連続7日）**／本番実挙動の回帰0 | □OK □NG（値: ） | 氏名/日付 |
 | **P1** | ロール×対象画面の閲覧可否マトリクス（実データ）＋誤ブロック一覧 | 見えるべき=100%／見えないべき=0%／**誤ブロック=0**／**カバレッジ：対象画面の全ロール網羅** | □OK □NG | |
-| **P2/2.5** | 操作/削除のロール別結果＋**案C連動の保存→再取得結果**＋削除の監査ログ | 付与のみ成功・未付与403=100%／連動が仕様一致／削除は確認＋付与のみ・監査100% | □OK □NG | |
+| **P2/2.5** | 操作(level2)のロール別結果（登録・編集・削除一括）＋破壊的削除の実行時確認・監査ログ | 付与のみ成功・未付与403=100%／操作許可で登録・編集・削除一括／削除は実行時確認＋監査100% | □OK □NG | |
 | **P3** | ①越境ネガティブテスト結果（**全店舗スコープモデル**）②件数比較レポート ③**性能レポート（p95 before/after）** | **越境=0件（全モデル）**／必要データ消失=0（現場確認サイン込み）／**p95劣化≤10%・N+1=0** | □OK □NG | |
 | **P4** | ロール別 指標応答 vs role_metrics の diff＋既定OFF/オプトイン結果＋会社指標付与時の行スコープ試行 | 未付与(visible=false)指標=応答0件／**会社指標は店舗ロール既定OFF・付与すれば可視（ハードブロックなし）**／**会社指標を付与しても他店明細の行=0件（行スコープは付与と独立に遮断）** | □OK □NG | |
 | **P5** | 監査網羅レポート＋ロックアウト試行結果＋publish反映結果＋**移行diffレポート** | 変更100%記録／最後のオーナー削除不可／適用が次リクエスト反映100%／**移行前後 判定一致=100%** | □OK □NG | |
@@ -85,8 +85,8 @@ bundle exec rake permissions:migration_diff   # master/manager/shop_manager→�
 | P1 見えるべき100%/見えないべき0% | TC-P1-02/04/06（＋網羅生成分） | |
 | P1 未付与=403 | TC-P1-01/03/05 | |
 | P2 付与のみ操作・未付与403 | TC-P2-01/02 | |
-| P2 案C連動 | TC-P2-03/04 | |
-| P2.5 削除opt-in＋監査 | TC-P2-05/06 | |
+| P2 操作=一体 | TC-P2-03/04 | |
+| P2.5 削除の実行時確認＋監査 | TC-P2-05/06 | |
 | P3 越境0（全モデル） | TC-P3-01/02/03＋全モデル生成分 | |
 | P3 和集合 | TC-P3-05 | |
 | P3 作成時店舗検証 | TC-P3-06 | |
