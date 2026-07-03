@@ -541,10 +541,7 @@
         </div>
       </div>
 
-      <div class="nr-step"><span id="stepnoContent">②</span> 権限内容を編集</div>
-      <div id="rmDetailPanel" class="nr-detailpanel nr-grid"></div>
-
-      <div class="nr-step"><span id="stepnoBasic">③</span> 基本設定<small>名前・区分</small></div>
+      <div class="nr-step"><span id="stepnoBasic">②</span> 基本設定<small>名前・区分（区分で下の権限内容が変わります）</small></div>
       <div class="nr-field"><label class="nrl">権限名</label>
         <input id="rmName" class="modal-input" placeholder="例：エリアマネージャー / 経理担当" oninput="rmValidate()" onkeydown="if(event.key==='Enter')submitRoleAndBack();this.style.borderColor='';"></div>
       <div class="nr-field"><label class="nrl">区分</label>
@@ -552,9 +549,13 @@
           <button class="rolebtn on" data-t="shop" onclick="rmSetTier('shop')">店舗ロール</button>
           <button class="rolebtn" data-t="company" onclick="rmSetTier('company')">会社ロール（本部）</button>
         </div>
-        <p class="hint" style="margin-top:6px;">📍 対象店舗は<b>ユーザー割当</b>で紐付け（ここは区分のみ）。</p>
-        <div id="rmAssignPreview" style="margin-top:8px;"></div>
-        <div id="rmAssignBtnWrap" style="margin-top:8px;text-align:left;max-width:560px;"><button type="button" class="ae-cta" onclick="gotoAssignFromEditor()">🔗 ユーザー割当で紐付け →</button></div></div>
+        <p class="hint" style="margin-top:6px;">📍 対象店舗は<b>ユーザー割当</b>で紐付け（ここは区分のみ）。区分で下の「権限内容」に出る画面が切り替わります。</p></div>
+
+      <div class="nr-step"><span id="stepnoContent">③</span> 権限内容を編集</div>
+      <div id="rmDetailPanel" class="nr-detailpanel nr-grid"></div>
+
+      <div id="rmAssignPreview" style="margin-top:12px;"></div>
+      <div id="rmAssignBtnWrap" style="margin-top:8px;text-align:left;max-width:560px;"><button type="button" class="ae-cta" onclick="gotoAssignFromEditor()">🔗 ユーザー割当で紐付け →</button></div>
       <div class="modal-note" id="rmNote"></div>
       <div class="nr-actions">
         <span class="nr-warn" id="rmWarn"></span>
@@ -1363,7 +1364,7 @@ function createRole(preselect, origin){
   document.getElementById('nrTitle').textContent='権限を新規作成';
   document.getElementById('rmCreateBtn').textContent='作成';
   document.getElementById('nrBaseStep').style.display='';
-  document.getElementById('stepnoContent').textContent='②'; document.getElementById('stepnoBasic').textContent='③';   // 新規＝①ベース②内容③基本
+  document.getElementById('stepnoBasic').textContent='②'; document.getElementById('stepnoContent').textContent='③';   // 新規＝①ベース②基本③内容（区分→内訳の順）
   _rmBaseOpts=buildBaseOpts(); _rmBaseOpen=false;
   _rmBaseVal = (preselect && _rmBaseOpts.some(o=>o.val==='tpl:'+preselect)) ? 'tpl:'+preselect : _rmBaseOpts[0].val;
   renderBaseDD();
@@ -1378,7 +1379,7 @@ function editRoleHere(ri, origin){ const r=ROLES[ri]; if(r.system){ toast('オ�
   document.getElementById('nrTitle').textContent='権限編集：'+r.name;
   document.getElementById('rmCreateBtn').textContent='保存';
   document.getElementById('nrBaseStep').style.display='none';
-  document.getElementById('stepnoContent').textContent='①'; document.getElementById('stepnoBasic').textContent='②';   // 編集＝①ベース非表示なので①内容②基本
+  document.getElementById('stepnoBasic').textContent='①'; document.getElementById('stepnoContent').textContent='②';   // 編集＝①ベース非表示なので①基本②内容
   _tpdExp={};
   _rmBasePerm={...r.perm}; _rmBaseSrc=null;
   rmTier=r.tier; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===r.tier));
