@@ -38,8 +38,16 @@
   header { grid-column:1/3; background:#21262b; color:#fff; display:flex; align-items:center; gap:16px; padding:0 18px; }
   .logo { background:var(--green); color:#fff; font-weight:700; font-size:13px; padding:3px 8px; border-radius:4px; }
   .logo small{ font-weight:400; opacity:.85; margin-left:4px;}
-  .company { background:#fff; color:#333; border-radius:5px; padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:8px; min-width:230px; }
+  .company { background:#fff; color:#333; border-radius:5px; padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:8px; min-width:230px; position:relative; cursor:pointer; user-select:none; }
+  .company:hover{ box-shadow:0 0 0 2px rgba(27,191,115,.4);}
   .company .ic{ width:16px;height:16px;background:var(--green);border-radius:3px;display:inline-block;}
+  /* 会社／店舗スコープ切替のドロップダウン（実機ヘッダーの会社・店舗切替に相当） */
+  .scopedd{ position:absolute; top:calc(100% + 6px); left:0; min-width:262px; background:#fff; border:1px solid #d7dde3; border-radius:8px; box-shadow:0 10px 26px rgba(0,0,0,.2); padding:6px; z-index:60; text-align:left; font-weight:400; cursor:default;}
+  .scopedd .sdh{ font-size:10.5px; font-weight:700; color:#8a939b; padding:7px 8px 4px; letter-spacing:.02em;}
+  .scopedd .sdo{ display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:6px; font-size:12.5px; cursor:pointer;}
+  .scopedd .sdo:hover{ background:#f2f6f9;}
+  .scopedd .sdo.on{ background:#e8f7f0; color:#0f7d49; font-weight:700;}
+  .scopedd .sdnote{ font-size:10.5px; color:#8a939b; padding:6px 9px 3px; border-top:1px solid #eef1f4; margin-top:4px; line-height:1.5;}
   header .sp{ flex:1; }
   header .round{ width:26px;height:26px;border-radius:50%;background:#3a4046;display:grid;place-items:center;font-size:13px;color:#cfd3d7;}
   nav { background:#fff; border-right:1px solid var(--line); padding:14px 0; }
@@ -484,7 +492,7 @@
 <div class="app">
   <header>
     <span class="logo">ラクミー <small>経営管理</small></span>
-    <span class="company"><span class="ic"></span>株式会社 麺屋ミライ ▾</span>
+    <span class="company" onclick="event.stopPropagation();toggleScopeDD()"><span class="ic"></span><span id="hdrScopeLabel">株式会社 麺屋ミライ</span> ▾<span id="scopeDD"></span></span>
     <div class="demo-toggle">
       <button data-m="ops" onclick="setDemoMode('ops')">🏢 運用デモ</button>
       <button data-m="new" onclick="setDemoMode('new')">🆕 新規導入デモ</button>
@@ -1292,6 +1300,38 @@ function buildPerm(presetFn,scope,roleKey){
   return p;
 }
 const SHOPS=['麺屋ミライ 渋谷店','麺屋ミライ 新宿店','麺屋ミライ 池袋店','麺屋ミライ 横浜店','麺屋ミライ 大宮店'];
+// ===== ヘッダーの会社／店舗スコープ切替 =====
+// 実機ヘッダーの会社・店舗切替に相当。選んだスコープに権限一覧を追従させる＝会社を選べば会社ロール×会社画面、
+// 店舗を選べば店舗ロール×店舗画面だけが出る。ctx: common=両方 / company=会社画面のみ / shop=店舗画面のみ。
+let hdrScope = lsGet('rakmy_hdr_scope','company');   // 'company' | 'shop'
+let hdrShop  = lsGet('rakmy_hdr_shop', SHOPS[0]);
+let hdrDDOpen = false;
+function toggleScopeDD(){ hdrDDOpen=!hdrDDOpen; renderScopeHdr(); }
+function setHdrScope(scope, shop){
+  const changed = (scope!==hdrScope) || (shop && shop!==hdrShop);
+  if(scope!==hdrScope) persistColState();   // 現スコープの列選択を退避してから切り替える
+  hdrScope=scope; if(shop) hdrShop=shop;
+  lsSet('rakmy_hdr_scope',hdrScope); lsSet('rakmy_hdr_shop',hdrShop);
+  hdrDDOpen=false;
+  if(changed){ listRolePick=null; applyColState(); }   // スコープを跨ぐとロール選択は意味を失うため全ロールに戻す＋列はそのスコープのものへ
+  renderScopeHdr();
+  const v=document.getElementById('view-list'); if(v&&!v.classList.contains('hide')) renderList();
+}
+// 現在のスコープで表示するカテゴリの ctx
+function scopeCtx(){ return hdrScope==='company' ? 'company' : 'shop'; }
+function inScope(c){ const x=c.ctx||'common'; return x==='common' || x===scopeCtx(); }
+function scopeRoleOK(r){ return hdrScope==='company' ? r.tier==='company' : r.tier==='shop'; }
+function scopeRoles(){ return ROLES.filter(r=>!r.system && scopeRoleOK(r)); }   // 一覧・表示ロール選択の母集合（オーナーは一覧対象外）
+function renderScopeHdr(){
+  const lab=document.getElementById('hdrScopeLabel'); if(!lab) return;
+  lab.textContent = hdrScope==='company' ? '株式会社 麺屋ミライ' : hdrShop;
+  const dd=document.getElementById('scopeDD'); if(!dd) return;
+  if(!hdrDDOpen){ dd.innerHTML=''; return; }
+  const co=`<div class="sdo ${hdrScope==='company'?'on':''}" onclick="event.stopPropagation();setHdrScope('company')">🏢 株式会社 麺屋ミライ（全社）</div>`;
+  const st=SHOPS.map(s=>`<div class="sdo ${hdrScope==='shop'&&hdrShop===s?'on':''}" onclick="event.stopPropagation();setHdrScope('shop','${s}')">🏬 ${s}</div>`).join('');
+  dd.innerHTML=`<div class="scopedd" onclick="event.stopPropagation()"><div class="sdh">会社スコープ</div>${co}<div class="sdh">店舗スコープ</div>${st}<div class="sdnote">選んだスコープに権限一覧が追従します（会社＝会社ロール×会社画面／店舗＝店舗ロール×店舗画面）。</div></div>`;
+}
+document.addEventListener('click', function(){ if(hdrDDOpen){ hdrDDOpen=false; renderScopeHdr(); } });
 // 運用デモ：経理/人事に分割済み・回っている状態
 function buildOpsRoles(){ return [
   {name:'店長',   key:'manager', tier:'shop',    scope:'shop',    scopeType:'self', perm:buildPerm(PRESET.manager,'shop','manager')},
@@ -1503,8 +1543,8 @@ let listTab='view';   // 一覧のタブ：view=表示権限／ops=設定権限�
 function setListTab(t){ listTab=t; listPickOpen.view=false; listPickOpen.ops=false; renderList(); }
 let listRolePick=null, listRoleOpen=false;   // 表示ロール選択（null=全て／配列=選択keyのみ）
 function toggleRoleDD(){ listRoleOpen=!listRoleOpen; renderList(); }
-function toggleRolePick(key){ const all=ROLES.filter(r=>!r.system).map(r=>r.key); const sel=[...(listRolePick||all)]; const i=sel.indexOf(key); i>=0?sel.splice(i,1):sel.push(key); listRolePick = sel.length===all.length?null:sel; renderList(); }
-function toggleRoleGrp(g){ const all=ROLES.filter(r=>!r.system).map(r=>r.key); const sel=new Set(listRolePick||all); const keys=ROLES.filter(r=>!r.system&&(r.tier==='company'?'company':'shop')===g).map(r=>r.key); const allOn=keys.every(k=>sel.has(k)); keys.forEach(k=>allOn?sel.delete(k):sel.add(k)); const arr=[...sel]; listRolePick = arr.length===all.length?null:arr; renderList(); }
+function toggleRolePick(key){ const all=scopeRoles().map(r=>r.key); const sel=[...(listRolePick||all)]; const i=sel.indexOf(key); i>=0?sel.splice(i,1):sel.push(key); listRolePick = sel.length===all.length?null:sel; renderList(); }
+function toggleRoleGrp(g){ const all=scopeRoles().map(r=>r.key); const sel=new Set(listRolePick||all); const keys=scopeRoles().filter(r=>(r.tier==='company'?'company':'shop')===g).map(r=>r.key); const allOn=keys.every(k=>sel.has(k)); keys.forEach(k=>allOn?sel.delete(k):sel.add(k)); const arr=[...sel]; listRolePick = arr.length===all.length?null:arr; renderList(); }
 function setRolesAll(on){ listRolePick = on?null:[]; renderList(); }
 let listExpand={view:false,ops:false};   // 遷移時（初期表示）は両群とも折りたたみ＝最もコンパクト（4列）。必要に応じ上のツールバーで列選択／群クリックで全展開
 let listPick={view:[],ops:[]};           // 折りたたみ時にチェックで複数カテゴリをスポット表示（空=内訳カウント）
@@ -1514,6 +1554,12 @@ function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 // 既定で表示する基礎列（主要画面）。導入時・運用時とも一目で権限が見えるように
 const DEFAULT_COLS={ view:['dashboard','sales','purchase','detail','report'], ops:['budget','cost','employees','vendor','delivery','pettycash','transfer'] };   // 機能の重要度順
+// 既定列はスコープごとに変える＝会社スコープでは会社画面（会社情報・お支払い・店舗管理・ダウンロード）を既定表示。
+// 店舗スコープの既定は従来どおり（予算・費用・発注先など店舗運用の主要画面）。
+const DEFAULT_COLS_BY_SCOPE={
+  company:{ view:[...DEFAULT_COLS.view], ops:['company','billing','shop','data','employees','users'] },
+  shop:{ view:[...DEFAULT_COLS.view], ops:[...DEFAULT_COLS.ops] }
+};
 // 重要度順（DEFAULT_COLS）→残りはCATEGORIES順。一覧・権限編集・列ツールバーで共通の並びに使う
 const CAT_PRIORITY={}; [...DEFAULT_COLS.view,...DEFAULT_COLS.ops].forEach((id,i)=>CAT_PRIORITY[id]=i);
 function orderedCats(gk){ return CATEGORIES.filter(c=>c.group===gk).slice().sort((a,b)=>{ const pa=CAT_PRIORITY[a.id]!=null?CAT_PRIORITY[a.id]:999, pb=CAT_PRIORITY[b.id]!=null?CAT_PRIORITY[b.id]:999; return pa!==pb?pa-pb:CATEGORIES.indexOf(a)-CATEGORIES.indexOf(b); }); }
@@ -1527,19 +1573,23 @@ function featTypeRank(f,group){
           : (f.inheritFrom ? 'sub' : 'main');
   return group==='view' ? ({analysis:0,list:1,sub:2,main:2}[t]) : ({main:0,sub:1,list:2,analysis:3}[t]);
 }
-function persistColState(){ lsSet('rakmy_col_state_v2',{expand:listExpand,pick:listPick}); }
-function loadColState(){ const s=lsGet('rakmy_col_state_v2',null);
-  if(s&&s.expand&&s.pick){ listExpand=s.expand; listPick=s.pick; }
-  else { listPick={view:[...DEFAULT_COLS.view],ops:[...DEFAULT_COLS.ops]}; }   // 初回は基礎列を表示
+// 列選択はスコープ別に保持＝会社で選んだ列が店舗に持ち越されない（列の意味が違うため）
+let colState={company:null,shop:null};
+function colKey(){ return hdrScope==='company'?'company':'shop'; }
+function persistColState(){ colState[colKey()]={expand:listExpand,pick:listPick}; lsSet('rakmy_col_state_v3',colState); }
+function applyColState(){ const s=colState[colKey()];
+  if(s&&s.expand&&s.pick){ listExpand={...s.expand}; listPick={view:[...s.pick.view],ops:[...s.pick.ops]}; }
+  else { const d=DEFAULT_COLS_BY_SCOPE[colKey()]; listExpand={view:false,ops:false}; listPick={view:[...d.view],ops:[...d.ops]}; }   // 初回はそのスコープの基礎列を表示
 }
+function loadColState(){ const s=lsGet('rakmy_col_state_v3',null); if(s&&typeof s==='object') colState={company:s.company||null,shop:s.shop||null}; applyColState(); }
 function toggleListAll(g){ listExpand[g]=!listExpand[g]; if(listExpand[g]) listPick[g]=[]; persistColState(); renderList(); }   // プルダウン内「全て」＝全カテゴリ列を展開
 function toggleListPickDD(g){ listPickOpen[g]=!listPickOpen[g]; const o=g==='view'?'ops':'view'; listPickOpen[o]=false; renderList(); }
 function toggleListPickItem(g,cid){ listExpand[g]=false; const a=listPick[g], i=a.indexOf(cid); i>=0?a.splice(i,1):a.push(cid); persistColState(); renderList(); }   // 個別選択時は「全て」を解除
 function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; persistColState(); renderList(); }   // クリア＝全解除（内訳に戻る）
 // 群の表示列（葉）：展開=全カテゴリ／折りたたみ＋選択あり=選択カテゴリ／折りたたみ＋未選択=内訳1列
-function groupLeaves(g){ if(listExpand[g.key]) return g.cats.map(c=>({c})); if(listPick[g.key].length) return listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); return [{tally:true}]; }   // 表示順は選択順に従う
+function groupLeaves(g){ if(listExpand[g.key]) return g.cats.length?g.cats.map(c=>({c})):[{tally:true}]; if(listPick[g.key].length){ const lv=listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); if(lv.length) return lv; } return [{tally:true}]; }   // 表示順は選択順に従う。選択列がスコープ外で全滅した時は内訳に戻す
 function renderList(){
-  const vc=orderedCats('view'), oc=orderedCats('ops');
+  const vc=orderedCats('view').filter(inScope), oc=orderedCats('ops').filter(inScope);   // ヘッダーの会社／店舗スコープに該当する画面だけを列にする
   const ALL=[{key:'view',cls:'grpview',label:'＋ 表示画面権限列を追加',gname:'閲覧権限（分析・レポート・管理画面の閲覧）',cats:vc},{key:'ops',cls:'grpops',label:'＋ 設定画面権限列を追加',gname:'設定画面権限（操作・設定）',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   const banner=document.getElementById('demoBanner');
@@ -1566,7 +1616,7 @@ function renderList(){
   const SHOP_RANK={area:0,manager:1,staff:2};   // 店舗ロールは権限順（エリア長→店長→従業員）。カスタムは末尾(ri順)
   const subRank=x=> x.r.tier==='shop' ? (SHOP_RANK[x.r.key]!=null?SHOP_RANK[x.r.key]:100+x.ri) : x.ri;
   let rows=ROLES.map((r,ri)=>({r,ri})).sort((a,b)=>GORDER[grp(a.r)]-GORDER[grp(b.r)]||subRank(a)-subRank(b));
-  rows=rows.filter(({r})=> !r.system && (!listRolePick || listRolePick.includes(r.key)));   // オーナー(全権固定)は一覧から除外＋表示ロール選択
+  rows=rows.filter(({r})=> !r.system && scopeRoleOK(r) && (!listRolePick || listRolePick.includes(r.key)));   // オーナー(全権固定)は一覧から除外＋会社/店舗スコープ＋表示ロール選択
   const gcount={}; rows.forEach(({r})=>{ const g=grp(r); gcount[g]=(gcount[g]||0)+1; });
   let lastG=null;
   rows.forEach(({r,ri})=>{
@@ -1590,17 +1640,18 @@ function renderList(){
   const tbl=document.getElementById('listTable');
   tbl.innerHTML=h;
   // 表外の固定ツールバー：列プルダウン＋表示ロール選択プルダウン（選択は自動記憶。保存ビューは廃止）
-  const allKeys=ROLES.filter(r=>!r.system).map(r=>r.key), selKeys=listRolePick||allKeys;
+  const allKeys=scopeRoles().map(r=>r.key), selKeys=listRolePick||allKeys;
   const bigGrp=r=>r.tier==='company'?'company':'shop';   // 大別：会社／店舗（オーナーは一覧対象外）
   let rpanel='';
   if(listRoleOpen){ let body='';
-    [['company','会社ロール'],['shop','店舗ロール']].forEach(([g,lab])=>{ const rs=ROLES.filter(r=>!r.system&&bigGrp(r)===g); if(!rs.length) return;
+    [['company','会社ロール'],['shop','店舗ロール']].forEach(([g,lab])=>{ const rs=scopeRoles().filter(r=>bigGrp(r)===g); if(!rs.length) return;
       const allOn=rs.every(r=>selKeys.includes(r.key));
       body+=`<div class="rgrp" onclick="event.stopPropagation();toggleRoleGrp('${g}')"><span class="pchk">${allOn?'☑':'☐'}</span>${lab}</div>`;
       body+=rs.map(r=>`<label class="ropt ${selKeys.includes(r.key)?'on':''}" onclick="event.stopPropagation();toggleRolePick('${r.key}')"><span class="pchk">${selKeys.includes(r.key)?'☑':'☐'}</span>${r.name}</label>`).join(''); });
     rpanel=`<div class="rolepanel"><div class="rolefoot"><button onclick="event.stopPropagation();setRolesAll(true)">全て</button><button onclick="event.stopPropagation();setRolesAll(false)">クリア</button><button class="rf-main" onclick="event.stopPropagation();toggleRoleDD()">閉じる</button></div>${body}</div>`; }
   const roleDD=`<span class="lpb-label">👤 表示ロール：</span><div class="roleddwrap"><button class="hdd-btn" style="min-width:170px;" onclick="event.stopPropagation();toggleRoleDD()"><span>${listRolePick?`選択中 ${selKeys.length}/${allKeys.length}`:'全ロール'}</span><span class="hdd-ar">▼</span></button>${rpanel}</div><span class="ltb-note">選んだロールが両タブ（一覧／設定）に共通で適用されます</span>`;
-  document.getElementById('listTopBar').innerHTML=roleDD;
+  const scopeChip=`<span class="scope-cap ${hdrScope==='company'?'company':''}" style="margin-right:10px;">${hdrScope==='company'?'🏢 会社スコープ（全社）':'🏬 店舗スコープ：'+hdrShop}</span>`;   // ヘッダーの切替に追従していることを一覧側にも明示
+  document.getElementById('listTopBar').innerHTML=scopeChip+roleDD;
   document.getElementById('listPickBar').innerHTML='<span style="flex:1"></span><span class="lpb-label">📌 権限列設定：</span>'+grps.map(g=>pickDD(g.key,g.label,g.cats)).join('');
   lastListLeaf=leaf; fitListWidth();
   positionPickPanels();
@@ -2018,6 +2069,7 @@ function renderSummary(){
 function toast(msg){ const t=document.getElementById('toast'); t.innerHTML='<span class="tk">✓</span>'+msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
 
 loadColState();
+renderScopeHdr();   // ヘッダーの会社／店舗スコープ表示を復元
 loadSetupDraft();
 applyDemoMode();
 updateDemoToggle();
