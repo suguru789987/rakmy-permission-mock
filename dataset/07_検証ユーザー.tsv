@@ -1,0 +1,8 @@
+ID	氏名	メール	割当権限	担当店舗	用途
+US-01	検証 経理花子	s.tsutsui+pm01@rakmy.jp	検証_経理担当	（全社）	SC-01 経理
+US-02	検証 人事次郎	s.tsutsui+pm02@rakmy.jp	検証_人事担当	（全社）	SC-02 人事
+US-03	検証 エリア三郎	s.tsutsui+pm03@rakmy.jp	検証_エリア長	渋谷店・新宿店	SC-03 エリア長。T-24の主役
+US-04	検証 バイト四郎	s.tsutsui+pm04@rakmy.jp	検証_バイトリーダー	渋谷店	SC-04 バイトL
+US-05	検証 税理士五郎	s.tsutsui+pm05@rakmy.jp	検証_閲覧のみ	（全社）	SC-05 閲覧のみ
+US-06	検証 スタッフ六子	s.tsutsui+pm06@rakmy.jp	検証_スタッフ	渋谷店	SC-06 最小権限
+US-07	検証 付替七海	s.tsutsui+pm07@rakmy.jp	検証_エリア長 → 検証_経理担当	新宿店	T-25 権限の付け替え
