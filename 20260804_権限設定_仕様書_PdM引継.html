@@ -1,43 +1,29 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>権限設定機能 仕様書（PdM引き継ぎ版）</title><style>
-:root{--fg:#1f2328;--sub:#57606a;--line:#d8dee4;--bg:#fff;--acc:#1F4E5F;--soft:#f6f8fa;--warn:#fff8e6;--warnline:#e3c86a}
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>権限設定機能 仕様書（PdM引き継ぎ版）</title><style>
+:root{--fg:#1f2328;--sub:#57606a;--line:#d8dee4;--acc:#1F4E5F;--soft:#f6f8fa}
 *{box-sizing:border-box}
 body{margin:0;background:#eef1f4;color:var(--fg);font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;line-height:1.85;font-size:15px}
 .wrap{max-width:1080px;margin:0 auto;padding:0 0 80px}
 header.top{background:var(--acc);color:#fff;padding:26px 40px}
-header.top h1{margin:0;font-size:21px}
-header.top .meta{opacity:.85;font-size:12.5px;margin-top:6px}
-header.top a{color:#bfe6f2}
-main{background:var(--bg);padding:34px 44px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+header.top h1{margin:0;font-size:21px} header.top .meta{opacity:.85;font-size:12.5px;margin-top:6px} header.top a{color:#bfe6f2}
+main{background:#fff;padding:34px 44px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 h1{font-size:24px;border-bottom:3px solid var(--acc);padding-bottom:8px;margin:44px 0 18px}
 h2{font-size:19px;border-bottom:1px solid var(--line);padding-bottom:6px;margin:38px 0 14px;color:var(--acc)}
-h3{font-size:16px;margin:26px 0 10px}
-h4{font-size:14.5px;margin:20px 0 8px;color:var(--sub)}
-p{margin:10px 0}
+h3{font-size:16px;margin:26px 0 10px} h4{font-size:14.5px;margin:20px 0 8px;color:var(--sub)}
 table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px;display:block;overflow-x:auto}
-th{background:var(--acc);color:#fff;font-weight:600;text-align:left}
-th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top}
+th{background:var(--acc);color:#fff;font-weight:600;text-align:left} th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top}
 tr:nth-child(even) td{background:var(--soft)}
 code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:"SF Mono",Menlo,monospace}
-pre{background:#0f2b33;color:#e6f1f5;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.6}
-pre code{background:none;color:inherit;padding:0}
+pre{background:#0f2b33;color:#e6f1f5;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:12.5px} pre code{background:none;color:inherit;padding:0}
 blockquote{border-left:4px solid var(--acc);background:var(--soft);margin:14px 0;padding:8px 16px;color:var(--sub)}
-ul,ol{padding-left:24px}
-li{margin:5px 0}
-hr{border:0;border-top:1px solid var(--line);margin:32px 0}
-strong{color:#0f3d4a}
-a{color:#1a6f8b}
+ul,ol{padding-left:24px} li{margin:5px 0} hr{border:0;border-top:1px solid var(--line);margin:32px 0}
+strong{color:#0f3d4a} a{color:#1a6f8b}
 .toc{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:14px 20px;margin:22px 0}
-.toc b{display:block;margin-bottom:6px;color:var(--acc)}
-.toc ol{margin:0;padding-left:20px;font-size:13.5px}
-.toc a{text-decoration:none}
-.toc a:hover{text-decoration:underline}
-.badge{display:inline-block;background:var(--warn);border:1px solid var(--warnline);border-radius:4px;padding:1px 8px;font-size:12px;margin-left:6px}
+.toc b{display:block;margin-bottom:6px;color:var(--acc)} .toc ol{margin:0;padding-left:20px;font-size:13.5px}
+.toc a{text-decoration:none} .toc a:hover{text-decoration:underline}
 @media print{body{background:#fff}main{box-shadow:none;padding:0}header.top{background:#fff;color:#000;border-bottom:2px solid #000}}
 </style></head><body>
-<header class="top"><h1>権限設定機能 仕様書（PdM引き継ぎ版）</h1><div class="meta">2026-08-04 更新 ／ ラクミー経営管理 ／ 動作モック <a href="https://suguru789987.github.io/rakmy-permission-mock/">https://suguru789987.github.io/rakmy-permission-mock/</a></div></header>
-<div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#_1">概要</a></li><li><a href="#0">0. この文書の使い方</a></li><li><a href="#1">1. 背景と課題</a></li><li><a href="#2">2. スコープと用語</a></li><li><a href="#3">3. 権限モデル</a></li><li><a href="#4">4. 段階導入</a></li><li><a href="#5">5. 画面仕様</a></li><li><a href="#6">6. データモデル（本番実装）</a></li><li><a href="#7">7. 設計判断の記録（なぜそう決めたか）</a></li><li><a href="#8-pdm">8. 未決事項（後任PdMの判断が必要）</a></li><li><a href="#9">9. リスクと対策</a></li><li><a href="#10">10. 引き継ぎメモ</a></li></ol></div><h1 id="pdm">権限設定機能 仕様書（PdM引き継ぎ版）</h1>
+<header class="top"><h1>権限設定機能 仕様書（PdM引き継ぎ版）</h1><div class="meta">2026-08-04 更新 ／ ラクミー経営管理 ／ 動作モック <a href="https://suguru789987.github.io/rakmy-permission-mock/">https://suguru789987.github.io/rakmy-permission-mock/</a></div></header><div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#_1">概要</a></li><li><a href="#0">0. この文書の使い方</a></li><li><a href="#1">1. 背景と課題</a></li><li><a href="#2">2. スコープと用語</a></li><li><a href="#3_1">3. 権限モデル</a></li><li><a href="#4">4. 段階導入</a></li><li><a href="#5">5. 画面仕様</a></li><li><a href="#6">6. データモデル（本番実装）</a></li><li><a href="#7">7. 設計判断の記録（なぜそう決めたか）</a></li><li><a href="#8-pdm">8. 未決事項（後任PdMの判断が必要）</a></li><li><a href="#9">9. リスクと対策</a></li><li><a href="#10">10. 引き継ぎメモ</a></li></ol></div><h1 id="pdm">権限設定機能 仕様書（PdM引き継ぎ版）</h1>
 <p>2026-08-03 ／ ラクミー経営管理 ／ 対象: <code>suguru789987/rakmy-permission-mock</code> build <code>eedfcd3</code>（整合監査済み・<code>20260803_08</code>）</p>
 <p><strong>動作モック（公開URL・ログイン不要）</strong></p>
 <h3 id="httpssuguru789987githubiorakmy-permission-mock">👉 https://suguru789987.github.io/rakmy-permission-mock/</h3>
@@ -102,6 +88,39 @@ a{color:#1a6f8b}
 <h2 id="0">0. この文書の使い方</h2>
 <p>後任PdMが<strong>この文書だけで判断・議論・意思決定できる</strong>ことを目的とする。経営向けの要約は <code>20260803_01</code>、エンジニア向けの実装設計は <code>ENFORCEMENT.md</code> / <code>docs/P0_FOUNDATION.md</code>。</p>
 <p>まず上の<strong>概要</strong>で全体像を掴んでから、読む順番の推奨：§1 背景 → §3 権限モデル → §5 画面仕様（<strong>§5.6 のケース別遷移フローで実際の動線を掴む</strong>）→ §7 設計判断 → §8 未決事項。<strong>§7 と §8 が引き継ぎの本体</strong>。仕様は読めば分かるが、「なぜそう決めたか」と「何がまだ決まっていないか」は文書がないと失われる。</p>
+<h3 id="3">3つの文書の役割分担</h3>
+<p><strong>設計意図はこの仕様書に置き、受入条件表が合格ラインに翻訳し、検証プランが挙動で確かめる。</strong> どれか1つでは成立しない。</p>
+<table>
+<thead>
+<tr>
+<th>層</th>
+<th>文書</th>
+<th>何を決めるか</th>
+<th>判断の主体</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. 意図</td>
+<td><strong>本書</strong></td>
+<td>なぜそう作るか。守るべき境界。MVPとして何が揃えば価値が出るか</td>
+<td>PdM</td>
+</tr>
+<tr>
+<td>2. 合格ライン</td>
+<td><code>20260803_06</code> 受入条件表</td>
+<td>意図を満たしたと言える定量条件。実装レベル（MVP必須／品質必須）とマイルストーン</td>
+<td>PdM＋エンジニア</td>
+</tr>
+<tr>
+<td>3. 挙動</td>
+<td><code>20260803_07</code> 検証プラン</td>
+<td>その条件を実際の画面・データでどう確かめるか</td>
+<td>検証実施者</td>
+</tr>
+</tbody>
+</table>
+<p><strong>受入条件表に書いてあって本書に無い判断があれば、それは本書の漏れ</strong>。条件表は意図を翻訳する場であって、意図を新しく作る場ではない。</p>
 <table>
 <thead>
 <tr>
@@ -263,7 +282,7 @@ a{color:#1a6f8b}
 </table>
 <p><strong>区分とデータ範囲は独立した別軸</strong>である。「店舗ロールだから自店舗のみ」ではない。区分は画面の出し分け、データ範囲は行の出し分けで、組み合わせは自由。</p>
 <hr />
-<h2 id="3">3. 権限モデル</h2>
+<h2 id="3_1">3. 権限モデル</h2>
 <h3 id="31-4">3.1 4つの制御軸</h3>
 <table>
 <thead>
@@ -462,6 +481,97 @@ a{color:#1a6f8b}
 </table>
 <p>各段階は<strong>シャドー検証 → 部分有効化 → 全面</strong>の3段で進める。詳細は <code>ROADMAP.md</code>。</p>
 <p><strong>既存顧客への影響を無くすため、リリース時に現行3権限と同じ動作のプリセットを用意する。</strong> これが移植の要件であり、受入条件 AC-01〜04 に対応する。</p>
+<h3 id="_2">実装レベルとマイルストーン（受入条件表の区分の根拠）</h3>
+<p><strong>何がMVPの必須要件かは本書で決める。</strong> 受入条件表はこの区分に従って条件を並べる。</p>
+<table>
+<thead>
+<tr>
+<th>実装レベル</th>
+<th>意味</th>
+<th>該当する設計要素</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MVP必須</strong></td>
+<td>揃わないと機能として成立しない</td>
+<td>権限の作成・保存（§5.2）／区分による出し分け（§3.3）／画面制御の実効（§3.1①）／1人1ロールと担当店舗（§3.5・§7-B）／現行移植（§4）／事故防止（§9）／<strong>境界設計（§7）</strong></td>
+</tr>
+<tr>
+<td><strong>品質必須</strong></td>
+<td>事故防止・整合。無いと運用に出せない</td>
+<td>表示整合（§5.3）／戻り導線（§5.6）／指標の一括設定（§5.5）／オーナー専用（§5.3）</td>
+</tr>
+<tr>
+<td>推奨</td>
+<td>利便性。無くてもリリースできる</td>
+<td>表示絞り込みの保持（§5.3）</td>
+</tr>
+<tr>
+<td>次段階</td>
+<td>P1では実装しない。実測を記録する</td>
+<td>操作判定（P2）／データ範囲（P3）／指標可視性（P4）／監査ログ（P5）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>境界設計（§7）を MVP必須に置いているのが要点。</strong> 動作テストでは検出できず、実装が違っても画面は正常に動くが、後から権限モデルが破綻する。実装物のレビューで確認する。</p>
+<p><strong>マイルストーン（実装順）</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>マイルストーン</th>
+<th>完了条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>権限が作れる</td>
+<td>顧客が自分で権限を作り、保存して再表示できる</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>制御が効く</td>
+<td>作った権限どおりに画面が開く／開かない。直URLも塞がる</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>人に配れる</td>
+<td>権限を人に割り当て、担当店舗を紐付けられる</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>既存顧客を壊さない</td>
+<td>現行3権限と同じ動作のプリセットが用意され、移行漏れがない</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>事故らない</td>
+<td>自分を締め出せない／一般権限で権限設定を触れない</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>運用できる</td>
+<td>設定を点検でき、指標をまとめて設定できる</td>
+</tr>
+<tr>
+<td>M7</td>
+<td>境界設計が守られている</td>
+<td>動作テストで見えない設計の約束が実装で守られている</td>
+</tr>
+<tr>
+<td>M8</td>
+<td>顧客価値に到達</td>
+<td>顧客が求める権限（画面単位で表現できる範囲）が実際に作れる</td>
+</tr>
+<tr>
+<td>M9</td>
+<td>次段階</td>
+<td>P1では実装しない。実測を記録し次の優先順位を決める</td>
+</tr>
+</tbody>
+</table>
 <h3 id="p1">P1 リリース時点の到達度（重要）</h3>
 <p><strong>必須の受入条件をすべて満たしても、顧客要望4つのうち満たせるのは1つだけ。</strong> §1.2 の4要望はそれぞれ別の制御軸を必要とし、P1 は「画面」しか実装しないため。</p>
 <table>
@@ -720,7 +830,7 @@ a{color:#1a6f8b}
 <h3 id="56-26">5.6 ケース別 遷移フロー（26フロー）</h3>
 <p><strong>同じ画面に複数の入口があり、来た元によって戻り先が変わる</strong>のがこの機能の遷移の特徴。「保存したらどこに着地するか」「キャンセルしたらどこに戻るか」を分けて把握する必要がある。</p>
 <p>以下は実装（<code>index.html</code>）から起こした全経路。各フローの前提条件・関連検証ID・分岐条件を含む完全版は <strong><code>20260803_09_権限設定_ケース別遷移フロー.tsv</code></strong>（14項目）。</p>
-<h4 id="_2">導入</h4>
+<h4 id="_3">導入</h4>
 <table>
 <thead>
 <tr>
@@ -755,7 +865,7 @@ a{color:#1a6f8b}
 </tr>
 </tbody>
 </table>
-<h4 id="_3">作成</h4>
+<h4 id="_4">作成</h4>
 <table>
 <thead>
 <tr>
@@ -889,7 +999,7 @@ a{color:#1a6f8b}
 </tr>
 </tbody>
 </table>
-<h4 id="_4">指標</h4>
+<h4 id="_5">指標</h4>
 <table>
 <thead>
 <tr>
@@ -925,7 +1035,7 @@ a{color:#1a6f8b}
 </tbody>
 </table>
 <p><strong>F-16 は保存ボタンが無く即時反映、F-17 は「適用」が必要。</strong> 同じ指標設定でも確定の仕方が違う。</p>
-<h4 id="_5">オーナー専用</h4>
+<h4 id="_6">オーナー専用</h4>
 <table>
 <thead>
 <tr>
@@ -953,7 +1063,7 @@ a{color:#1a6f8b}
 </tr>
 </tbody>
 </table>
-<h4 id="_6">横断</h4>
+<h4 id="_7">横断</h4>
 <table>
 <thead>
 <tr>
@@ -1002,7 +1112,7 @@ a{color:#1a6f8b}
 </tr>
 </tbody>
 </table>
-<h4 id="_7">押さえておくべき分岐</h4>
+<h4 id="_8">押さえておくべき分岐</h4>
 <table>
 <thead>
 <tr>
@@ -1089,6 +1199,7 @@ a{color:#1a6f8b}
 <hr />
 <h2 id="7">7. 設計判断の記録（なぜそう決めたか）</h2>
 <p><strong>引き継ぎで最も失われやすい情報。</strong> 各判断には却下した案とその理由を残す。</p>
+<p><strong>ここに書いた判断はすべて受入条件表の K グループ（境界設計を守る）に条件化されている。</strong> 動作テストでは検出できないため、実装物のレビュー（検証プラン T-24）で確認する。§7-B・§7-H・§7-H' は K 以外の条件（担当店舗・1人1ロール・雛形）で担保する。</p>
 <h3 id="a">A. 権限はロール経由で与える（人に直接付けない）</h3>
 <p><strong>却下案</strong> — ユーザーごとに権限を作り込む。</p>
 <p><strong>理由</strong> — 従業員が増えるほど設定が増殖し、「誰がどこまで見えるか」の把握が不可能になる。「店長」を1つ作れば店長が10人でも設定は1つで、修正も一箇所で済む。</p>
