@@ -1338,7 +1338,7 @@ document.addEventListener('click', function(){ if(hdrDDOpen){ hdrDDOpen=false; r
 function buildOpsRoles(){ return [
   {name:'店長',   key:'manager', tier:'shop',    scope:'shop',    scopeType:'self', perm:buildPerm(PRESET.manager,'shop','manager')},
   {name:'従業員', key:'staff',   tier:'shop',    scope:'shop',    scopeType:'self', perm:buildPerm(PRESET.staff,'shop','staff')},
-  {name:'エリア長', key:'area',  tier:'shop',    scope:'shop',    scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildPerm(PRESET.manager,'shop','area')},
+  {name:'エリア長', key:'area',  tier:'shop',    scope:'shop',    scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildPerm(PRESET.manager,'shop','area')},   // ★カスタマイズ例：既定テンプレではなく店長をベースに顧客が作った権限
   {name:'経理担当',   key:'keiri',   tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.company,'company','keiri')},
   {name:'人事担当',   key:'jinji',   tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.company,'company','jinji')},
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner'), system:true},
@@ -1346,11 +1346,11 @@ function buildOpsRoles(){ return [
 /* デモ用：カテゴリ内で設定がバラつく「一部」状態を意図的に作る（1機能だけ下げる→混在＝一部表示の確認用） */
 function seedPartial(roleKey,cid,val){ const r=ROLES.find(x=>x.key===roleKey), c=CATEGORIES.find(x=>x.id===cid); if(!r||!c) return; const idx=c.features.findIndex(f=>!f.fixed&&!f.inheritFrom&&!(f.noStaff&&roleKey==='staff')); if(idx>=0) setFeatVal(r.perm,cid,idx,c.features[idx],val); }
 function applyOpsSeed(){ seedPartial('keiri','dashboard',0); seedPartial('jinji','sales',0); seedPartial('manager','detail',0); seedPartial('keiri','inventory',1); }
-// 新規導入デモ：初期設定で推奨5権限（全権/本部管理/エリア長/店長/従業員）が登録済みの状態
+// 新規導入デモ：初期設定で推奨4権限（全権/本部管理/店長/従業員）が登録済みの状態。
+// エリア長は既定に含めない＝カスタマイズ例（店長をベースに顧客が新規作成する。運用デモには作成済みの例として存在）
 function buildNewRoles(){ return [
   {name:'オーナー（全権）', key:'owner', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner'), system:true},
   {name:'本部管理', key:'honbu', tier:'company', scope:'company', scopeType:'all', perm:buildPerm(PRESET.full,'company','owner')},   // 全権相当：全社の設定/一覧を操作・閲覧可
-  {name:'エリア長', key:'area', tier:'shop', scope:'shop', scopeType:'shops', shops:[SHOPS[0],SHOPS[1],SHOPS[2]], perm:buildPerm(PRESET.manager,'shop','area')},   // 掌握店舗の設定/一覧を全て操作・閲覧可
   {name:'店長', key:'manager', tier:'shop', scope:'shop', scopeType:'self', perm:buildPerm(PRESET.manager,'shop','manager')},   // 自店舗の設定/一覧を全て操作・閲覧可
   {name:'従業員', key:'staff', tier:'shop', scope:'shop', scopeType:'self', perm:buildStarterPerm(PRESET.staff,'shop','staff')},   // 閲覧中心（雛形のまま）
 ]; }
@@ -1384,10 +1384,11 @@ function renderDelegateList(){
 let _roleSeq=0, rmTier='shop';
 let rmScope='self';
 // 運用時の新規作成：テンプレート or 既存ロール複製をベースに、権限プレビューを見て作成
+// 既定テンプレートは オーナー／本部管理／店長／従業員 の4種＋プレーン。
+// エリア長は"カスタマイズ例"であって既定ではない＝店長をベースに顧客が作る（運用デモに作成済みの例として存在）
 const ROLE_TEMPLATES=[
   {id:'full',    name:'全権オーナー相当', group:'会社ロール', tier:'company', scope:'all',   preset:'full',    rep:'owner',   summary:'全権・すべて操作可'},
   {id:'company', name:'本部管理',         group:'会社ロール', tier:'company', scope:'all',   preset:'full',    rep:'owner',   summary:'全社の設定・一覧を操作／閲覧（全権相当）'},
-  {id:'area',    name:'エリア長',         group:'店舗ロール', tier:'shop',    scope:'shops', preset:'manager', rep:'manager', summary:'掌握店舗の設定・一覧を全て操作／閲覧'},
   {id:'manager', name:'店長',             group:'店舗ロール', tier:'shop',    scope:'self',  preset:'manager', rep:'manager', summary:'自店舗の設定・一覧を全て操作／閲覧'},
   {id:'staff',   name:'従業員',           group:'店舗ロール', tier:'shop',    scope:'self',  preset:'staff',   rep:'staff',   summary:'閲覧中心（操作は最小）'},
   {id:'blank',   name:'まっさら（なし）', group:'その他',     tier:'shop',    scope:'self',  preset:'blank',   rep:'tmp',     summary:'全機能なしから付与'},
@@ -1596,7 +1597,7 @@ function renderList(){
   const ALL=[{key:'view',cls:'grpview',label:'＋ 表示画面権限列を追加',gname:'閲覧権限（分析・レポート・管理画面の閲覧）',cats:vc},{key:'ops',cls:'grpops',label:'＋ 設定画面権限列を追加',gname:'設定画面権限（操作・設定）',cats:oc}];
   const grps=ALL.filter(g=>g.key===listTab);   // タブで選んだ群だけを表示
   const banner=document.getElementById('demoBanner');
-  if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>権限テンプレートで推奨5権限を登録しました</b>（全権オーナー／本部管理／エリア長／店長／従業員）。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
+  if(demoMode==='new'){ banner.className='demo-banner'; banner.innerHTML='✅ <b>権限テンプレートで推奨4権限を登録しました</b>（全権オーナー／本部管理／店長／従業員）。エリア長など上位の役割は店長をベースに「＋権限を新規作成」で追加できます。内容を確認し、必要なら「権限編集」で調整。新しい権限は「＋権限を新規作成」でテンプレを土台に追加できます。'; }
   else { banner.className='hide'; banner.innerHTML=''; }
   document.querySelectorAll('.listtabs .ltab').forEach(b=>b.classList.toggle('on', b.dataset.tab===listTab));
   document.getElementById('listLegend').innerHTML = listTab==='view'
@@ -1731,7 +1732,7 @@ function gotoAssignFromEditor(){
 const SETUP_TEMPLATES=[
   {key:'owner', group:'会社ロール', name:'オーナー（全権）', roleKeys:['owner'], scope:'全社・本部', preset:'full', summary:'全権固定・すべて操作可', fixedBase:true},
   {key:'company', group:'会社ロール', name:'会社ロール（権限母体）', roleKeys:['keiri','jinji'], scope:'全社・本部', preset:'company', summary:'本部・全社の権限母体。経理／人事などはここを土台に新設し、制限・解放で調整'},
-  {key:'manager', group:'店舗ロール', name:'店長・エリア店長（権限母体）', roleKeys:['manager','area'], scope:'自店舗／掌握店舗群', preset:'manager', summary:'店舗運営の権限母体。エリア店長は掌握店舗分の設定・一覧も閲覧可（差は範囲のみ）'},
+  {key:'manager', group:'店舗ロール', name:'店長（権限母体）', roleKeys:['manager'], scope:'自店舗', preset:'manager', summary:'店舗運営の権限母体。エリア長など上位の役割はこれをベースに新規作成する'},
   {key:'staff', group:'店舗ロール', name:'従業員', roleKeys:['staff'], scope:'自店舗', preset:'staff', summary:'閲覧中心（操作は最小）。店長母体を絞った権限'},
 ];
 const SETUP_BASE_OPT=[['preset','推奨（プリセット）'],[2,'操作可'],[1,'閲覧のみ'],[0,'なし']];
