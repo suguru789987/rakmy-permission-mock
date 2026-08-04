@@ -1,0 +1,1279 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>権限設定機能 仕様書（PdM引き継ぎ版）</title><style>
+:root{--fg:#1f2328;--sub:#57606a;--line:#d8dee4;--bg:#fff;--acc:#1F4E5F;--soft:#f6f8fa;--warn:#fff8e6;--warnline:#e3c86a}
+*{box-sizing:border-box}
+body{margin:0;background:#eef1f4;color:var(--fg);font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;line-height:1.85;font-size:15px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 0 80px}
+header.top{background:var(--acc);color:#fff;padding:26px 40px}
+header.top h1{margin:0;font-size:21px}
+header.top .meta{opacity:.85;font-size:12.5px;margin-top:6px}
+header.top a{color:#bfe6f2}
+main{background:var(--bg);padding:34px 44px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h1{font-size:24px;border-bottom:3px solid var(--acc);padding-bottom:8px;margin:44px 0 18px}
+h2{font-size:19px;border-bottom:1px solid var(--line);padding-bottom:6px;margin:38px 0 14px;color:var(--acc)}
+h3{font-size:16px;margin:26px 0 10px}
+h4{font-size:14.5px;margin:20px 0 8px;color:var(--sub)}
+p{margin:10px 0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px;display:block;overflow-x:auto}
+th{background:var(--acc);color:#fff;font-weight:600;text-align:left}
+th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top}
+tr:nth-child(even) td{background:var(--soft)}
+code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:"SF Mono",Menlo,monospace}
+pre{background:#0f2b33;color:#e6f1f5;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.6}
+pre code{background:none;color:inherit;padding:0}
+blockquote{border-left:4px solid var(--acc);background:var(--soft);margin:14px 0;padding:8px 16px;color:var(--sub)}
+ul,ol{padding-left:24px}
+li{margin:5px 0}
+hr{border:0;border-top:1px solid var(--line);margin:32px 0}
+strong{color:#0f3d4a}
+a{color:#1a6f8b}
+.toc{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:14px 20px;margin:22px 0}
+.toc b{display:block;margin-bottom:6px;color:var(--acc)}
+.toc ol{margin:0;padding-left:20px;font-size:13.5px}
+.toc a{text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.badge{display:inline-block;background:var(--warn);border:1px solid var(--warnline);border-radius:4px;padding:1px 8px;font-size:12px;margin-left:6px}
+@media print{body{background:#fff}main{box-shadow:none;padding:0}header.top{background:#fff;color:#000;border-bottom:2px solid #000}}
+</style></head><body>
+<header class="top"><h1>権限設定機能 仕様書（PdM引き継ぎ版）</h1><div class="meta">2026-08-04 更新 ／ ラクミー経営管理 ／ 動作モック <a href="https://suguru789987.github.io/rakmy-permission-mock/">https://suguru789987.github.io/rakmy-permission-mock/</a></div></header>
+<div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#_1">概要</a></li><li><a href="#0">0. この文書の使い方</a></li><li><a href="#1">1. 背景と課題</a></li><li><a href="#2">2. スコープと用語</a></li><li><a href="#3">3. 権限モデル</a></li><li><a href="#4">4. 段階導入</a></li><li><a href="#5">5. 画面仕様</a></li><li><a href="#6">6. データモデル（本番実装）</a></li><li><a href="#7">7. 設計判断の記録（なぜそう決めたか）</a></li><li><a href="#8-pdm">8. 未決事項（後任PdMの判断が必要）</a></li><li><a href="#9">9. リスクと対策</a></li><li><a href="#10">10. 引き継ぎメモ</a></li></ol></div><h1 id="pdm">権限設定機能 仕様書（PdM引き継ぎ版）</h1>
+<p>2026-08-03 ／ ラクミー経営管理 ／ 対象: <code>suguru789987/rakmy-permission-mock</code> build <code>eedfcd3</code>（整合監査済み・<code>20260803_08</code>）</p>
+<p><strong>動作モック（公開URL・ログイン不要）</strong></p>
+<h3 id="httpssuguru789987githubiorakmy-permission-mock">👉 https://suguru789987.github.io/rakmy-permission-mock/</h3>
+<hr />
+<h2 id="_1">概要</h2>
+<p><strong>「誰に何を見せるか」を顧客自身が設定できるようにする機能。</strong> 現行は権限が3種類固定で、顧客側に作る手段が無い。</p>
+<p>やることは <strong>① 権限を作る → ② 人に配る → ③ 点検する</strong> の3つだけ。</p>
+<pre><code>① 権限を作る            ② 人に配る                  ③ 点検する
+┌──────────┐      ┌──────────┐      ┌──────────┐
+│  権限一覧      │─────▶│  ユーザー割当   │─────▶│  役割サマリ     │
+│              │      │              │      │              │
+│ ＋新規作成     │      │ 誰に付けるか    │      │ 誰が何人持つか  │
+└──────────┘      └──────────┘      └──────────┘
+      │ ①ベースを選ぶ           │ 権限を1つ選ぶ            │
+      │ ②権限名・区分           │ 担当店舗を選ぶ           │
+      │ ③画面ごとに設定         │                        │
+      ▼                       ▼                       ▼
+   保存 ────────────────▶ 保存 ────────────────▶ 確認
+</code></pre>
+<p><strong>最短の一本道</strong></p>
+<pre><code>権限一覧 → ＋権限を新規作成 → ①ベース → ②権限名・区分 → ③画面ごとに設定
+        → 「ユーザー割当で紐付け →」 → 対象者と担当店舗を選ぶ → 保存 → 役割サマリで確認
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>ステップ</th>
+<th>画面</th>
+<th>やること</th>
+<th>決まること</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>①</td>
+<td>権限編集</td>
+<td>近いテンプレートを選び、画面ごとに 操作／閲覧／なし を設定</td>
+<td><strong>どの画面を見せるか</strong></td>
+</tr>
+<tr>
+<td>②</td>
+<td>ユーザー割当</td>
+<td>権限を1つ選び、担当店舗を紐付ける</td>
+<td><strong>誰が・どの店のデータを扱えるか</strong></td>
+</tr>
+<tr>
+<td>③</td>
+<td>役割サマリ</td>
+<td>権限ごとの許可数と割当人数を確認</td>
+<td>抜け・持たせすぎの検知</td>
+</tr>
+</tbody>
+</table>
+<p><strong>押さえるべき3点</strong></p>
+<ol>
+<li><strong>権限はロール経由で配る</strong> — 人に直接付けない。「店長」を1つ作れば店長が10人でも設定は1つ（→ §7-A）</li>
+<li><strong>権限と担当店舗は別々に決める</strong> — 権限＝どの画面、担当店舗＝どの店のデータ。同じエリア長でも人ごとに店舗数が違うため（→ §7-B）</li>
+<li><strong>1人1ロール</strong> — 付け替えると前の権限は外れる。兼務は専用の権限を作って表現する（→ §3.5・暫定決定）</li>
+</ol>
+<p>入口が複数ある画面（権限編集は4入口、割当は3入口）があり、<strong>来た元によって戻り先が変わる</strong>。全26フローは §5.6。</p>
+<hr />
+<h2 id="0">0. この文書の使い方</h2>
+<p>後任PdMが<strong>この文書だけで判断・議論・意思決定できる</strong>ことを目的とする。経営向けの要約は <code>20260803_01</code>、エンジニア向けの実装設計は <code>ENFORCEMENT.md</code> / <code>docs/P0_FOUNDATION.md</code>。</p>
+<p>まず上の<strong>概要</strong>で全体像を掴んでから、読む順番の推奨：§1 背景 → §3 権限モデル → §5 画面仕様（<strong>§5.6 のケース別遷移フローで実際の動線を掴む</strong>）→ §7 設計判断 → §8 未決事項。<strong>§7 と §8 が引き継ぎの本体</strong>。仕様は読めば分かるが、「なぜそう決めたか」と「何がまだ決まっていないか」は文書がないと失われる。</p>
+<table>
+<thead>
+<tr>
+<th>文書</th>
+<th>役割</th>
+<th>主な読者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本書 <code>20260803_05</code></td>
+<td>仕様の全体・設計判断・未決事項</td>
+<td>後任PdM</td>
+</tr>
+<tr>
+<td><code>20260803_06</code></td>
+<td>受入条件表（31条件）</td>
+<td>後任PdM・QA</td>
+</tr>
+<tr>
+<td><code>20260803_07</code></td>
+<td>検証プラン（<strong>29件</strong>）。操作系と計算系を統合し1本に。<strong>上部の準備（S-01〜S-06）に初期設定を集約</strong>し、設定値は <code>20260803_10</code> のデータセットを参照する</td>
+<td>後任PdM・QA</td>
+</tr>
+<tr>
+<td><code>20260803_09</code></td>
+<td>ケース別遷移フロー（26フロー・全項目）</td>
+<td>後任PdM・QA</td>
+</tr>
+<tr>
+<td><code>20260803_10</code></td>
+<td>検証用データセット（金額を1:2:4にして混入店舗を逆算できる設計）</td>
+<td>後任PdM・QA</td>
+</tr>
+<tr>
+<td><code>20260803_01</code></td>
+<td>経営向け要約</td>
+<td>経営</td>
+</tr>
+<tr>
+<td><code>README.md</code></td>
+<td>モックの画面仕様（詳細）</td>
+<td>PdM・エンジニア</td>
+</tr>
+<tr>
+<td><code>ENFORCEMENT.md</code></td>
+<td>本番実装の設計</td>
+<td>エンジニア</td>
+</tr>
+<tr>
+<td><code>ROADMAP.md</code></td>
+<td>段階導入の順序</td>
+<td>PdM・エンジニア</td>
+</tr>
+<tr>
+<td><code>PDM_JUDGE.md</code> / <code>JUDGMENT_LOG.md</code></td>
+<td>過去の判断の時系列記録</td>
+<td>後任PdM</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1">1. 背景と課題</h2>
+<h3 id="11">1.1 現行の制約</h3>
+<p>現行ラクミー経営管理の権限は <code>master</code> / <code>manager</code> / <code>shop_manager</code> の<strong>3種類固定</strong>。DBに権限テーブルは無く、アカウント種別で分岐している。顧客側で権限を作る手段は存在しない。</p>
+<h3 id="12">1.2 顧客要望の実態</h3>
+<p>CSに寄せられる要望は「3権限の中間」に集中する。</p>
+<table>
+<thead>
+<tr>
+<th>要望</th>
+<th>現行で応えられるか</th>
+<th>不足しているもの</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>経理担当に全社のお金は見せるが給与は見せない</td>
+<td>✕</td>
+<td>画面単位の制御</td>
+</tr>
+<tr>
+<td>エリアマネージャーに担当2店舗だけ見せる</td>
+<td>✕</td>
+<td>データ範囲の制御</td>
+</tr>
+<tr>
+<td>顧問税理士に閲覧だけさせる</td>
+<td>✕</td>
+<td>操作（書込）の制御</td>
+</tr>
+<tr>
+<td>アルバイトリーダーに売上だけ見せる</td>
+<td>✕</td>
+<td>画面内の指標単位の制御</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4つの要望が要求する制御軸がすべて異なる</strong>点が重要。これが §3 の権限モデルが4軸（画面／機能／指標／データ範囲）になっている理由であり、§4 の段階導入の順序を決めている。</p>
+<h3 id="13">1.3 なぜ今やるか</h3>
+<p>多店舗顧客の受注条件になっている案件がある。また「権限が分けられないので本部の一部しか使っていない」状態は利用率が上がらず、更新時に解約リスクとなる。</p>
+<hr />
+<h2 id="2">2. スコープと用語</h2>
+<h3 id="21">2.1 スコープ</h3>
+<p><strong>対象</strong> — 会社画面（経営管理 V69）の権限設定機能。権限の定義、ユーザーへの割当、担当店舗の紐付け、指標の可視性設定。</p>
+<p><strong>対象外</strong> — 新しい画面カテゴリ自体の追加（プロダクト側のマスタ機能）。タイムレコ側の権限。従業員台帳の管理。</p>
+<h3 id="22">2.2 用語定義</h3>
+<p>用語の揺れが議論を壊すため、以下で固定する。</p>
+<table>
+<thead>
+<tr>
+<th>用語</th>
+<th>定義</th>
+<th>誤用されやすい点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>権限（ロール）</strong></td>
+<td>「どの画面をどこまで使えるか」の定義。名前を持つ</td>
+<td>「役職」と混同される</td>
+</tr>
+<tr>
+<td><strong>区分</strong></td>
+<td>権限が会社画面向きか店舗画面向きか（会社／店舗の2値）</td>
+<td>「データ範囲」と混同される</td>
+</tr>
+<tr>
+<td><strong>データ範囲（スコープ）</strong></td>
+<td>どの店舗のデータ行を扱えるか（自店舗／指定店舗群／全社）</td>
+<td>「区分」と混同される</td>
+</tr>
+<tr>
+<td><strong>割当</strong></td>
+<td>権限をユーザーに適用する行為</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>役職</strong></td>
+<td>従業員台帳の肩書き（店長・スタッフ等）。<strong>権限を決めない参考情報</strong></td>
+<td>権限だと誤解される</td>
+</tr>
+<tr>
+<td><strong>カテゴリ</strong></td>
+<td>権限設定の単位となる画面のまとまり。27個</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>機能</strong></td>
+<td>カテゴリ内の個別機能。53個</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>指標</strong></td>
+<td>分析画面に表示される数字の項目</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>区分とデータ範囲は独立した別軸</strong>である。「店舗ロールだから自店舗のみ」ではない。区分は画面の出し分け、データ範囲は行の出し分けで、組み合わせは自由。</p>
+<hr />
+<h2 id="3">3. 権限モデル</h2>
+<h3 id="31-4">3.1 4つの制御軸</h3>
+<table>
+<thead>
+<tr>
+<th>軸</th>
+<th>制御するもの</th>
+<th>設定場所</th>
+<th>実装段階</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 画面</td>
+<td>どの画面を開けるか</td>
+<td>権限編集</td>
+<td><strong>今回</strong></td>
+</tr>
+<tr>
+<td>② 機能</td>
+<td>画面内で何ができるか（なし／閲覧／操作）</td>
+<td>権限編集（画面名クリックで展開）</td>
+<td>次</td>
+</tr>
+<tr>
+<td>③ 指標</td>
+<td>画面内にどの数字を出すか</td>
+<td>指標一覧／指標条件設定</td>
+<td>後</td>
+</tr>
+<tr>
+<td>④ データ範囲</td>
+<td>どの店舗の行を返すか</td>
+<td>ユーザー割当（担当店舗）</td>
+<td>後</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-3">3.2 権限レベル（3状態）</h3>
+<p><strong><code>なし ⊂ 閲覧 ⊂ 操作</code></strong> の順序権限。<strong>操作＝登録・編集・削除を一体で含む書き込み全般</strong>。</p>
+<p>機能の性質により取りうる段階が異なる。</p>
+<table>
+<thead>
+<tr>
+<th>種別</th>
+<th>段階</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>常時(base)</td>
+<td>閲覧固定</td>
+<td>ダッシュボード</td>
+</tr>
+<tr>
+<td>閲覧専用(view)</td>
+<td>なし／閲覧</td>
+<td>売上分析・集計</td>
+</tr>
+<tr>
+<td>設定(edit)</td>
+<td>なし／閲覧／操作</td>
+<td>納品書・棚卸・従業員管理</td>
+</tr>
+<tr>
+<td>管理(admin)</td>
+<td>なし／閲覧／設定可</td>
+<td>会社情報・お支払い・連携設定</td>
+</tr>
+<tr>
+<td>実行(action)</td>
+<td>なし／実行可</td>
+<td>ダウンロード</td>
+</tr>
+</tbody>
+</table>
+<p><strong>削除を別権限に分けていない。</strong> 「登録できる＝編集も削除もできる」とし、破壊的な削除は実行時の確認ダイアログで担保する。分けると状態が4つになり、設定コストが跳ね上がる割に「登録はできるが削除はできない」の実用ケースが乏しかったため（→ §7-D）。</p>
+<h3 id="33-2753">3.3 カテゴリ構成（27カテゴリ53機能）</h3>
+<p>カテゴリは <code>ctx</code> により3種に分かれ、区分によって出し分ける。</p>
+<table>
+<thead>
+<tr>
+<th>ctx</th>
+<th>意味</th>
+<th>数</th>
+<th>カテゴリ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>common</code></td>
+<td>会社・店舗どちらでも</td>
+<td>17</td>
+<td>ダッシュボード／売上分析／仕入分析／詳細分析／集計／従業員（閲覧）／締め状況（閲覧）／ダッシュボード（カスタマイズ）／ラベル／納品書／売上／棚卸／小口現金／従業員管理／締め管理／ユーザー／店舗間商品移動</td>
+</tr>
+<tr>
+<td><code>company</code></td>
+<td>会社画面のみ</td>
+<td>4</td>
+<td>ダウンロード／店舗（管理）／会社情報／お支払い</td>
+</tr>
+<tr>
+<td><code>shop</code></td>
+<td>店舗画面のみ</td>
+<td>6</td>
+<td>発注先&amp;仕入商品／店舗情報／連携設定／費用設定／休業日設定／予算設定</td>
+</tr>
+</tbody>
+</table>
+<p>区分＝会社 → 21カテゴリ（common 17 ＋ company 4）／区分＝店舗 → 23カテゴリ（common 17 ＋ shop 6）。</p>
+<p>機械可読の辞書は <code>docs/feature_keys.json</code>（<code>category_count: 27</code> / <code>feature_count: 53</code>）。<strong>機能を増減したらこのファイルと <code>ENFORCEMENT.md</code> 付録Aを再生成すること</strong>（カウント整合が崩れると検証の網羅判定が壊れる）。</p>
+<h3 id="34">3.4 ロール構成</h3>
+<table>
+<thead>
+<tr>
+<th>ロール</th>
+<th>区分</th>
+<th>位置づけ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>オーナー（全権）</td>
+<td>会社</td>
+<td>全権固定・編集不可。権限一覧から除外</td>
+</tr>
+<tr>
+<td>会社ロール（経理／人事など）</td>
+<td>会社</td>
+<td>職務分掌で設定</td>
+</tr>
+<tr>
+<td>店舗ロール（店長／従業員）</td>
+<td>店舗</td>
+<td>店舗現場。<strong>既定はこの2つ</strong>。エリア長などはここから派生させる</td>
+</tr>
+</tbody>
+</table>
+<p><strong>エリア長は既定テンプレートに含めない。</strong> 現時点で店長と権限差はなく、顧客の組織によって要否も内容も変わるため、<strong>店長をベースに顧客が作るカスタマイズ例</strong>として扱う。上位の役割という位置づけでもない。差別化が要る場合は権限編集で画面を絞る／広げる、または担当店舗数で行う。</p>
+<p>既定テンプレートは <strong>オーナー／本部管理／店長／従業員の4種</strong>（＋ゼロから作るプレーン）。</p>
+<h3 id="35-112026-08-03">3.5 1人1ロール（2026-08-03 決定・暫定）</h3>
+<p>1人が同時に持てる権限は<strong>1つ</strong>。付け替えると前の権限は自動的に外れる。</p>
+<p><strong>採用理由</strong> — 「この人は結局何が見られるのか」が権限名だけで確定する。合算方式では権限名を見ても実際の可視範囲が分からず、点検が困難になる。</p>
+<p><strong>副作用</strong> — 兼務（店長 兼 本部経理など）は「店長＋経理」という権限を新設して表現する。兼務の組み合わせだけ権限が増える。</p>
+<p><strong>この判断は暫定である。</strong> 運用して権限が増えすぎるようなら合算方式への回帰を検討する。判断材料は「実際に作られた権限の数」と「そのうち兼務用が何割か」。→ §8-1</p>
+<hr />
+<h2 id="4">4. 段階導入</h2>
+<p>権限は<strong>誤って塞げば業務停止、誤って通せば情報漏洩</strong>。どちらも重大なため、blast radius の小さい順に入れる。</p>
+<table>
+<thead>
+<tr>
+<th>段階</th>
+<th>内容</th>
+<th>リスク</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>データモデル＋保存＋シャドー検証</td>
+<td>低</td>
+<td>未着手</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td><strong>画面単位の閲覧制限</strong></td>
+<td><strong>低〜中</strong></td>
+<td><strong>ステージング検証中</strong></td>
+</tr>
+<tr>
+<td>P2</td>
+<td>操作（登録・編集・削除）判定</td>
+<td>中</td>
+<td>未着手</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>データ範囲の強制</td>
+<td><strong>高</strong></td>
+<td>未着手</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>指標の可視性</td>
+<td>中</td>
+<td>未着手</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>監査ログ・ロックアウト防止・移行</td>
+<td>中</td>
+<td>未着手</td>
+</tr>
+</tbody>
+</table>
+<p>各段階は<strong>シャドー検証 → 部分有効化 → 全面</strong>の3段で進める。詳細は <code>ROADMAP.md</code>。</p>
+<p><strong>既存顧客への影響を無くすため、リリース時に現行3権限と同じ動作のプリセットを用意する。</strong> これが移植の要件であり、受入条件 AC-01〜04 に対応する。</p>
+<h3 id="p1">P1 リリース時点の到達度（重要）</h3>
+<p><strong>必須の受入条件をすべて満たしても、顧客要望4つのうち満たせるのは1つだけ。</strong> §1.2 の4要望はそれぞれ別の制御軸を必要とし、P1 は「画面」しか実装しないため。</p>
+<table>
+<thead>
+<tr>
+<th>顧客要望</th>
+<th>必要な軸</th>
+<th>受入条件</th>
+<th>P1で満たせるか</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>経理に金は見せ人は見せない</td>
+<td>画面</td>
+<td>AC-10 / AC-11</td>
+<td><strong>○</strong></td>
+</tr>
+<tr>
+<td>エリアマネージャーに担当店だけ</td>
+<td>データ範囲</td>
+<td>AC-23</td>
+<td>✕（P3）</td>
+</tr>
+<tr>
+<td>税理士に見るだけ</td>
+<td>操作</td>
+<td>AC-24</td>
+<td>✕（P2）</td>
+</tr>
+<tr>
+<td>売上だけ見せ原価は隠す</td>
+<td>指標</td>
+<td>AC-25</td>
+<td>✕（P4）</td>
+</tr>
+</tbody>
+</table>
+<p>したがって <strong>AC-22（意図判定）の必須ラインは「画面単位で表現できる4シナリオに×を出さない」までとし</strong>、データ範囲・操作を要する SC-03／SC-05 は <strong>AC-32（次段階）</strong> に分けている。<strong>P1 の合格＝MVP 達成ではない</strong>。この差を曖昧にすると「受入条件を全部満たしたのに顧客が使えない」という事態になる。</p>
+<p>検証で SC-03／SC-05 が × と確定した時点が、P2／P3 を前倒しするかの判断ポイント（→ §8-6）。</p>
+<hr />
+<h2 id="5">5. 画面仕様</h2>
+<p>全9画面。各画面の詳細な挙動は <code>README.md</code> に記載。ここでは<strong>引き継ぎに必要な要点と、判断が要る箇所</strong>に絞る。</p>
+<h3 id="51">5.1 画面一覧と遷移</h3>
+<p>各画面の入口・出口を含む全経路は <strong>§5.6</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>画面</th>
+<th>役割</th>
+<th>主な遷移先</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>view-list</code></td>
+<td>権限一覧</td>
+<td>起点。権限×画面のマトリクス</td>
+<td>権限編集／指標一覧／役割サマリ／ユーザー割当</td>
+</tr>
+<tr>
+<td><code>view-newrole</code></td>
+<td>権限編集・新規作成</td>
+<td>統合ウィザード</td>
+<td>一括割当／元の画面</td>
+</tr>
+<tr>
+<td><code>view-catalog</code></td>
+<td>指標一覧</td>
+<td>権限ごとの指標ON/OFF</td>
+<td>指標条件設定</td>
+</tr>
+<tr>
+<td><code>view-condset</code></td>
+<td>指標条件設定</td>
+<td>指標の一括作り込み</td>
+<td>マイテンプレート／指標一覧</td>
+</tr>
+<tr>
+<td><code>view-tpllist</code></td>
+<td>マイテンプレート</td>
+<td>指標セットの保存・再利用</td>
+<td>指標条件設定</td>
+</tr>
+<tr>
+<td><code>view-summary</code></td>
+<td>役割サマリ</td>
+<td>権限ごとの俯瞰</td>
+<td>ユーザー割当（絞り込み）／権限編集</td>
+</tr>
+<tr>
+<td><code>view-users</code></td>
+<td>ユーザー割当</td>
+<td>人起点の割当</td>
+<td>割当編集</td>
+</tr>
+<tr>
+<td><code>view-assignedit</code></td>
+<td>割当編集</td>
+<td>1人の権限と担当店舗</td>
+<td>権限編集／新規作成</td>
+</tr>
+<tr>
+<td><code>view-roleassign</code></td>
+<td>一括割当</td>
+<td>権限起点で複数人へ</td>
+<td>役割サマリ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>全画面に戻る導線があり、dead-end は無い</strong>（監査済み）。権限編集とユーザー割当の戻るは「来た元＋権限一覧へ」の2ボタン。</p>
+<h3 id="52">5.2 権限編集（統合ウィザード）</h3>
+<p>新規作成と既存編集で<strong>同じ画面を共有</strong>し、タイトルとステップ番号を出し分ける。</p>
+<table>
+<thead>
+<tr>
+<th>モード</th>
+<th>ステップ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>新規</td>
+<td>①ベース → ②基本設定（権限名・区分） → ③権限内容</td>
+</tr>
+<tr>
+<td>編集</td>
+<td>①基本設定 → ②権限内容（ベース選択は非表示）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ステップ順は「識別 → 中身 → 確定」で固定。</strong> 区分を先に決めるのは、区分が③に出る画面リストを絞るため（会社なら店舗専用6画面が出ない）。逆順にすると設定後に区分変更でやり直しになる。</p>
+<p><strong>ベース候補</strong></p>
+<table>
+<thead>
+<tr>
+<th>グループ</th>
+<th>候補</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ベーステンプレート</td>
+<td>全権オーナー相当／本部管理／店長／従業員（<strong>4種</strong>）</td>
+</tr>
+<tr>
+<td>既存権限をコピー</td>
+<td>運用中の各権限（運用デモのみ表示）</td>
+</tr>
+<tr>
+<td>ゼロから</td>
+<td>プレーンテンプレート（全機能なし）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ゼロから作らせない設計。</strong> 27画面53機能をゼロ設定するのは非現実的なため、必ず「近いものを選んで差分を直す」形にしている。リリース時の移植プリセットがそのままベース候補になる想定。</p>
+<p><strong>最下部のコミット領域</strong> — 「🔗 ユーザー割当で紐付け →」CTA ＋ 保存／キャンセル。<strong>権限編集はスコープ（担当店舗）を扱わない</strong>（→ §7-B）。例外はガバナンス警告（店舗ロールで店舗未設定の保持者がいる時のみ）。</p>
+<h3 id="53">5.3 権限一覧</h3>
+<p>ロール × カテゴリのマトリクス。<strong>一覧画面権限（青）／設定画面権限（緑）</strong>の2タブ。</p>
+<ul>
+<li>既定は<strong>折りたたみ</strong>（要約列のみ）。27画面を全部出すと横に長大になり読めないため</li>
+<li>「👤 表示ロール」で行を絞る／「📌 権限列設定」で列を選ぶ。<strong>列選択は localStorage に記憶</strong></li>
+<li><strong>セルクリック → 権限編集の該当カテゴリへズーム＋一時ハイライト</strong>。気づきから修正までを一続きにする</li>
+<li>ヘッダーの会社名プルダウンで<strong>会社／店舗スコープを切替</strong>。行（ロール）と列（画面）が同時に追従する</li>
+<li>オーナーは一覧から除外。専用操作は右上「👑 オーナー操作」に集約</li>
+</ul>
+<h3 id="54">5.4 ユーザー割当・割当編集・一括割当</h3>
+<p><strong>割当の入口は3つ（意図的に共存）</strong></p>
+<table>
+<thead>
+<tr>
+<th>入口</th>
+<th>起点</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一括割当（<code>view-roleassign</code>）</td>
+<td>権限</td>
+<td>新規作成直後・大量配布</td>
+</tr>
+<tr>
+<td>ユーザー割当（<code>view-users</code>）</td>
+<td>人</td>
+<td>入社・異動・個別修正</td>
+</tr>
+<tr>
+<td>役割サマリ「割当へ」</td>
+<td>権限</td>
+<td>保持者の確認から修正</td>
+</tr>
+</tbody>
+</table>
+<p>思考の出発点が3通りあるため。ただし<strong>付与の実体は割当画面に集約</strong>しており二重管理は無い。</p>
+<p><strong>割当編集</strong> — 権限は<strong>ラジオで1つ</strong>（先頭に「割当なし」）。別の権限を選ぶと「選ぶと『○○』から置き換わります」を行に表示。店舗ロールを選んだ時のみ店舗ピッカーが出る。</p>
+<p><strong>一括割当の事故防止3点</strong></p>
+<table>
+<thead>
+<tr>
+<th>仕掛け</th>
+<th>防ぐ事故</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>区分フィルタ</td>
+<td>本部の経理に店舗ロールを付ける</td>
+</tr>
+<tr>
+<td>「現在のロール」列</td>
+<td>現状を知らずに付け替える</td>
+</tr>
+<tr>
+<td>置き換えの明示（⚠ 既に「○○」を保持／✓ この権限で登録済み）＋保存時確認</td>
+<td>意図しない権限の剥奪</td>
+</tr>
+</tbody>
+</table>
+<p><strong>役職（肩書き）は判断材料にしていない。</strong> 「店長」「マネージャー」「店長 兼 本部経理」など命名が顧客ごとにバラバラで信頼できないため、実際の割当ロールを表示して判断させる。</p>
+<h3 id="55">5.5 指標一覧・指標条件設定</h3>
+<p>指標の可否は<strong>各ロールのON/OFFスイッチのみ</strong>。機密ランクは画面に出さず、<strong>初期値の自動決定にのみ内部利用</strong>する。</p>
+<table>
+<thead>
+<tr>
+<th>機密度</th>
+<th>従業員</th>
+<th>店長・エリア長</th>
+<th>経理・人事</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>現場OK(open)</td>
+<td>ON</td>
+<td>ON</td>
+<td>ON</td>
+</tr>
+<tr>
+<td>店長まで(mgr)</td>
+<td>OFF</td>
+<td>ON</td>
+<td>ON</td>
+</tr>
+<tr>
+<td>経営機密(exec)</td>
+<td>OFF</td>
+<td>OFF</td>
+<td>ON</td>
+</tr>
+</tbody>
+</table>
+<p>既定ON実測：従業員＝店舗17／会社0、店長・エリア長＝店舗36／会社8、経理・人事＝店舗36／会社25。</p>
+<p><strong>指標の付与と行スコープは独立。</strong> 会社指標を店舗ロールに付与しても、他店の生データ行は §3.1 ④ により遮断される。付与＝集計値の閲覧許可であって行の解放ではない。</p>
+<h3 id="56-26">5.6 ケース別 遷移フロー（26フロー）</h3>
+<p><strong>同じ画面に複数の入口があり、来た元によって戻り先が変わる</strong>のがこの機能の遷移の特徴。「保存したらどこに着地するか」「キャンセルしたらどこに戻るか」を分けて把握する必要がある。</p>
+<p>以下は実装（<code>index.html</code>）から起こした全経路。各フローの前提条件・関連検証ID・分岐条件を含む完全版は <strong><code>20260803_09_権限設定_ケース別遷移フロー.tsv</code></strong>（14項目）。</p>
+<h4 id="_2">導入</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>ケース</th>
+<th>遷移フロー</th>
+<th>保存時の着地</th>
+<th>戻る導線</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-01</td>
+<td>権限テンプレートで一括登録</td>
+<td>権限テンプレート → 権限一覧</td>
+<td>権限一覧（登録済みバナー）</td>
+<td>—（初回画面）</td>
+</tr>
+<tr>
+<td>F-02</td>
+<td>下書きの一時保存</td>
+<td>権限テンプレート（同一画面に留まる）</td>
+<td>同一画面</td>
+<td>—</td>
+</tr>
+<tr>
+<td>F-25</td>
+<td>下書きの破棄</td>
+<td>権限テンプレート（既定の選択状態に戻る）</td>
+<td>同一画面</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_3">作成</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>ケース</th>
+<th>遷移フロー</th>
+<th>保存時の着地</th>
+<th>戻る導線</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-03</td>
+<td>新規作成（一覧起点）</td>
+<td>権限一覧 → 権限編集①ベース → ②基本設定 → ③権限内容 → 保存 → 権限一覧</td>
+<td>権限一覧</td>
+<td>← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-04</td>
+<td>新規作成（割当編集起点）</td>
+<td>割当編集 → 権限編集①ベース（<strong>プレーン既定</strong>）→ ②→③ → 保存 → 割当編集</td>
+<td>割当編集</td>
+<td>← 割当編集へ ＋ ← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-05</td>
+<td>作成後そのまま割当へ</td>
+<td>権限編集③ → 確認モーダル → 一括割当 → 保存 → 役割サマリ</td>
+<td>役割サマリ（該当ロールをハイライト）</td>
+<td>← 権限一覧へ</td>
+</tr>
+</tbody>
+</table>
+<h4 id="4_1">編集（入口4つ・戻り先がすべて異なる）</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>ケース</th>
+<th>遷移フロー</th>
+<th>保存時の着地</th>
+<th>戻る導線</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-06</td>
+<td>一覧の行ボタン</td>
+<td>権限一覧 → 権限編集①基本設定 → ②権限内容 → 保存 → 権限一覧</td>
+<td>権限一覧</td>
+<td>← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-07</td>
+<td>セルクリック</td>
+<td>権限一覧 → 権限編集（<strong>該当カテゴリへズーム＋一時ハイライト</strong>）→ 保存 → 権限一覧</td>
+<td>権限一覧</td>
+<td>← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-08</td>
+<td>役割サマリ起点</td>
+<td>役割サマリ → 権限編集 → 保存 → 役割サマリ（該当ロールをハイライト）</td>
+<td>役割サマリ</td>
+<td>← 役割サマリへ ＋ ← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-09</td>
+<td>割当編集起点</td>
+<td>割当編集 → 権限編集 → 保存 → 割当編集</td>
+<td>割当編集</td>
+<td>← 割当編集へ ＋ ← 権限一覧へ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>F-09 は §8-2 の論点そのもの。</strong> ここから編集すると、その権限を持つ全員に反映される（1人だけの調整にはならない）。</p>
+<h4 id="33">割当（入口3つ＋操作3種）</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>ケース</th>
+<th>遷移フロー</th>
+<th>保存時の着地</th>
+<th>戻る導線</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-10</td>
+<td>一括割当（権限起点・入口1）</td>
+<td>権限編集③ → 一括割当（管理者一覧＋含める＋対象店舗）→ 保存 → 役割サマリ</td>
+<td>役割サマリ</td>
+<td>← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-11</td>
+<td>ユーザー割当（人起点・入口2）</td>
+<td>権限一覧 → ユーザー割当（全件）→ 割当を編集 → 割当編集 → 保存 → ユーザー割当</td>
+<td>ユーザー割当</td>
+<td>← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-12</td>
+<td>役割サマリから（権限起点・入口3）</td>
+<td>役割サマリ → ユーザー割当（<strong>保持者に絞り込み</strong>）→ 割当編集 → 保存 → ユーザー割当</td>
+<td>ユーザー割当（絞り込み維持）</td>
+<td>← 役割サマリへ ＋ ← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-13</td>
+<td>権限の付け替え（1人1ロール）</td>
+<td>ユーザー割当 → 割当編集（ラジオ選択）→ 保存 → ユーザー割当</td>
+<td>ユーザー割当</td>
+<td>← ユーザー割当へ</td>
+</tr>
+<tr>
+<td>F-14</td>
+<td>担当店舗の紐付け</td>
+<td>割当編集（<strong>店舗ロール選択時のみ店舗ピッカーが出現</strong>）→ 店舗選択 → 保存 → ユーザー割当</td>
+<td>ユーザー割当</td>
+<td>← ユーザー割当へ</td>
+</tr>
+<tr>
+<td>F-15</td>
+<td>権限を外す（割当なし）</td>
+<td>割当編集 → 保存 → ユーザー割当（未割当と表示）</td>
+<td>ユーザー割当</td>
+<td>← ユーザー割当へ</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_4">指標</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>ケース</th>
+<th>遷移フロー</th>
+<th>保存時の着地</th>
+<th>戻る導線</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-16</td>
+<td>指標一覧を開く</td>
+<td>権限一覧 → 指標一覧（店舗/会社タブ）→ 個別ON/OFF → 権限一覧</td>
+<td><strong>即時反映（保存ボタンなし）</strong></td>
+<td>← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-17</td>
+<td>指標条件設定で一括作り込み</td>
+<td>指標一覧 → 指標条件設定①土台 → ②編集 →「適用して指標一覧へ」→ 指標一覧</td>
+<td>指標一覧（適用済み）</td>
+<td>キャンセル＝非適用で戻る</td>
+</tr>
+<tr>
+<td>F-18</td>
+<td>マイテンプレートに保存</td>
+<td>指標条件設定 → マイテンプレート（保存/読込/更新/削除）→ 指標条件設定</td>
+<td>マイテンプレート一覧</td>
+<td>← 指標条件設定へ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>F-16 は保存ボタンが無く即時反映、F-17 は「適用」が必要。</strong> 同じ指標設定でも確定の仕方が違う。</p>
+<h4 id="_5">オーナー専用</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>ケース</th>
+<th>遷移フロー</th>
+<th>保存時の着地</th>
+<th>戻る導線</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-19</td>
+<td>指標一覧（全件・読取）</td>
+<td>権限一覧 → 指標一覧（オーナー・全件・<strong>読取</strong>）→ 権限一覧</td>
+<td>—（読取のみ）</td>
+<td>← 権限一覧へ</td>
+</tr>
+<tr>
+<td>F-20</td>
+<td>全権の付与先を指定</td>
+<td>権限一覧 → 付与先指定モーダル → 権限一覧</td>
+<td>権限一覧</td>
+<td>モーダルを閉じる</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_6">横断</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>ケース</th>
+<th>遷移フロー</th>
+<th>保存時の着地</th>
+<th>戻る導線</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-21</td>
+<td>会社／店舗スコープ切替</td>
+<td>任意の画面 → スコープ選択 → 権限一覧（行×列が追従）</td>
+<td>端末に保持</td>
+<td>—</td>
+</tr>
+<tr>
+<td>F-22</td>
+<td>一覧の表示を絞る</td>
+<td>権限一覧（同一画面で再描画）</td>
+<td>即時反映・localStorage に記憶</td>
+<td>—</td>
+</tr>
+<tr>
+<td>F-23</td>
+<td>事故防止：既登録の確認</td>
+<td>一括割当 → 確認モーダル（○○ → △△）→ 保存 → 役割サマリ</td>
+<td>役割サマリ</td>
+<td>キャンセル＝保存せず戻る</td>
+</tr>
+<tr>
+<td>F-24</td>
+<td>事故防止：自己ロックアウト</td>
+<td>権限編集 → 警告 →（ブロックまたは続行）</td>
+<td>—</td>
+<td>権限編集に留まる</td>
+</tr>
+<tr>
+<td>F-26</td>
+<td>デモモードの切替</td>
+<td>任意の画面 → 権限一覧（ロール構成が入れ替わる）</td>
+<td>端末に保持</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_7">押さえておくべき分岐</h4>
+<table>
+<thead>
+<tr>
+<th>フロー</th>
+<th>分岐・条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-04</td>
+<td>割当編集から新規作成すると、ベースが「プレーンテンプレート」で開く</td>
+</tr>
+<tr>
+<td>F-05</td>
+<td>権限名が未入力なら移動不可。<strong>新規は「キャンセル/保存して移動」の2択、既存は「保存せず移動」も選べる</strong></td>
+</tr>
+<tr>
+<td>F-10</td>
+<td>区分フィルタで対象者を絞る（「すべて表示」で解除）。店舗ロール＆含める＆店舗0はエラー</td>
+</tr>
+<tr>
+<td>F-12</td>
+<td>保持者0名なら絞り込まず全件表示＋案内バナー</td>
+</tr>
+<tr>
+<td>F-13</td>
+<td>選ぶ前に「選ぶと『○○』から置き換わります」を行に表示。前の権限は自動的に外れる</td>
+</tr>
+<tr>
+<td>F-14</td>
+<td>会社ロールは全社のため店舗紐付けなし。店舗0件は保存不可</td>
+</tr>
+<tr>
+<td>F-19</td>
+<td>編集UI（トグル/コピー/条件設定）は非表示。対象ロールを切り替えれば編集可</td>
+</tr>
+<tr>
+<td>F-21</td>
+<td>会社＝会社ロール×21画面、店舗＝店舗ロール×23画面。<strong>列選択はスコープ別に記憶</strong>、表示ロール選択は全ロールに戻る</td>
+</tr>
+<tr>
+<td>F-23</td>
+<td>既に別権限を持つ人がいる時のみモーダルが出る</td>
+</tr>
+</tbody>
+</table>
+<p><strong>全画面に戻る導線があり dead-end は無い</strong>（監査済み）。遷移を変更したら §5.1 の画面一覧と本節、<code>20260803_09</code> を同時に更新すること。</p>
+<p><strong>検証との対応</strong> — 26フローすべてに検証ケースが紐付いている（<code>20260803_09</code> の関連検証ID列 ⇔ <code>20260803_07</code> の対応ID列で双方向）。特に <strong>F-09（割当編集起点の権限編集）は §8-2 の論点そのもの</strong>で、<code>20260803_07</code> の <strong>T-07</strong> で「その権限を持つ全員に反映される旨の警告があるか」を実測し判断材料とする。</p>
+<hr />
+<h2 id="6">6. データモデル（本番実装）</h2>
+<p>詳細は <code>ENFORCEMENT.md</code>。PdMが把握しておくべき骨格のみ。</p>
+<table>
+<thead>
+<tr>
+<th>テーブル</th>
+<th>役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>roles</code></td>
+<td>権限の定義（名前・区分）</td>
+</tr>
+<tr>
+<td><code>role_permissions</code></td>
+<td>権限 × feature_key × level(0/1/2)</td>
+</tr>
+<tr>
+<td><code>user_roles</code></td>
+<td>ユーザー ↔ 権限 ＋ 担当店舗（<code>store_ids</code>）</td>
+</tr>
+<tr>
+<td><code>role_metrics</code></td>
+<td>権限 × 指標の可視性</td>
+</tr>
+<tr>
+<td><code>audit_logs</code></td>
+<td>変更履歴</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>user_roles.store_ids</code> が担当店舗の唯一の正解。</strong> 権限定義側には持たせない（→ §7-B）。</p>
+<p><strong>1人1ロールの制約は <code>user_roles</code> に一意制約を張るかで表現する。</strong> 暫定決定のため、DB制約で縛るか、アプリ層のみで縛るかは判断が必要（→ §8-1）。DB制約にすると合算方式へ戻す際にマイグレーションが必要になる。<strong>アプリ層のみで縛ることを推奨</strong>。</p>
+<hr />
+<h2 id="7">7. 設計判断の記録（なぜそう決めたか）</h2>
+<p><strong>引き継ぎで最も失われやすい情報。</strong> 各判断には却下した案とその理由を残す。</p>
+<h3 id="a">A. 権限はロール経由で与える（人に直接付けない）</h3>
+<p><strong>却下案</strong> — ユーザーごとに権限を作り込む。</p>
+<p><strong>理由</strong> — 従業員が増えるほど設定が増殖し、「誰がどこまで見えるか」の把握が不可能になる。「店長」を1つ作れば店長が10人でも設定は1つで、修正も一箇所で済む。</p>
+<p><strong>関連</strong> — この原則があるため、§8-2（ユーザー行からの権限編集）が論点になる。</p>
+<h3 id="b">B. 担当店舗は割当側にのみ持たせる</h3>
+<p><strong>却下案</strong> — 権限編集にも「データ範囲」の選択肢を置く（当初はあった。撤去した）。</p>
+<p><strong>理由</strong> — 両方に店舗設定があると「どちらが本当か」が分からず、片方だけ直して事故る。同じ「エリア長」でもAさん2店舗・Bさん3店舗なので、権限側に持たせると担当店舗の組み合わせだけ権限が必要になり破綻する。</p>
+<p><strong>徹底の度合い</strong> — 権限編集③から掌握店舗数・店舗名の<strong>情報表示すら撤去</strong>した。割当由来のデータを権限定義の場に出さない。例外はガバナンス警告のみ。</p>
+<h3 id="c">C. 区分とデータ範囲は独立した別軸</h3>
+<p><strong>却下案</strong> — 「店舗ロール＝自店舗のみ」と固定する。</p>
+<p><strong>理由</strong> — 「従業員だが複数店舗に所属」「店舗ロールだが全社データを見る」といった実運用がある。ロール定義の区分・範囲は<strong>既定値（テンプレ）にすぎず</strong>、実効スコープは割当で束縛する。</p>
+<h3 id="d">D. 操作＝登録・編集・削除を一体（削除を分けない）</h3>
+<p><strong>却下案</strong> — 4状態（なし／閲覧／操作／全て（削除））＋操作詳細トグル。実際に実装したが撤去した。</p>
+<p><strong>理由</strong> — 状態が増えるほど設定コストが跳ね上がる割に、「登録はできるが削除はできない」の実用ケースが乏しかった。破壊的な削除は実行時の確認ダイアログで担保する方が実効的。</p>
+<h3 id="e">E. 機密ランクを画面に出さない</h3>
+<p><strong>却下案</strong> — 指標に🔓🔸🔒バッジを表示する。実装したが撤去した。</p>
+<p><strong>理由</strong> — バッジを出すと顧客が指標を選ぶたびにランクの妥当性を判断させることになる。ランクは初期値の自動決定にのみ使い、画面はシンプルなON/OFFスイッチにする。</p>
+<h3 id="f">F. 会社指標を店舗ロールに出すことを禁止しない</h3>
+<p><strong>却下案</strong> — 店舗ロールには全社集計をハードブロックする。当初そうしていたが撤回した。</p>
+<p><strong>理由</strong> — 「うちは店長にも全社利益を見せる」という顧客がいる。既定OFF＋管理者オプトインとし、ハードブロックはしない。<strong>ただし行データの遮断は独立にハード強制</strong>する。</p>
+<h3 id="g">G. 「含める」チェックを店舗選択と統合しない</h3>
+<p><strong>却下案</strong> — 一括割当で店舗を選んだら自動的に権限を付与する。</p>
+<p><strong>理由</strong> — 誤クリックがそのまま権限付与になる。明示チェックを安全装置として残す。会社ロールは対象店舗が無いため「含める」が唯一の付与手段でもある。</p>
+<h3 id="h-2026-08-04">H'. エリア長を既定テンプレートにしない（2026-08-04）</h3>
+<p><strong>却下案</strong> — エリア長を既定の推奨テンプレートに含める（当初はそうしていた）。</p>
+<p><strong>理由</strong> — エリア長は<strong>現時点で店長と権限差がない</strong>。差が出るのは担当店舗数だけで、それは割当で決まる（→ §7-B）。中身が同じテンプレートを2つ並べると、顧客は「どちらを選ぶべきか」を判断できない。さらにエリア長という役割の要否も内容も<strong>顧客の組織構造に依存</strong>するため、標準として提示すると「エリア長はこういうものだ」という誤った既定を押し付けることになる。</p>
+<p><strong>扱い</strong> — <strong>店長をベースに顧客が作るカスタマイズ例</strong>として位置づける。運用デモには作成済みの例として残し「こう作れる」を見せる。既定テンプレートは オーナー／本部管理／店長／従業員 の4種。</p>
+<h3 id="h-112026-08-03">H. 1人1ロール（2026-08-03・暫定）</h3>
+<p><strong>却下案</strong> — 複数ロール保持＋合算（当初の設計）。</p>
+<p><strong>理由</strong> — 権限名だけで可視範囲が確定する。合算方式は点検が困難。</p>
+<p><strong>副作用を認識した上での暫定決定。</strong> → §8-1</p>
+<hr />
+<h2 id="8-pdm">8. 未決事項（後任PdMの判断が必要）</h2>
+<h3 id="8-1-113">8-1. 1人1ロールを継続するか【優先度：中・期限＝運用開始3ヶ月後】</h3>
+<p><strong>論点</strong> — 兼務のたびに専用権限が増える。増えすぎると権限一覧が読めなくなり、当初の課題に回帰する。</p>
+<p><strong>判断材料</strong> — 顧客ごとの権限総数、うち兼務用の割合。10権限を超え、その3割以上が兼務用なら合算方式への回帰を検討。</p>
+<p><strong>準備</strong> — DB制約で1人1ロールを縛らない（アプリ層のみ）。縛るとマイグレーションが必要になる。</p>
+<h3 id="8-2">8-2. ユーザー行からの権限編集をどう扱うか【優先度：高・期限＝実装前】</h3>
+<p><strong>論点</strong> — 「田中さんだけ調整したい」でユーザー行から権限編集に入ると、同じ権限を持つ全員に波及する。事故になる。</p>
+<p><strong>選択肢</strong></p>
+<table>
+<thead>
+<tr>
+<th>案</th>
+<th>内容</th>
+<th>副作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>権限名の変更を強制（＝その人専用の権限を作る）</td>
+<td>権限が人数分に増殖し §7-A が崩れる</td>
+</tr>
+<tr>
+<td>B</td>
+<td><strong>警告のみ</strong>（「他に○名が持っています」＋続行／複製を選択）</td>
+<td>無し。複製を選べばAと同じ結果</td>
+</tr>
+<tr>
+<td>C</td>
+<td>ユーザー行からは編集させない</td>
+<td>遠回りになる</td>
+</tr>
+</tbody>
+</table>
+<p><strong>推奨は B。</strong> 事故を防ぎつつ権限の増殖も起きない。</p>
+<h3 id="8-3-ui">8-3. 権限一覧をマトリクスから一覧に変えるか【優先度：中・期限＝UI確定前】</h3>
+<p><strong>論点</strong> — 現行はマトリクス（権限×27画面）。シンプル一覧（区分・権限名・操作）にする案がある。</p>
+<p><strong>トレードオフ</strong> — マトリクスは権限同士を横並びで比較できるが横に長い。一覧は権限数が増えても崩れないが、可視範囲は別途ボタンで確認することになる。</p>
+<p><strong>併存案</strong> — 既定は一覧、「比較表示」でマトリクス。</p>
+<p><strong>連動</strong> — この判断でタブの階層が決まる。一覧化するなら「権限／ユーザー」の1階層で済む。マトリクス維持なら2階層になる。</p>
+<h3 id="8-4">8-4. 割当対象は全従業員かログイン管理者か【優先度：高・期限＝実装前】</h3>
+<p><strong>論点</strong> — 現行は「経営管理にログインする管理者」のみを対象にしている。全従業員（アルバイト含む）を並べる案がある。</p>
+<p><strong>懸念</strong> — 全従業員だとログインしない人まで一覧に出て、誰に権限を付けるべきかが埋もれる。全従業員にするならログイン可否のフィルタが別途必要。</p>
+<h3 id="8-5-2p2">8-5. 権限設定をチェックボックス（2値）にするか【優先度：中・期限＝P2着手前】</h3>
+<p><strong>論点</strong> — 今回は閲覧制限のみなので2値で足りる。ただし P2（操作制限）で「閲覧はできるが操作はできない」が必要になり、3状態が要る。</p>
+<p><strong>判断</strong> — 今2値にして P2 で作り直すか、最初から3状態にするか。</p>
+<h3 id="8-6-3">8-6. 検証で確定させる3点【優先度：高・期限＝検証完了時】</h3>
+<p>以下は検証（<code>20260803_07</code>）の実測で確定する。結果次第で P2/P3 の前倒しを判断する。</p>
+<table>
+<thead>
+<tr>
+<th>確認事項</th>
+<th>該当なら何が作れないか</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>担当外店舗のデータが混ざるか</td>
+<td>エリアマネージャー</td>
+</tr>
+<tr>
+<td>閲覧のみの権限で保存できてしまうか</td>
+<td>見るだけの権限（税理士・親会社）</td>
+</tr>
+<tr>
+<td>ダッシュボード経由で売上が漏れるか</td>
+<td>売上を見せない権限（人事）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9">9. リスクと対策</h2>
+<table>
+<thead>
+<tr>
+<th>リスク</th>
+<th>影響</th>
+<th>対策</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>誤って塞ぐ</td>
+<td>業務停止</td>
+<td>シャドー検証で過剰ブロックを事前検出。fail-open から段階切替</td>
+</tr>
+<tr>
+<td>誤って通す</td>
+<td>情報漏洩</td>
+<td>未定義は fail-closed（既定なし）。直URLもブロック</td>
+</tr>
+<tr>
+<td>自己ロックアウト</td>
+<td>運用停止</td>
+<td>最後の全権は外せない。自ロールから権限設定を外す操作に警告</td>
+</tr>
+<tr>
+<td>移行漏れ</td>
+<td>既存顧客が使えなくなる</td>
+<td>現行3権限と同じ動作のプリセット。移行前後の判定一致100%を受入条件に</td>
+</tr>
+<tr>
+<td>権限の増殖</td>
+<td>管理不能</td>
+<td>1人1ロールの副作用。§8-1 で見直し</td>
+</tr>
+<tr>
+<td>仕様とモックの乖離</td>
+<td>議論が空転</td>
+<td>定期監査。機能増減時は <code>feature_keys.json</code> を再生成</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10">10. 引き継ぎメモ</h2>
+<h3 id="101">10.1 直近の作業状態</h3>
+<ul>
+<li>モックは公開URLで動作。build <code>c48a953</code></li>
+<li>ステージングに P1（画面単位の閲覧制限）がデプロイ済み。<strong>検証は未実施</strong></li>
+<li>エンジニアへのUI変更依頼（<code>20260727_02</code>）は<strong>未送付</strong>。ロール名→権限名、種別→区分、キーの非表示、ベーステンプレートのプルダウン追加の4件</li>
+<li>設計変更（<code>20260803_04</code>）のうち1人1ロールのみ反映済み。残り2点は §8-2 / §8-3</li>
+</ul>
+<h3 id="102">10.2 運用上の注意</h3>
+<ul>
+<li><strong>Pages のビルド方式は「GitHub Actions」必須</strong>。legacy に戻すと SHA 注入が無効化され、全員が古いキャッシュを見続ける不具合が再発する</li>
+<li>「反映されない」はキャッシュで片付けず、<strong>ライブHTMLを curl して <code>__BUILD__</code> を確認</strong>する</li>
+<li>モックのロジック変更は Node の vm ＋DOMスタブで実行検証する（<code>HANDOFF.md</code> §検証手段）</li>
+<li><strong>本番 <code>rakmy</code> / <code>rakmy_server</code> には接触しない。</strong> 実テーブル名・列名は public モックに出さない。顧客PIIはダミー（麺屋ミライ）</li>
+</ul>
+<h3 id="103">10.3 未送付・未着手の一覧</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UI変更依頼のエンジニア送付</td>
+<td>未</td>
+</tr>
+<tr>
+<td>ステージング検証の実施</td>
+<td>未</td>
+</tr>
+<tr>
+<td>§8-2 / §8-3 / §8-4 の判断</td>
+<td>未</td>
+</tr>
+<tr>
+<td>P0（データモデル）の着手</td>
+<td>未</td>
+</tr>
+</tbody>
+</table></main></div></body></html>

@@ -1,0 +1,479 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>権限設定機能 仕様書（経営向け）</title><style>
+:root{--fg:#1f2328;--sub:#57606a;--line:#d8dee4;--bg:#fff;--acc:#1F4E5F;--soft:#f6f8fa;--warn:#fff8e6;--warnline:#e3c86a}
+*{box-sizing:border-box}
+body{margin:0;background:#eef1f4;color:var(--fg);font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;line-height:1.85;font-size:15px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 0 80px}
+header.top{background:var(--acc);color:#fff;padding:26px 40px}
+header.top h1{margin:0;font-size:21px}
+header.top .meta{opacity:.85;font-size:12.5px;margin-top:6px}
+header.top a{color:#bfe6f2}
+main{background:var(--bg);padding:34px 44px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h1{font-size:24px;border-bottom:3px solid var(--acc);padding-bottom:8px;margin:44px 0 18px}
+h2{font-size:19px;border-bottom:1px solid var(--line);padding-bottom:6px;margin:38px 0 14px;color:var(--acc)}
+h3{font-size:16px;margin:26px 0 10px}
+h4{font-size:14.5px;margin:20px 0 8px;color:var(--sub)}
+p{margin:10px 0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px;display:block;overflow-x:auto}
+th{background:var(--acc);color:#fff;font-weight:600;text-align:left}
+th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top}
+tr:nth-child(even) td{background:var(--soft)}
+code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:"SF Mono",Menlo,monospace}
+pre{background:#0f2b33;color:#e6f1f5;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.6}
+pre code{background:none;color:inherit;padding:0}
+blockquote{border-left:4px solid var(--acc);background:var(--soft);margin:14px 0;padding:8px 16px;color:var(--sub)}
+ul,ol{padding-left:24px}
+li{margin:5px 0}
+hr{border:0;border-top:1px solid var(--line);margin:32px 0}
+strong{color:#0f3d4a}
+a{color:#1a6f8b}
+.toc{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:14px 20px;margin:22px 0}
+.toc b{display:block;margin-bottom:6px;color:var(--acc)}
+.toc ol{margin:0;padding-left:20px;font-size:13.5px}
+.toc a{text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.badge{display:inline-block;background:var(--warn);border:1px solid var(--warnline);border-radius:4px;padding:1px 8px;font-size:12px;margin-left:6px}
+@media print{body{background:#fff}main{box-shadow:none;padding:0}header.top{background:#fff;color:#000;border-bottom:2px solid #000}}
+</style></head><body>
+<header class="top"><h1>権限設定機能 仕様書（経営向け）</h1><div class="meta">2026-08-04 更新 ／ ラクミー経営管理</div></header>
+<div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#1_1">1. 一言でいうと</a></li><li><a href="#2">2. いま何が起きているか</a></li><li><a href="#3">3. 事業上の意味</a></li><li><a href="#4">4. 今回のリリース範囲と、その後</a></li><li><a href="#5-3">5. 設計の骨格（3つの原則）</a></li><li><a href="#6-9">6. 画面の構成（全9画面）</a></li><li><a href="#1_3">フロー1｜導入時に権限を一括で用意する</a></li><li><a href="#2_3">フロー2｜現行に無い権限を新しく作る（本機能の主目的）</a></li><li><a href="#3_2">フロー3｜既に使っている権限を修正する</a></li><li><a href="#4_1">フロー4｜作った権限を人に配る</a></li><li><a href="#5">フロー5｜担当店舗を紐付ける</a></li><li><a href="#6">フロー6｜見せる数字（指標）を選ぶ</a></li><li><a href="#7">フロー7｜全体を点検する</a></li><li><a href="#8">フロー8｜オーナー専用の操作</a></li></ol></div><h1 id="_1">権限設定機能 仕様書（経営向け）</h1>
+<p>2026-08-03 ／ ラクミー経営管理</p>
+<p><strong>動作モック（実際の画面をそのまま操作できます）</strong></p>
+<h3 id="httpssuguru789987githubiorakmy-permission-mock">👉 https://suguru789987.github.io/rakmy-permission-mock/</h3>
+<p>ブラウザで開くだけで動きます。インストール・ログイン不要。架空の店舗データ（麺屋ミライ）で、実データは含みません。</p>
+<hr />
+<h1 id="1">第1部｜経営判断のための要約</h1>
+<h2 id="1_1">1. 一言でいうと</h2>
+<p><strong>「誰に何を見せるか」を、お客様自身が設定できるようにする機能。</strong></p>
+<h2 id="2">2. いま何が起きているか</h2>
+<p>現在の権限は <strong>3種類の固定</strong> です。</p>
+<table>
+<thead>
+<tr>
+<th>現行の権限</th>
+<th>実質の意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master</td>
+<td>全部見える・全部触れる</td>
+</tr>
+<tr>
+<td>manager</td>
+<td>本部として全社が見える</td>
+</tr>
+<tr>
+<td>shop_manager</td>
+<td>店長として自店舗が見える</td>
+</tr>
+</tbody>
+</table>
+<p>この3つしかないため、お客様から次のような要望が来ても<strong>設定で応えられません</strong>。</p>
+<ul>
+<li>「経理担当には全社のお金は見せたいが、従業員の給与は見せたくない」</li>
+<li>「エリアマネージャーには担当の2店舗だけ見せたい。他店は見せたくない」</li>
+<li>「顧問税理士に見せたいが、数字を変更されては困る」</li>
+<li>「アルバイトリーダーには売上だけ見せたい。原価は見せたくない」</li>
+</ul>
+<p>結果として現場は、<strong>見せたくない数字まで見せる</strong>か、<strong>必要な人にアクセスを与えない</strong>かの二択になっています。前者は情報管理上のリスク、後者は「使えないから使わない」に直結します。</p>
+<h2 id="3">3. 事業上の意味</h2>
+<p><strong>受注条件になっている案件があります。</strong> 多店舗展開のお客様ほど「エリアマネージャーに担当店だけ」「親会社・税理士に閲覧だけ」という要件が強く、現行の3権限では要件を満たせません。</p>
+<p><strong>解約リスクの低減にもつながります。</strong> 「権限が分けられないから本部の一部しか使っていない」という状態は、利用率が上がらず、価値を実感されないまま更新時期を迎える典型パターンです。</p>
+<h2 id="4">4. 今回のリリース範囲と、その後</h2>
+<p>権限は<strong>誤って塞げば業務が止まり、誤って通せば情報が漏れる</strong>性質のため、段階的に入れます。</p>
+<table>
+<thead>
+<tr>
+<th>段階</th>
+<th>内容</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>今回</strong></td>
+<td>画面単位の<strong>閲覧制限</strong>。会社スコープ／店舗スコープの設定</td>
+<td>ステージング検証中</td>
+</tr>
+<tr>
+<td>次</td>
+<td><strong>操作（登録・編集・削除）の制限</strong></td>
+<td>未着手</td>
+</tr>
+<tr>
+<td>その次</td>
+<td><strong>データ範囲の制限</strong>（担当外店舗の数字を出さない）</td>
+<td>未着手</td>
+</tr>
+<tr>
+<td>最後</td>
+<td>指標単位の制御・監査ログ</td>
+<td>未着手</td>
+</tr>
+</tbody>
+</table>
+<p><strong>既存のお客様への影響はありません。</strong> リリース時に、現行の3権限と同じ動きをするプリセットを用意します。今まで見えていたものは今までどおり見え、設定を触らなければ何も変わりません。</p>
+<hr />
+<h1 id="2_1">第2部｜機能の全体像</h1>
+<h2 id="5-3">5. 設計の骨格（3つの原則）</h2>
+<p>この機能は次の3つの考え方でできています。以降の操作フローはすべてこの原則から導かれています。</p>
+<h3 id="1_2">原則① 権限はロール（役割）経由で与える</h3>
+<p>権限を人に直接くっつけるのではなく、<strong>権限 → ロール → ユーザー</strong> の順で適用します。</p>
+<p><strong>なぜそうするか。</strong> 人ごとに権限を作り込むと、従業員が増えるほど設定が増殖し、誰がどこまで見えるのか把握できなくなります。「店長」という権限をひとつ作れば、店長が10人でも設定はひとつ。修正も一箇所で済みます。</p>
+<h3 id="2_2">原則② 「権限」と「担当店舗」は別々に決める</h3>
+<p><strong>権限</strong>（どの画面を見せるか）は権限設定画面で決め、<strong>担当店舗</strong>（どの店のデータか）は割当画面で人ごとに決めます。</p>
+<p><strong>なぜそうするか。</strong> 同じ「エリア長」でも、Aさんは2店舗、Bさんは3店舗を担当します。ここを権限側に持たせると、担当店舗の組み合わせの数だけ権限を作ることになり、破綻します。権限は少数を共有し、店舗は人ごとに紐付ける設計にしています。</p>
+<h3 id="3-112026-08-03">原則③ 1人に1つの権限（2026-08-03 決定・暫定）</h3>
+<p>1人が同時に持てる権限は<strong>1つ</strong>です。別の権限を付け直すと、前の権限は自動的に外れます。</p>
+<p><strong>なぜそうするか。</strong> 「この人は結局何が見られるのか」が<strong>権限名だけで確定</strong>します。複数の権限を重ねて合算する方式だと、権限名を見ても実際に見える範囲が分からず、合算結果を計算しないと判断できません。権限の点検が難しくなります。</p>
+<p><strong>兼務の扱い。</strong> 「店長 兼 本部経理」のような兼務は、<strong>「店長＋経理」という権限を新しく作って</strong>割り当てます。役職（従業員台帳の肩書き）が兼務でも、権限は1つです。<strong>役職と権限は別物</strong>という整理です。</p>
+<p><strong>副作用も認識しています。</strong> 兼務の組み合わせが増えるほど権限が増えます。運用してみて権限が増えすぎるようなら見直す前提の<strong>暫定決定</strong>です。</p>
+<h2 id="6-9">6. 画面の構成（全9画面）</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>画面</th>
+<th>何をする場所か</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>権限一覧</td>
+<td>すべての権限を一覧で見比べる（起点）</td>
+</tr>
+<tr>
+<td>2</td>
+<td>権限編集／新規作成</td>
+<td>権限そのものを作る・直す</td>
+</tr>
+<tr>
+<td>3</td>
+<td>指標一覧</td>
+<td>その権限で見せる数字を選ぶ</td>
+</tr>
+<tr>
+<td>4</td>
+<td>指標条件設定</td>
+<td>見せる数字をまとめて作り込む</td>
+</tr>
+<tr>
+<td>5</td>
+<td>マイテンプレート</td>
+<td>作った数字のセットを保存して使い回す</td>
+</tr>
+<tr>
+<td>6</td>
+<td>役割サマリ</td>
+<td>権限ごとに「誰が何人持っているか」を俯瞰する</td>
+</tr>
+<tr>
+<td>7</td>
+<td>ユーザー割当</td>
+<td>人を選んで権限を付ける</td>
+</tr>
+<tr>
+<td>8</td>
+<td>割当編集（店舗紐付け）</td>
+<td>その人の担当店舗を決める</td>
+</tr>
+<tr>
+<td>9</td>
+<td>一括割当</td>
+<td>ひとつの権限を複数人へ一度に配る</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="3_1">第3部｜主要フローと操作手順</h1>
+<p>以下は<strong>導入から運用までの実際の流れ</strong>です。各フローに「何のためにやるか」と「この設計にした理由」を添えています。</p>
+<p>画面遷移の全経路（24フロー・入口と戻り先の対応）は <code>20260803_09_権限設定_ケース別遷移フロー.tsv</code> にまとめています。</p>
+<hr />
+<h2 id="1_3">フロー1｜導入時に権限を一括で用意する</h2>
+<p><strong>目的：</strong> 導入初日に「権限が空っぽで誰も何も見えない」状態を避ける。お客様がゼロから27画面分を設定するのは現実的でないため、動く状態から始めてもらう。</p>
+<p><strong>誰が：</strong> 導入担当（CS）またはお客様のオーナー</p>
+<p><strong>操作手順</strong></p>
+<ol>
+<li>権限設定を開く → 初回は<strong>権限テンプレート</strong>の画面が出る</li>
+<li>用意する権限を選ぶ（既定は全部オン）<br />
+   - オーナー（全権）… 全権固定<br />
+   - 会社ロール（権限母体）… 本部・全社の土台。ここから経理／人事を派生させる<br />
+   - 店長（権限母体）… 店舗運営の土台。エリア長などはここから派生させる<br />
+   - 従業員 … 閲覧中心</li>
+<li>それぞれの初期値を選ぶ（推奨プリセット／操作可／閲覧のみ／なし）</li>
+<li>「適用」→ <strong>権限一覧に5権限が登録された状態で着地</strong></li>
+<li>一覧の上部に「登録しました。内容を確認し、必要なら権限編集で調整してください」と表示される</li>
+</ol>
+<p><strong>この設計にした理由</strong></p>
+<p>「母体を作って後で分ける」流れを想定しています。導入時は<strong>会社ロールをひとつの母体</strong>として作り、運用が回り始めてから「経理」「人事」に分割します。最初から細かく分けると、まだ運用が固まっていない段階で誤った線引きを固定してしまいます。</p>
+<hr />
+<h2 id="2_3">フロー2｜現行に無い権限を新しく作る（本機能の主目的）</h2>
+<p><strong>目的：</strong> 「経理だけ」「エリアマネージャー」など、現行の3権限では表現できなかった中間の権限を作る。<strong>この機能の価値の中心。</strong></p>
+<p><strong>誰が：</strong> お客様の管理者（本部）</p>
+<p><strong>操作手順</strong></p>
+<ol>
+<li>権限一覧 → <strong>「＋ 権限を新規作成」</strong></li>
+<li><strong>① ベースを選ぶ</strong> … 近い権限を土台にする<br />
+   - ベーステンプレート（オーナー相当／本部管理／店長／従業員）<br />
+   - <strong>既存権限をコピー</strong>（運用中の権限を複製して差分だけ直す）<br />
+   - プレーン（すべて「なし」からゼロで作る）</li>
+<li><strong>② 基本設定</strong> … 権限名と区分（会社／店舗）を決める</li>
+<li><strong>③ 権限内容</strong> … 画面ごとに <code>操作／閲覧／なし</code> を調整する<br />
+   - 画面名をクリックすると、その場で<strong>内訳（機能）→ 数字（指標）</strong>まで掘り下げて設定できる<br />
+   - 上部に「何画面を許可したか」の許可数が出る</li>
+<li>最下部で <strong>保存</strong>、または <strong>「ユーザー割当で紐付け →」</strong>（フロー4へ直行）</li>
+</ol>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>ステップの順番が「識別 → 中身 → 確定」になっています。</strong> 先に区分（会社／店舗）を決めるのは、区分によって次に出る画面リストが変わるためです。会社の権限を作るのに店舗専用の画面を並べても意味がなく、逆も同じです。順番を逆にすると、設定した後に区分を変えて設定がやり直しになります。</p>
+<p><strong>ゼロから作らせない設計にしています。</strong> 27画面53機能をゼロから設定するのは現実的でないため、必ず「近いものを選んで差分を直す」形にしています。実際の顧客運用もこの形になります。</p>
+<hr />
+<h2 id="3_2">フロー3｜既に使っている権限を修正する</h2>
+<p><strong>目的：</strong> 「この権限、この画面も見せたい」という日常的な微修正を、最短で終わらせる。</p>
+<p><strong>誰が：</strong> お客様の管理者</p>
+<p><strong>操作手順</strong></p>
+<ol>
+<li>権限一覧で、<strong>変えたい権限の行 × 変えたい画面の列</strong> のマス目をクリック</li>
+<li>権限編集が開き、<strong>そのマス目に該当する箇所へ自動でスクロールして一時的に光る</strong></li>
+<li><code>なし → 閲覧</code> などに変更して保存</li>
+<li><strong>元いた画面に戻る</strong>（一覧から来たら一覧へ、割当から来たら割当へ）</li>
+</ol>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>「見つけた場所から直せる」ことを重視しています。</strong> 一覧で問題に気づいたのに、編集画面を開いてから該当箇所を探し直すのでは、27画面の中から目的の項目を見つける手間がかかります。マス目クリックで直接その場所へ飛ぶことで、気づきから修正までを一続きにしています。</p>
+<p><strong>戻り先が元の画面になるのも同じ理由です。</strong> どこから来ても一覧に戻される作りだと、続けて別の修正をするたびに元の場所へ辿り直すことになります。</p>
+<hr />
+<h2 id="4_1">フロー4｜作った権限を人に配る</h2>
+<p><strong>目的：</strong> 権限を実際に効かせる。ここまでは定義を作っただけで、誰にも適用されていない。</p>
+<p><strong>誰が：</strong> お客様の管理者</p>
+<p>入口が3つあり、<strong>やりたいことによって使い分けます</strong>。</p>
+<h3 id="4-a">4-A ひとつの権限を複数人へ一度に配る（一括割当）</h3>
+<p>新しく権限を作った直後や、大量に配るときに使います。</p>
+<ol>
+<li>権限編集の最下部 → <strong>「ユーザー割当で紐付け →」</strong></li>
+<li>管理者一覧が出て、各人に <strong>〔含める〕チェック</strong> と <strong>〔対象店舗〕</strong> が並ぶ</li>
+<li>複数人にチェックを入れ、それぞれの担当店舗を選ぶ</li>
+<li><strong>一括保存</strong> → 役割サマリに着地し、「割当ユーザー ○名」が更新されたことを確認できる</li>
+</ol>
+<p><strong>割当ミスを防ぐ仕掛けが3つ入っています。</strong></p>
+<table>
+<thead>
+<tr>
+<th>仕掛け</th>
+<th>防ぐ事故</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>区分フィルタ</strong> … 店舗ロールを配るときは店舗所属者のみ、会社ロールを配るときは本部所属者のみ表示</td>
+<td>本部の経理に店舗の権限を付けてしまう</td>
+</tr>
+<tr>
+<td><strong>「現在のロール」列</strong> … 各人が今どの権限を持っているかをその場に表示</td>
+<td>すでに店長なのに従業員権限を重ねてしまう</td>
+</tr>
+<tr>
+<td><strong>置き換えの明示</strong> … 既に別の権限を持つ人の行に「既に『店長』を保持。含めると置き換わります」、この権限で登録済みの人に「✓ この権限で登録済み」を表示。保存時にも確認が入る</td>
+<td>1人1ロールのため、含めると前の権限が外れる。意図しない権限の剥奪を防ぐ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>役職（肩書き）を判断材料にしていません。</strong> 従業員台帳の役職名は「店長」「マネージャー」「店長 兼 本部経理」など命名がお客様ごとにバラバラで、信頼できません。<strong>実際に今持っている権限</strong>を表示して判断してもらう作りにしています。</p>
+<p><strong>「含める」チェックを店舗選択と統合していません。</strong> 店舗を選んだ瞬間に権限が付く作りだと、誤クリックがそのまま権限付与になります。明示的なチェックを安全装置として残しています。</p>
+<h3 id="4-b">4-B 人を選んで権限を付け直す（ユーザー割当）</h3>
+<p>入社・異動・退職など、<strong>人単位の変更</strong>のときに使います。</p>
+<ol>
+<li>ユーザー割当（管理者一覧）を開く</li>
+<li>対象の人を選ぶ</li>
+<li>持たせる権限を<strong>1つ選ぶ</strong>（ラジオ。先頭に「割当なし」）。別の権限を選ぶと現在の権限から置き換わる旨が行に表示される</li>
+<li>店舗ロールを付けた場合は担当店舗を紐付ける</li>
+</ol>
+<h3 id="4-c">4-C 権限から逆引きして配る（役割サマリ経由）</h3>
+<p>「この権限、誰が持っているんだったか」から入るときに使います。</p>
+<ol>
+<li>役割サマリで各権限の「割当ユーザー ○名」を確認</li>
+<li><strong>「割当へ →」</strong> をクリック</li>
+<li><strong>その権限を持つ人だけに絞り込まれた</strong>状態でユーザー割当が開く</li>
+</ol>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>同じ目的地に3つの入口を用意しています。</strong> 「権限を作ったから配る」「人が入ったから設定する」「この権限を持つ人を確認したい」は、それぞれ思考の出発点が違います。どれかひとつに強制すると、他の2つのケースで遠回りになります。ただし<strong>付与の実体は割当画面ひとつに集約</strong>しており、二重管理は起きません。</p>
+<hr />
+<h2 id="5">フロー5｜担当店舗を紐付ける</h2>
+<p><strong>目的：</strong> 「どの店のデータを扱えるか」を人ごとに決める。<strong>権限とは別軸の設定。</strong></p>
+<p><strong>誰が：</strong> お客様の管理者</p>
+<p><strong>操作手順</strong></p>
+<ol>
+<li>ユーザー割当で店舗ロール（店長・エリア長など）を付ける</li>
+<li><strong>店舗ピッカー</strong>が出る<br />
+   - 店長 … 自店舗を1つ選ぶ（複数店舗の兼任も可）<br />
+   - エリア長 … 複数店舗を選ぶ。先頭の<strong>「全店」</strong>チェックで一括選択も可</li>
+<li>保存すると、一覧の「有効範囲」列に実際の店舗名が出る（例：「店舗（渋谷店）」「指定店舗群（3店舗：…）」「全店（5店舗）」）</li>
+</ol>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>担当店舗を権限編集側に置いていません。</strong> 権限編集の画面には、掌握店舗数も店舗名も一切表示しません。両方に店舗設定があると「どちらが本当か」が分からなくなり、片方だけ直して事故が起きます。<strong>担当店舗の唯一の正解は割当画面</strong>、と決め切っています。</p>
+<p>ただし<strong>ガバナンス上の警告だけは権限編集にも出します</strong>。「店舗ロールなのに店舗が未設定の人が○名います」という警告です。設定はできないが、問題があることは気づける、という線引きです。</p>
+<hr />
+<h2 id="6">フロー6｜見せる数字（指標）を選ぶ</h2>
+<p><strong>目的：</strong> 同じ画面を見せても、そこに出る数字は権限ごとに変えたい。「売上分析は見せるが、原価率は見せない」といった調整。</p>
+<p><strong>誰が：</strong> お客様の管理者</p>
+<p><strong>操作手順</strong></p>
+<ol>
+<li>権限一覧の行 → <strong>「指標一覧（○）」</strong>（○＝その権限で見える指標数）</li>
+<li>指標が <strong>🏬店舗指標／🏢会社指標</strong> のタブで並ぶ。各指標をクリックで 表示⇄非表示</li>
+<li>数が多いときは <strong>「指標条件設定 ＞」</strong> へ<br />
+   - <strong>① 土台を選ぶ</strong> … 推奨テンプレート（現場スタッフ向け／店長向け／管理者・経理向け）、他の権限からコピー、まっさら、保存済みテンプレートを読込<br />
+   - <strong>② 調整する</strong> … 系統ごとに一括表示／非表示、個別クリックで例外指定、条件ルール（対象 × 種別 × 公開範囲 × 表示可否）でまとめて設定</li>
+<li><strong>「適用して指標一覧へ」</strong> で反映</li>
+<li>よく使う組み合わせは <strong>マイテンプレート</strong>に保存して他の権限にも使い回せる</li>
+</ol>
+<p><strong>初期値は自動で決まります。</strong> 手作業をゼロから始めなくて済むよう、指標の性質に応じた既定値が入っています。</p>
+<table>
+<thead>
+<tr>
+<th>指標の性質</th>
+<th>従業員</th>
+<th>店長・エリア長</th>
+<th>経理・人事</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>現場で使う数字</td>
+<td>表示</td>
+<td>表示</td>
+<td>表示</td>
+</tr>
+<tr>
+<td>店長まで（原価率・人件費など）</td>
+<td>非表示</td>
+<td>表示</td>
+<td>表示</td>
+</tr>
+<tr>
+<td>経営機密（全社の利益・店舗別ランキングなど）</td>
+<td>非表示</td>
+<td>非表示</td>
+<td>表示</td>
+</tr>
+</tbody>
+</table>
+<p>初期状態の実数：従業員＝店舗17／会社0、店長・エリア長＝店舗36／会社8、経理・人事＝店舗36／会社25。</p>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>機密ランクを画面に出していません。</strong> 「この指標は経営機密です」というラベルを表示すると、お客様が指標を選ぶたびにランクの妥当性を判断させることになります。ランクは<strong>初期値を決めるためだけに内部で使い</strong>、画面上はシンプルな表示／非表示のスイッチにしています。</p>
+<p><strong>会社の数字を店舗の人に見せることを禁止していません。</strong> 「うちは店長にも全社の利益を見せる方針」というお客様もいます。既定はオフにしつつ、管理者が意図的にオンにできる設計です。ただし<strong>数字を見せることと、他店の明細を見られることは別</strong>で、後者は構造的に遮断されます。</p>
+<hr />
+<h2 id="7">フロー7｜全体を点検する</h2>
+<p><strong>目的：</strong> 設定が増えた後に「誰が何をどこまで見られるのか」を俯瞰し、抜けや持たせすぎを見つける。</p>
+<p><strong>誰が：</strong> お客様の管理者、CS</p>
+<p><strong>操作手順</strong></p>
+<ol>
+<li><strong>権限一覧</strong> … 権限 × 画面のマトリクスで見比べる<br />
+   - <strong>一覧画面権限（青）／設定画面権限（緑）</strong> の2タブ<br />
+   - 上部の<strong>「表示ロール」</strong>で見比べたい権限だけに絞る<br />
+   - <strong>「権限列設定」</strong>で見たい画面だけを列に出す（選択は次回も記憶される）<br />
+   - ヘッダーの<strong>会社名をクリック</strong>すると会社スコープ／店舗スコープが切り替わり、一覧の権限と画面が連動して入れ替わる</li>
+<li><strong>役割サマリ</strong> … 権限ごとに「許可数」「割当ユーザー数」「店舗未設定の警告」を一覧</li>
+<li>問題を見つけたらその場から権限編集または割当へ遷移</li>
+</ol>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>既定を「折りたたみ」にしています。</strong> 27画面を全部列に出すと横に長大な表になり、かえって読めません。既定では要約された数列だけを表示し、必要なときに展開する形にしています。</p>
+<p><strong>列の選択を記憶します。</strong> 点検作業は繰り返し行うもので、毎回同じ列を選び直すのは無駄だからです。</p>
+<hr />
+<h2 id="8">フロー8｜オーナー専用の操作</h2>
+<p><strong>目的：</strong> 全権の管理と委譲。権限設定そのものを守る。</p>
+<p><strong>誰が：</strong> オーナー（全権保持者）のみ</p>
+<p><strong>操作手順</strong></p>
+<ol>
+<li>権限一覧の右上 <strong>「👑 オーナー操作」</strong></li>
+<li><strong>指標管理</strong> … 全指標を一覧で確認（読み取り専用）</li>
+<li><strong>付与先を指定</strong> … 全権を委ねる相手を指名</li>
+</ol>
+<p><strong>この設計にした理由</strong></p>
+<p><strong>オーナーは権限一覧の表に出しません。</strong> 全権固定で編集できないため、設定対象の中に混ぜると「なぜ編集できないのか」という混乱を生みます。専用のメニューに分けています。</p>
+<hr />
+<h1 id="4_2">第4部｜判断が必要な点</h1>
+<p>現在の実装は<strong>画面単位の閲覧制限まで</strong>です。検証で以下が確認された場合、次の段階の開発をどこまで前倒しするかの判断が必要になります。</p>
+<p><strong>① データ範囲の制限（優先度：高い見込み）</strong></p>
+<p>画面を制限しても、担当外店舗の数字が混ざる可能性があります。この場合、フロー5で店舗を紐付けても実際には効かず、<strong>お客様が最も欲しがる「エリアマネージャー」が作れません</strong>。</p>
+<p><strong>② 操作の制限（優先度：高い見込み）</strong></p>
+<p>閲覧だけを許可しても、その画面で保存ボタンが機能してしまう可能性があります。この場合「<strong>見るだけ</strong>の権限」が作れず、税理士・親会社向けの要望に応えられません。</p>
+<p><strong>③ 数字単位の制限</strong></p>
+<p>フロー6の指標制御が効かない場合、「売上は見せるが原価は見せない」がひとつの画面の中で分けられません。</p>
+<p>いずれも検証（<code>20260803_03a</code> / <code>03b</code>）で実測し、<strong>作れない権限が何かを一覧化</strong>したうえで開発順序をご相談します。</p>
+<hr />
+<h1 id="5_1">第5部｜規模感と関連資料</h1>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>権限を設定できる画面</td>
+<td>27カテゴリ／53機能</td>
+</tr>
+<tr>
+<td>会社スコープで設定する画面</td>
+<td>21（一覧7＋設定14）</td>
+</tr>
+<tr>
+<td>店舗スコープで設定する画面</td>
+<td>23（一覧7＋設定16）</td>
+</tr>
+<tr>
+<td>標準で用意する権限テンプレート</td>
+<td>4（オーナー／本部管理／店長／従業員）</td>
+</tr>
+<tr>
+<td>画面数</td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<p>上記の数はすべて動作モック（https://suguru789987.github.io/rakmy-permission-mock/ ）で実測した値です。</p>
+<table>
+<thead>
+<tr>
+<th>資料</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>20260803_02_権限設定_受入条件表.tsv</code></td>
+<td>リリース可否の判断基準（18条件）</td>
+</tr>
+<tr>
+<td><code>20260803_03a_権限設定_検証プラン_操作系.tsv</code></td>
+<td>画面操作の検証（38ケース）</td>
+</tr>
+<tr>
+<td><code>20260803_03b_権限設定_検証プラン_計算系.tsv</code></td>
+<td>件数・金額の検証（16ケース）</td>
+</tr>
+<tr>
+<td><code>20260727_01b_権限設定_検証用設定値.md</code></td>
+<td>検証で使う権限設定・ユーザー</td>
+</tr>
+<tr>
+<td><code>20260727_02_権限設定_UI変更依頼.md</code></td>
+<td>開発への修正依頼</td>
+</tr>
+<tr>
+<td><code>20260803_04_権限設定_設計変更_差分確認.md</code></td>
+<td>設計変更26項目の突き合わせと要判断事項</td>
+</tr>
+<tr>
+<td><code>20260803_05_権限設定_仕様書_PdM引継.md</code></td>
+<td>PdM引き継ぎ版の仕様書（設計判断・未決事項つき）</td>
+</tr>
+<tr>
+<td><code>20260803_09_権限設定_ケース別遷移フロー.tsv</code></td>
+<td>24フローの画面遷移（第3部の詳細版）</td>
+</tr>
+</tbody>
+</table></main></div></body></html>
