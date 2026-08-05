@@ -36,12 +36,15 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:13px}
 @media (max-width:700px){main{padding:24px 18px}.toc ol{columns:1}}
 </style></head><body>
 <header class="top"><h1>ラクミー サービスマニュアル（掲載原稿）</h1>
-<div class="meta">経営管理 ／ 権限設定 ｜ 2026-08-05 更新 ｜ 画像10枚は未取得 ｜ 掲載先 help.rakmy.jp/management/権限設定</div></header>
+<div class="meta">経営管理 ／ 権限設定 ｜ オーナー・本部管理者向け ｜ 2026-08-05 更新 ｜ 画像10枚は未取得 ｜ 掲載先 help.rakmy.jp/management/権限設定</div></header>
 <div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#_2">権限設定でできること</a></li><li><a href="#_3">ご利用の前提条件</a></li><li><a href="#_4">用語の説明</a></li><li><a href="#_5">ご利用の流れ</a></li><li><a href="#_6">導入時の初期設定</a></li><li><a href="#_7">権限を作成する</a></li><li><a href="#_8">作成した権限を修正する</a></li><li><a href="#_9">権限をメンバーに割り当てる</a></li><li><a href="#_10">担当店舗を設定する</a></li><li><a href="#_11">権限を変更・解除する</a></li><li><a href="#_12">表示する数字を選ぶ</a></li><li><a href="#_13">オーナーだけができること</a></li><li><a href="#_14">設定内容を確認する</a></li><li><a href="#_15">よくあるご質問</a></li><li><a href="#_16">参照リンク</a></li></ol></div><h1 id="_1">権限設定</h1>
-<p>ラクミー経営管理クラウドを使うメンバーごとに、<strong>どの画面を見られるか</strong>を設定できます。経理担当・エリアマネージャー・アルバイトリーダーなど、貴社の体制に合わせた権限を自由に作成できます。</p>
+<p>ラクミー経営管理クラウドを使うメンバーごとに、<strong>どの画面を見られるか</strong>を設定できます。経理担当・人事担当・アルバイトリーダーなど、貴社の体制に合わせた権限を自由に作成できます。</p>
 <blockquote>
-<p>⚠️ <strong>ご利用上の注意</strong>
-権限設定は<strong>本部管理者のみ</strong>が操作できます。設定を誤ると必要な画面が開けなくなる場合がありますので、変更後は対象の方にご確認ください。</p>
+<p><strong>このページの対象</strong>
+<strong>オーナー・本部管理者の方向け</strong>の説明です。権限の設定はこのお二方のみが行えます。設定を誤ると必要な画面が開けなくなる場合がありますので、変更後は対象の方にご確認ください。
+なお一部の操作（すべての数字の確認、全権の委譲）は<strong>オーナーのみ</strong>が行えます。該当箇所は「オーナーだけができること」でご案内します。</p>
+<p><strong>はじめて設定される方へ</strong>
+「導入時の初期設定」からお読みください。おすすめの権限をまとめて登録できます。すでに設定済みで特定の操作を調べたい方は、下の目次からお進みください。</p>
 </blockquote>
 <p><strong>目次</strong></p>
 <ol>
@@ -93,8 +96,55 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:13px}
 設定できるのは<strong>画面を開けるかどうか</strong>です。画面の中の一部の数字だけを隠したり、画面は開けるが変更だけを禁止したりする設定は、今回のリリースには含まれていません。</p>
 </blockquote>
 <h2 id="_3">ご利用の前提条件</h2>
+<p><strong>この画面で何ができるかは、ご自身の権限によって変わります。</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>オーナー</th>
+<th>本部管理者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>権限を作る・直す</td>
+<td>できる</td>
+<td>できる</td>
+</tr>
+<tr>
+<td>メンバーに割り当てる</td>
+<td>できる</td>
+<td>できる</td>
+</tr>
+<tr>
+<td>担当店舗を設定する</td>
+<td>できる</td>
+<td>できる</td>
+</tr>
+<tr>
+<td>表示する数字を選ぶ</td>
+<td>できる</td>
+<td>できる</td>
+</tr>
+<tr>
+<td><strong>すべての数字を確認する</strong></td>
+<td><strong>できる</strong></td>
+<td>できない</td>
+</tr>
+<tr>
+<td><strong>全権を他の方に委ねる</strong></td>
+<td><strong>できる</strong></td>
+<td>できない</td>
+</tr>
+<tr>
+<td>オーナーの権限を変更する</td>
+<td>できない（全権で固定）</td>
+<td>できない</td>
+</tr>
+</tbody>
+</table>
 <ul>
-<li>操作できるのは<strong>本部管理者</strong>のみです。</li>
+<li>操作できるのは<strong>オーナーと本部管理者</strong>のみです。</li>
 <li>権限を割り当てられるのは、<strong>ラクミー経営管理クラウドにログインする方</strong>です。従業員情報に登録されていても、ログインしない方は対象外です。</li>
 <li><strong>1人が持てる権限は1つ</strong>です。別の権限を割り当てると、それまでの権限は自動的に外れます。</li>
 <li>権限は<strong>会社／店舗の区分</strong>で分かれます。区分によって設定できる画面が変わります。</li>
@@ -120,6 +170,18 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:13px}
 <tr>
 <td><strong>担当店舗</strong></td>
 <td>店舗の権限を持つメンバーが、どの店舗を担当するか。<strong>メンバーごと</strong>に設定します</td>
+</tr>
+<tr>
+<td><strong>スコープ選択</strong></td>
+<td>画面上部にある、会社と店舗を切り替える欄。ここで選んだ側の権限と画面が表示されます</td>
+</tr>
+<tr>
+<td><strong>雛形（ベース）</strong></td>
+<td>権限を作るときの土台。近いものを選んで違うところだけ直します</td>
+</tr>
+<tr>
+<td><strong>権限母体</strong></td>
+<td>経理・人事など複数の権限を派生させるための、共通の土台となる権限</td>
 </tr>
 </tbody>
 </table>
