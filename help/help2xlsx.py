@@ -20,6 +20,8 @@ while i<len(lines):
     if l.startswith("### "): add("H3",clean(l[4:])); i+=1; continue
     m=re.match(r"^【画像([①-⑩])：(.+)】$",l)
     if m: add("画像",f"【画像{m.group(1)}】",clean(m.group(2))); i+=1; continue
+    m=re.match(r"^【図(\d)：(.+)】$",l)
+    if m: add("図",f"【図{m.group(1)}】",clean(m.group(2))+"（help/figures/ のSVGを掲載）"); i+=1; continue
     if l.startswith("> "):
         blk=[]
         while i<len(lines) and lines[i].startswith(">"):
@@ -65,7 +67,7 @@ while i<len(lines):
 HDR=PatternFill("solid",fgColor="1F4E5F"); HF=Font(color="FFFFFF",bold=True,size=10)
 THIN=Side(style="thin",color="D0D7DE"); BD=Border(left=THIN,right=THIN,top=THIN,bottom=THIN)
 WRAP=Alignment(wrap_text=True,vertical="top")
-TONE={"目次":"F5F7F9","H1":"1F4E5F","H2":"D6E7EF","H3":"E8F1F5","注記（引用）":"FFF6E5","小見出し":"F0F4F7","画像":"EEF6FB","FAQ":"F5F5F5","表 見出し":"EDF3F7"}
+TONE={"目次":"F5F7F9","H1":"1F4E5F","H2":"D6E7EF","H3":"E8F1F5","注記（引用）":"FFF6E5","小見出し":"F0F4F7","画像":"EEF6FB","図":"E6F2F5","FAQ":"F5F5F5","表 見出し":"EDF3F7"}
 wb=Workbook(); ws=wb.active; ws.title="ヘルプページ"
 ws.append(["権限設定 ヘルプページ原稿　help.rakmy.jp / management / 権限設定　※ページ掲載時の見た目の順どおりに並べています。画像10枚は未取得。"])
 ws.cell(row=1,column=1).font=Font(size=9,color="6B7280",italic=True)
