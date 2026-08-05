@@ -19,9 +19,9 @@ while i<len(lines):
     if l.startswith("## "): add("H2",clean(l[3:])); i+=1; continue
     if l.startswith("### "): add("H3",clean(l[4:])); i+=1; continue
     m=re.match(r"^【画像([①-⑩])：(.+)】$",l)
-    if m: add("画像",f"【画像{m.group(1)}】",clean(m.group(2))); i+=1; continue
+    if m: add("画像",f"【画像{m.group(1)}】",clean(m.group(2))+"　※スクリーンショット未取得"); i+=1; continue
     m=re.match(r"^【図(\d)：(.+)】$",l)
-    if m: add("図",f"【図{m.group(1)}】",clean(m.group(2))+"（help/figures/ のSVGを掲載）"); i+=1; continue
+    if m: add("図",f"【図{m.group(1)}】",clean(m.group(2))+"　※作成済み。help/figures/ の SVG または PNG を掲載"); i+=1; continue
     if l.startswith("> "):
         blk=[]
         while i<len(lines) and lines[i].startswith(">"):
