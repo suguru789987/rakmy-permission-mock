@@ -23,22 +23,22 @@ def arrow(x1,y,x2,color=ACC):
             f'<path d="M{x2} {y} L{x2-10} {y-5.5} L{x2-10} {y+5.5} Z" fill="{color}"/>')
 
 def fig1():
-    W,H=1000,250
+    W,H=1000,266
     s=head(W,H,"権限設定のご利用の流れ")
     s+=txt(W/2,34,"はじめて設定する場合は、この順番がおすすめです",15,SUB)
     STEP=[("導入時の初期設定","よく使う権限を\nまとめて登録"),("権限を作成する","足りない権限を\n貴社に合わせて追加"),
-          ("メンバーに割り当てる","誰にどの権限を\n付けるか決める"),("担当店舗を設定する","店舗の権限を付けた方に\n担当店舗を紐付け"),
-          ("権限一覧で確認する","誰が何の権限を\n持っているか確認")]
-    bw,gap,y0=176,30,70; x=(W-(bw*5+gap*4))/2
+          ("権限をメンバーに\n割り当てる","誰にどの権限を\n付けるか決める"),("担当店舗を設定する","店舗の権限を付けた方に\n担当店舗を紐付け"),
+          ("設定内容を確認する","誰が何の権限を\n持っているか確認")]
+    bw,gap,y0,bh=176,30,70,128; x=(W-(bw*5+gap*4))/2
     for i,(t,sub) in enumerate(STEP):
         cx=x+i*(bw+gap)
-        s+=rect(cx,y0,bw,112)
+        s+=rect(cx,y0,bw,bh)
         s+=f'<circle cx="{cx+22}" cy="{y0+22}" r="13" fill="{ACC}"/>'+txt(cx+22,y0+27,i+1,13,"#fff","700")
-        s+=txt(cx+bw/2,y0+58,t,15.5,INK,"600")
-        for k,ln in enumerate(sub.split("\n")): s+=txt(cx+bw/2,y0+80+k*17,ln,12.5,SUB)
-        if i<4: s+=arrow(cx+bw+5,y0+56,cx+bw+gap-5)
-    s+=f'<rect x="{x}" y="200" width="{bw*4+gap*3}" height="30" rx="6" fill="#eef6f8" stroke="{ACC}" stroke-width="1" stroke-dasharray="4 3"/>'
-    s+=txt(x+(bw*4+gap*3)/2,220,"ここまでで初期設定は完了です",13,ACC,"600")
+        for k,ln in enumerate(t.split("\n")): s+=txt(cx+bw/2,y0+56+k*19,ln,15.5,INK,"600")
+        for k,ln in enumerate(sub.split("\n")): s+=txt(cx+bw/2,y0+98+k*17,ln,12.5,SUB)
+        if i<4: s+=arrow(cx+bw+5,y0+bh/2,cx+bw+gap-5)
+    s+=f'<rect x="{x}" y="216" width="{bw*4+gap*3}" height="30" rx="6" fill="#eef6f8" stroke="{ACC}" stroke-width="1" stroke-dasharray="4 3"/>'
+    s+=txt(x+(bw*4+gap*3)/2,236,"ここまでで初期設定は完了です",13,ACC,"600")
     return "01_ご利用の流れ",W,H,s+"</svg>"
 
 def fig2():
@@ -59,7 +59,7 @@ def fig3():
     s=head(W,H,"会社と店舗の区分")
     s+=txt(W/2,32,"権限は会社か店舗のどちらかに属します。1つの権限で両方は扱えません",15,SUB)
     s+=f'<line x1="500" y1="52" x2="500" y2="300" stroke="{LINE}" stroke-width="1.5" stroke-dasharray="5 4"/>'
-    for x,kb,t2,sub2,cnt,fs in [(60,"会社","会社の画面（4種類）","会社情報・お支払い・店舗管理・ダウンロード",21,12.5),
+    for x,kb,t2,sub2,cnt,fs in [(60,"会社","会社の画面（4種類）","会社情報・お支払い・店舗（管理）・ダウンロード",21,12.5),
                                 (540,"店舗","店舗の画面（6種類）","発注先&amp;仕入商品・店舗情報・連携設定・費用設定・休業日設定・予算設定",23,11)]:
         cx=x+200
         s+=rect(x,62,400,74,"#f7f7f9",LINE)+txt(cx,92,"共通の画面（17種類）",16,INK,"600")+txt(cx,116,"ダッシュボード・売上分析・従業員管理 など",12.5,SUB)
