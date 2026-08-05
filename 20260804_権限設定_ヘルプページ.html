@@ -1,5 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>権限設定 ｜ ラクミー サービスマニュアル（原稿）</title><style>
 :root{--fg:#1f2328;--sub:#57606a;--line:#d8dee4;--acc:#1F4E5F;--soft:#f6f8fa;--note:#fff8e6;--noteline:#e3c86a}
 *{box-sizing:border-box}
@@ -127,13 +126,40 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:13px}
 <p><strong>権限と担当店舗は別々に設定します。</strong> 同じ「エリアマネージャー」でも、Aさんは2店舗、Bさんは3店舗というように担当が異なるためです。権限は共通のものを使い、担当店舗はメンバーごとに紐付けます。</p>
 <p>「役職」は従業員情報に登録された肩書きで、<strong>権限とは別のもの</strong>です。役職を変更しても権限は変わりません。</p>
 <h2 id="_5">ご利用の流れ</h2>
-<p>権限を使い始めるまでの全体像です。</p>
+<p>権限の設定は、次の3つの画面を行き来しながら進めます。</p>
+<table>
+<thead>
+<tr>
+<th>画面</th>
+<th>ここで何をするか</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>権限設定</td>
+<td>権限を作る・直す</td>
+</tr>
+<tr>
+<td>ユーザー割当</td>
+<td>権限をメンバーに割り当て、担当店舗を紐付ける</td>
+</tr>
+<tr>
+<td>権限一覧</td>
+<td>誰が何の権限を持っているかを確認する</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>権限設定とユーザー割当は、どちらからでも行き来できます</strong>
+権限を作った直後にそのまま割り当てに進むことも、メンバーの設定中に権限そのものを直したり、新しい権限をその場で作ったりすることもできます。すでに割り当て済みの方には、その旨が一覧の行に表示されます。</p>
+</blockquote>
+<p>はじめて設定する場合は、次の順番がおすすめです。</p>
 <ol>
 <li><strong>初期設定で権限を用意する</strong> — おすすめの権限をまとめて登録します。</li>
 <li><strong>足りない権限を作る</strong> — 貴社に合わせた権限を追加します。</li>
 <li><strong>メンバーに割り当てる</strong> — 誰にどの権限を付けるかを決めます。</li>
 <li><strong>担当店舗を設定する</strong> — 店舗の権限を付けた方に、担当店舗を紐付けます。</li>
-<li><strong>確認する</strong> — 誰が何の権限を持っているかを一覧で確認します。</li>
+<li><strong>権限一覧で確認する</strong> — 誰が何の権限を持っているかを確認します。</li>
 </ol>
 <h2 id="_6">導入時の初期設定</h2>
 <p>はじめて権限設定を開くと、<strong>権限テンプレート</strong>の画面が表示されます。よく使う権限をまとめて登録できます。</p>
@@ -332,7 +358,7 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:13px}
 <tr>
 <td>割当編集</td>
 <td>権限の行で「権限編集 →」</td>
-<td>メンバーの設定中に権限そのものを直したいとき</td>
+<td>メンバーの設定中に権限そのものを直したいとき（割当編集の開き方は「権限をメンバーに割り当てる」で説明します）</td>
 </tr>
 </tbody>
 </table>
