@@ -399,4 +399,5 @@
 
 ---
 
+サポートが必要ですか？
 [サポートチームに連絡](https://docs.google.com/forms/d/e/1FAIpQLSe1qwnma82vLEpQQNdzjl_gLSt_qHMHZp6eqmhaziUB11IAOA/viewform)
