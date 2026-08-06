@@ -67,7 +67,7 @@ def build_ac():
 def build_tp():
     rows=list(csv.DictReader(open(f"{ROOT}/20260803_07_権限設定_検証プラン_PdM引継.tsv",encoding="utf-8"),delimiter="\t"))
     hdr=list(rows[0].keys()); wb=Workbook(); ws=wb.active; ws.title="検証プラン"
-    ws["A1"]="確かめる手順。上から順に実施する。S-01〜S-06 は準備、T-01〜 が検証。「判定」に OK / NG を入れる。"
+    ws["A1"]="確かめる手順。上から順に実施する。S-01〜S-06 は準備、T-01〜 が検証。\n「画面」を開いて「操作」を行い、「期待挙動」と「起きてはいけないこと」を見て、「合否ライン」に照らして「判定」に OK / NG を入れる。\n右端の「受入条件ID／遷移フローID／ヘルプページの該当箇所」は、NG のときにどこへ跳ね返るかを示す。"
     ws["A1"].font=Font(bold=True,size=11,color="1F4E5F")
     ws.append(hdr); hrow=ws.max_row
     for r in rows: ws.append([r[k] for k in hdr])
@@ -77,7 +77,7 @@ def build_tp():
     rng=f"{get_column_letter(ji)}{hrow+1}:{get_column_letter(ji)}{ws.max_row}"
     ws.conditional_formatting.add(rng,CellIsRule(operator="equal",formula=['"OK"'],fill=PatternFill("solid",fgColor="D8F0E0")))
     ws.conditional_formatting.add(rng,CellIsRule(operator="equal",formula=['"NG"'],fill=PatternFill("solid",fgColor="FBDCDC")))
-    style(ws,hrow,len(hdr),[8,9,28,12,50,54,9,24,40,18,9],rowh=94)
+    style(ws,hrow,len(hdr),[8,9,22,26,24,38,36,34,40,36,34,10,16,12,32,16,9],rowh=120)
     ws.freeze_panes=f"C{hrow+1}"
     p=f"{ROOT}/20260804_権限設定_02_検証プラン.xlsx"; wb.save(p); return p,len(rows)
 
