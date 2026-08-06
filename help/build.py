@@ -49,6 +49,6 @@ open(HTMLP,"w",encoding="utf-8").write(
 f"""<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>権限設定 ｜ ラクミー サービスマニュアル（原稿）</title><style>{CSS}</style></head><body>
 <header class="top"><h1>ラクミー サービスマニュアル（掲載原稿）</h1>
-<div class="meta">経営管理 ／ 権限設定 ｜ オーナー・本部管理者向け ｜ 2026-08-05 更新 ｜ 図3点は作成済み・スクリーンショット10枚は未取得（撮影リストあり） ｜ 掲載先 help.rakmy.jp/management/権限設定</div></header>
+<div class="meta">経営管理 ／ 権限設定 ｜ オーナー・本部管理者向け ｜ 2026-08-06 更新 ｜ 図3点は作成済み・スクリーンショット10枚は未取得（撮影リストあり） ｜ 掲載先 help.rakmy.jp/management/権限設定</div></header>
 <div class="wrap"><main><div class="toc"><b>ページの構成</b><ol>{toc}</ol></div>{body}</main></div></body></html>""")
 print("Notion版・HTML を生成")
