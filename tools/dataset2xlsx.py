@@ -80,6 +80,52 @@ for t in ["日付は 2026-08-01 で作成しています。検証実施月に合
     ws.append([t]); ws.cell(ws.max_row,1).font=Font(size=10,color="333333")
 for col,w in zip("ABCDE",[62,44,30,18,8]): ws.column_dimensions[col].width=w
 
+
+# ── 目次シート（先頭に置く）
+IDX=[("01_店舗","店舗3件（渋谷・新宿・池袋）","投入","S-02","池袋は担当外＝見えてはいけない店舗として使う"),
+ ("02_従業員","従業員4名と月給","投入","T-09 T-10 T-11 T-18","池袋三郎だけ給与80万。エリア長の画面に出たら担当外が見えている証拠"),
+ ("03_売上","売上・客数・客単価","投入","T-10 T-11 T-23","1：2：4。合計からどの店舗が混ざったか逆算できる"),
+ ("04_仕入","仕入と原価率","投入","T-12 T-23","原価率を全店10%に統一。項目の有無だけを見るため"),
+ ("05_人件費","店舗別の人件費","投入","T-09 T-12","1：2：4"),
+ ("06_費用_予算","地代家賃と売上予算","投入","T-13 T-23","集計・予実対比の画面を空にしないため。予算は売上の1.1倍"),
+ ("07_検証ユーザー","検証ユーザーと割当権限・担当店舗","投入","S-03 S-05 T-09〜T-18","US-07 は付け替え検証のため「エリア長 → 経理（会社）」の遷移表記"),
+ ("08_権限設定値","権限ごとの画面設定値","投入","S-04 T-05","そのまま入力できる。ベース列は指標の既定を決める"),
+ ("09_指標の初期値","権限ごとの指標ON件数","突合","T-19","投入データではない。実測値と突き合わせる期待値"),
+]
+wi=wb.create_sheet("目次",0)
+wi.append(["権限設定 検証用データセット　目次"])
+wi["A1"].font=Font(bold=True,size=14,color=INK)
+wi.append(["投入＝ステージングに登録するデータ／突合＝登録せず実測値と突き合わせる期待値"])
+wi["A2"].font=Font(size=10,color="5B6B7C")
+wi.append([])
+wi.append(["シート","内容","件数","種別","使う検証ID","このデータの役割"]); hi=wi.max_row
+for name,desc,kind,tids,role in IDX:
+    n=len(load(name+".tsv"))
+    extra=""
+    if name=="08_権限設定値":
+        import collections as _c
+        g=_c.OrderedDict()
+        for x in load(name+".tsv"): g.setdefault(x["権限名"],0)
+        extra=f"（権限{len(g)}件）"
+    wi.append([name,desc,f"{n}行{extra}",kind,tids,role])
+for c in wi[hi]:
+    c.font=Font(bold=True,size=10,color="FFFFFF"); c.fill=HDR
+    c.alignment=Alignment(wrap_text=True,vertical="center",horizontal="center")
+for row in wi.iter_rows(min_row=hi,max_row=wi.max_row):
+    for c in row:
+        c.border=BOX
+        if c.row>hi: c.alignment=Alignment(wrap_text=True,vertical="top")
+for col,w in zip("ABCDEF",[18,32,16,10,24,50]): wi.column_dimensions[col].width=w
+wi.row_dimensions[hi].height=30
+for r in range(hi+1,wi.max_row+1): wi.row_dimensions[r].height=34
+wi.freeze_panes=f"A{hi+1}"
+wi.append([])
+wi.append(["■ 読む順番"]); wi.cell(wi.max_row,1).font=Font(bold=True,size=11,color=INK); wi.cell(wi.max_row,1).fill=SUB
+for t in ["1. 「使い方」で なぜこのデータが必要か・1：2：4 の理由 を読む",
+          "2. 「投入手順」のとおり 01 → 03〜06 → 02 → 07 → 08 → 07 の順に登録する",
+          "3. 検証を実施し、09 の期待値と実測値を突き合わせる（T-19）"]:
+    wi.append([t]); wi.cell(wi.max_row,1).font=Font(size=10,color="333333")
+
 NOTE={"01_店舗.tsv":"池袋店は「担当外＝見えてはいけない店舗」として使います。",
  "02_従業員.tsv":"池袋三郎の給与だけ桁を上げています。エリア長の画面に 800,000 が出たら担当外が見えている証拠です。",
  "03_売上.tsv":"1：2：4。合計からどの店舗が含まれるか逆算できます。比率を変えないでください。",
