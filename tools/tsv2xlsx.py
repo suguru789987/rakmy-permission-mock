@@ -77,7 +77,7 @@ def build_tp():
     rng=f"{get_column_letter(ji)}{hrow+1}:{get_column_letter(ji)}{ws.max_row}"
     ws.conditional_formatting.add(rng,CellIsRule(operator="equal",formula=['"OK"'],fill=PatternFill("solid",fgColor="D8F0E0")))
     ws.conditional_formatting.add(rng,CellIsRule(operator="equal",formula=['"NG"'],fill=PatternFill("solid",fgColor="FBDCDC")))
-    style(ws,hrow,len(hdr),[8,9,30,12,52,56,10,26,20,10],rowh=88)
+    style(ws,hrow,len(hdr),[8,9,28,12,50,54,9,24,40,18,9],rowh=94)
     ws.freeze_panes=f"C{hrow+1}"
     p=f"{ROOT}/20260804_権限設定_02_検証プラン.xlsx"; wb.save(p); return p,len(rows)
 
