@@ -93,8 +93,8 @@ for c in range(1,4): ws.cell(row=2,column=c).border=BD
 ws.freeze_panes="A3"; ws.auto_filter.ref=f"A2:C{ws.max_row}"
 for i,w in enumerate([14,78,60],1): ws.column_dimensions[get_column_letter(i)].width=w
 OUT=os.path.expanduser("~/Desktop/権限設定_20260804/ヘルプページ")
-wb.save(f"{OUT}/20260805_権限設定_ヘルプページ.xlsx"); wb.save("20260805_権限設定_ヘルプページ.xlsx")
-with open(f"{OUT}/20260805_権限設定_ヘルプページ.csv","w",encoding="utf-8-sig",newline="") as f:
+wb.save(f"{OUT}/20260806_権限設定_ヘルプページ.xlsx"); wb.save("20260806_権限設定_ヘルプページ.xlsx")
+with open(f"{OUT}/20260806_権限設定_ヘルプページ.csv","w",encoding="utf-8-sig",newline="") as f:
     csv.writer(f).writerows([["階層","内容","補足"]]+rows)
 from collections import Counter
 print(f"作成: {len(rows)}行")
