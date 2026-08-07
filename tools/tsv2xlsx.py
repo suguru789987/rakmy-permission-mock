@@ -60,9 +60,57 @@ def build_ac():
     rng=f"{get_column_letter(ni)}{hrow+1}:{get_column_letter(ni)}{ws.max_row}"
     ws.conditional_formatting.add(rng,CellIsRule(operator="equal",formula=['"OK"'],fill=PatternFill("solid",fgColor="D8F0E0")))
     ws.conditional_formatting.add(rng,CellIsRule(operator="equal",formula=['"NG"'],fill=PatternFill("solid",fgColor="FBDCDC")))
-    W=[16,30,16,9,10,34,40,36,22,22,16,26,24,9,16,12,12]
+    W=[16,28,16,9,10,32,38,34,20,20,14,30,22,22,9,16,12,12]
     style(ws,hrow,len(hdr),W,rowh=76)
     ws.freeze_panes=f"D{hrow+1}"
+
+    # ── 列仕様シート
+    wsc=wb.create_sheet("列仕様",0)
+    wsc["A1"]="受入条件表 列仕様"; wsc["A1"].font=Font(bold=True,size=14,color="1F4E5F")
+    wsc["A2"]="どこまで実装できれば合格かを定めた表です。実装が条件を満たしているかを確かめ、「合否」を埋めます。実際の画面で動かして確かめる手順は 20260804_権限設定_02_検証プラン.xlsx です。"
+    wsc["A2"].font=Font(size=10,color="5B6B7C")
+    wsc.append([])
+    wsc.append(["#","列名","何を書くか","記入者","例"]); hc=wsc.max_row
+    for r in [
+     ("1","マイルストーン","M1〜M9。実装の順番。上から順に到達させる","作成時","M2 制御が効く"),
+     ("2","マイルストーンの完了条件","そのマイルストーンが終わったと言える状態","作成時","作った権限どおりに画面が開く／開かない。直URLも塞がる"),
+     ("3","設計ポイント","A〜K。同じ観点の条件をまとめたもの。定義は 00_定義表.xlsx","作成時","D. 制御が実際に効く"),
+     ("4","条件ID","AC＝機能の条件、K＝境界設計（動作テストでは検出できない）","作成時","AC-11"),
+     ("5","実装レベル","MVP必須／品質必須／推奨／次段階。次段階はP1では実装しない","作成時","MVP必須"),
+     ("6","何を実装するか","実装すべきことを一文で","作成時","許可していない画面が開けない。メニュー非表示だけでなく直URLも塞ぐ"),
+     ("7","合格ライン（この数値を満たせば実装完了）","OK/NGを分ける数値の線。件数・割合で書く","作成時","メニュー非表示かつ直URLでも開けない=100%"),
+     ("8","実装できていないと起きること","満たさないまま出すと何が起きるか。優先順位の判断材料","作成時","メニューから消しても直URLで開けてしまい、権限を絞った意味がなくなる"),
+     ("9","実装箇所","どこに実装されるか。エンジニアとの確認用","作成時","ルーティング／各画面のガード"),
+     ("10","確認する画面","実装できているかを確かめる画面","作成時","各画面（メニューと直URL）"),
+     ("11","対応検証ID","この条件を確かめる検証ケース。検証プランの検証IDと対応","作成時","T-09 T-09b T-11"),
+     ("12","ヘルプページの該当箇所","顧客に何と説明しているか。NGならヘルプの記述も直す必要がある","作成時","ケース別のやり方（経理担当に、売上とお支払だけ見せたい）"),
+     ("13","仕様書の根拠","仕様書のどの節に基づくか","作成時","§4 段階導入 P1"),
+     ("14","エビデンス","合否の根拠として残すもの。スクショ名や記録","実施時","T-09.png T-09b.png"),
+     ("15","合否","OK／NG／対象外。入れると上のマイルストーン集計に反映される","実施時","OK"),
+     ("16","実測値","確かめた結果の数値・状態をそのまま書く","実施時","開ける5画面／開けない3画面とも100%"),
+     ("17","判定者","誰が判定したか","実施時","鈴木"),
+     ("18","判定日","いつ判定したか。実装が変わると結果も変わるため必須","実施時","2026-08-20"),
+    ]: wsc.append(list(r))
+    for c in wsc[hc]:
+        c.font=Font(bold=True,size=10,color="FFFFFF"); c.fill=HDR
+        c.alignment=Alignment(wrap_text=True,vertical="center",horizontal="center")
+    for row in wsc.iter_rows(min_row=hc,max_row=wsc.max_row):
+        for c in row:
+            c.border=BOX
+            if c.row>hc: c.alignment=Alignment(wrap_text=True,vertical="top")
+    for col,w in zip("ABCDE",[5,26,52,10,50]): wsc.column_dimensions[col].width=w
+    for r in range(hc+1,wsc.max_row+1): wsc.row_dimensions[r].height=42
+    wsc.freeze_panes=f"A{hc+1}"
+    wsc.append([]); wsc.append(["■ 使い方"])
+    wsc.cell(wsc.max_row,1).font=Font(bold=True,size=11,color="1F4E5F"); wsc.cell(wsc.max_row,1).fill=SUB2
+    for t in ["1. マイルストーン M1 から順に、その条件が実装されているかをエンジニアと確認する",
+              "2. 「確認する画面」を開き、「合格ライン」の数値を満たしているかを見る",
+              "3. 「実測値」「合否」「判定者」「判定日」を記入する。「エビデンス」に根拠を残す",
+              "4. 上の集計ブロックでマイルストーンごとの到達率が自動計算される",
+              "5. NG のときは「対応検証ID」で挙動を確かめ、「ヘルプページの該当箇所」で顧客への説明も直す必要があるかを見る",
+              "※ 実装の確認がこの表、実際に動かしての確認が検証プラン。役割が違うので両方を使う"]:
+        wsc.append([t]); wsc.cell(wsc.max_row,1).font=Font(size=10,color="333333")
+
     p=f"{ROOT}/20260804_権限設定_01_受入条件表.xlsx"; wb.save(p); return p,len(rows)
 
 def build_tp():
