@@ -162,7 +162,52 @@ if openpyxl:
         chk("生成",f"{os.path.basename(f)} の列仕様が実データと一致",spec==list(src[0].keys()),
             str(set(spec)^set(src[0].keys())))
 
-print("\n■ 10. デスクトップ同期")
+print("\n■ 10. 連番・重複・区分の自動検査")
+# ID の重複
+chk("連番","条件IDに重複が無い",len(acid)==len(AC),str([k for k,v in collections.Counter(x["条件ID"] for x in AC).items() if v>1]))
+chk("連番","検証IDに重複が無い",len(tid)==len(TP),str([k for k,v in collections.Counter(x["検証ID"] for x in TP).items() if v>1]))
+# ヘルプの画像番号が掲載順に連番
+NUM="①②③④⑤⑥⑦⑧⑨⑩"
+imgs=re.findall(r"【画像([①-⑩])：",HELP)
+chk("連番","ヘルプの画像番号が掲載順に連番",imgs==list(NUM[:len(imgs)]),f"実際={''.join(imgs)}")
+figs=re.findall(r"【図(\d)：",HELP)
+chk("連番","図のファイルが実在",all(os.path.exists(f"help/figures/0{n}_"+d+".svg") for n,d in
+    [("1","ご利用の流れ"),("2","権限と担当店舗"),("3","会社と店舗の区分")]))
+# 列仕様の通し番号が 1..N
+if openpyxl:
+    for f in ["20260804_権限設定_01_受入条件表.xlsx","20260804_権限設定_02_検証プラン.xlsx"]:
+        w=openpyxl.load_workbook(f)["列仕様"]
+        ns=[int(r[0]) for r in w.iter_rows(min_row=5,values_only=True) if r[0] and str(r[0]).isdigit()]
+        chk("連番",f"{os.path.basename(f)[-12:]} の列番号が連番",ns==list(range(1,len(ns)+1)),str(ns))
+# 08 の各権限の許可画面が、その区分で扱える画面か（AC-22 型の取り違えを検出）
+ctx=collections.defaultdict(set)
+for x in D8: ctx[x["ctx"]].add(x["画面（カテゴリ）"])
+bad=[]
+for x in D8:
+    if x["設定値"] in ("なし",""): continue
+    c=x["ctx"]; k=x["区分"]
+    if (c=="company" and k!="会社") or (c=="shop" and k!="店舗"):
+        bad.append((x["権限名"],x["画面（カテゴリ）"],k,c))
+chk("区分","権限の許可画面が区分の範囲内（AC-22型）",not bad,str(bad[:5]))
+# 検証プラン・受入条件表の括弧内に書いたヘルプ引用が本文に実在するか
+HELP_FLAT=HELP.replace("**","")
+def quoted(rows,k):
+    o=[]
+    for x in rows:
+        v=x.get("ヘルプページの該当箇所","")
+        if v.startswith("—"): continue   # 該当なしの説明書きは対象外
+        for m in re.findall(r"（([^）]+)）",v):
+            for piece in re.split(r"\s*[＋／]\s*",m):
+                piece=piece.strip()
+                if not piece or piece.startswith("—") or "図" in piece or "顧客向け" in piece or "設計" in piece: continue
+                if "ケース" in piece and "すべて" in piece: continue
+                if piece.replace("**","") not in HELP_FLAT: o.append((x[k],piece))
+    return o
+q1=quoted(AC,"条件ID"); q2=quoted(TP,"検証ID")
+chk("参照","受入条件表のヘルプ引用が本文に実在",not q1,str(q1[:4]))
+chk("参照","検証プランのヘルプ引用が本文に実在",not q2,str(q2[:4]))
+
+print("\n■ 11. デスクトップ同期")
 if os.path.isdir(DESK):
     pairs=[(f,f) for f in ["20260803_06_権限設定_受入条件表_PdM引継.tsv","20260803_07_権限設定_検証プラン_PdM引継.tsv",
         "20260803_10_権限設定_検証用データセット.md","20260804_権限設定_01_受入条件表.xlsx",
