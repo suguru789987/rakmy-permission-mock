@@ -1592,6 +1592,30 @@ function toggleListPickItem(g,cid){ listExpand[g]=false; const a=listPick[g], i=
 function clearListPick(g){ listPick[g]=[]; listExpand[g]=false; persistColState(); renderList(); }   // クリア＝全解除（内訳に戻る）
 // 群の表示列（葉）：展開=全カテゴリ／折りたたみ＋選択あり=選択カテゴリ／折りたたみ＋未選択=内訳1列
 function groupLeaves(g){ if(listExpand[g.key]) return g.cats.length?g.cats.map(c=>({c})):[{tally:true}]; if(listPick[g.key].length){ const lv=listPick[g.key].map(id=>g.cats.find(c=>c.id===id)).filter(Boolean).map(c=>({c})); if(lv.length) return lv; } return [{tally:true}]; }   // 表示順は選択順に従う。選択列がスコープ外で全滅した時は内訳に戻す
+// AC-35 権限の削除：割当ユーザーが1名以上いる権限は削除できない（警告のみ）。消すとその人が未割当になり業務が止まるため
+function roleHolders(ri){ const rk=ROLES[ri].key; return USERS.filter(u=>(u.roleKeys||[]).includes(rk)); }
+function delBtn(ri){
+  const r=ROLES[ri];
+  if(r.system) return '';                                   // オーナー（全権固定）は削除させない
+  const n=roleHolders(ri).length;
+  return `<br><button class="rowedit" style="background:${n?'#c9ced4':'#c0573a'};margin-top:5px;" onclick="delRole(${ri})">削除</button>`;
+}
+function delRole(ri){
+  const r=ROLES[ri], hs=roleHolders(ri);
+  if(hs.length){
+    alert(`「${r.name}」は ${hs.length}名 に割り当てられているため削除できません。\n\n`
+      +`${hs.map(u=>'・'+u.name).join('\n')}\n\n`
+      +`先に「ユーザー割当」でこの方々に別の権限を割り当てるか、割当を外してから削除してください。`
+      +`\n（権限を消すとその方は何も見られなくなります）`);
+    return;
+  }
+  if(!confirm(`「${r.name}」を削除します。よろしいですか。`)) return;
+  const key=r.key;
+  _allCat().forEach(it=>{ if(it.roles) delete it.roles[key]; });   // 指標カタログ側の列も落とす
+  ROLES.splice(ri,1);
+  toast(`「${r.name}」を削除しました`);
+  show('list');
+}
 function renderList(){
   const vc=orderedCats('view').filter(inScope), oc=orderedCats('ops').filter(inScope);   // ヘッダーの会社／店舗スコープに該当する画面だけを列にする
   const ALL=[{key:'view',cls:'grpview',label:'＋ 表示画面権限列を追加',gname:'閲覧権限（分析・レポート・管理画面の閲覧）',cats:vc},{key:'ops',cls:'grpops',label:'＋ 設定画面権限列を追加',gname:'設定画面権限（操作・設定）',cats:oc}];
@@ -1637,8 +1661,8 @@ function renderList(){
     const nMet = CATALOG.transactions.reduce((s,g)=>s+g.items.filter(i=>catItemAllowed(i,r.key)).length,0);   // そのロールが閲覧できる指標数＝指標一覧設定の反映
     let act;
     if(r.system) act=`<div style="color:#9aa0a6;font-size:11px;font-weight:700;margin-bottom:4px;">全権・固定（編集不可）</div><button class="rowedit" onclick="openCatalogAll()">指標管理（全件）＞</button><br><button class="rowedit" style="background:#159b5d;margin-top:5px;" onclick="openDelegate()">付与先を指定 ＞</button>`;
-    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧（${nMet}）＞</button>`;
-    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧（${nMet}）＞</button>`;
+    else if(r.tier==='shop') act=`<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧（${nMet}）＞</button>${delBtn(ri)}`;
+    else act=`${r.delegated?'<div style="color:#159b5d;font-size:11px;font-weight:700;margin-bottom:4px;">全権（オーナーが指名）</div>':''}<button class="rowedit" onclick="editRoleHere(${ri})">権限編集</button><br><button class="rowedit" style="background:#3b82f6;margin-top:5px;" onclick="openCatalogFor('${r.key}')">指標一覧（${nMet}）＞</button>${delBtn(ri)}`;
     h+=`<td class="actcol">${act}</td></tr>`;
   });
   const tbl=document.getElementById('listTable');
