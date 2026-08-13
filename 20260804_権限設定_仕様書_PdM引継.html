@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>権限設定機能 仕様書（PdM引き継ぎ版）</title><style>
+<title>権限設定 仕様書（PdM引継）</title><style>
 :root{--fg:#1f2328;--sub:#57606a;--line:#d8dee4;--acc:#1F4E5F;--soft:#f6f8fa}
 *{box-sizing:border-box}
 body{margin:0;background:#eef1f4;color:var(--fg);font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;line-height:1.85;font-size:15px}
@@ -24,7 +24,7 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 @media print{body{background:#fff}main{box-shadow:none;padding:0}header.top{background:#fff;color:#000;border-bottom:2px solid #000}}
 </style></head><body>
 <header class="top"><h1>権限設定機能 仕様書（PdM引き継ぎ版）</h1><div class="meta">2026-08-04 ／ ラクミー経営管理 ／ 動作モック <a href="https://suguru789987.github.io/rakmy-permission-mock/">https://suguru789987.github.io/rakmy-permission-mock/</a></div></header>
-<div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#_1">概要</a></li><li><a href="#0">0. この文書の使い方</a></li><li><a href="#1">1. 背景と課題</a></li><li><a href="#2">2. スコープと用語</a></li><li><a href="#3">3. 権限モデル</a></li><li><a href="#4">4. 段階導入</a></li><li><a href="#5">5. 画面仕様</a></li><li><a href="#6">6. データモデル（本番実装）</a></li><li><a href="#7">7. 設計判断の記録（なぜそう決めたか）</a></li><li><a href="#8-pdm">8. 未決事項（後任PdMの判断が必要）</a></li><li><a href="#9">9. リスクと対策</a></li><li><a href="#10">10. 引き継ぎメモ</a></li></ol></div><h1 id="pdm">権限設定機能 仕様書（PdM引き継ぎ版）</h1>
+<div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#_1">概要</a></li><li><a href="#0">0. この文書の使い方</a></li><li><a href="#1">1. 背景と課題</a></li><li><a href="#2">2. スコープと用語</a></li><li><a href="#3">3. 権限モデル</a></li><li><a href="#4">4. 段階導入</a></li><li><a href="#5">5. 画面仕様</a></li><li><a href="#6">6. データモデル（本番実装）</a></li><li><a href="#7">7. 設計判断の記録（なぜそう決めたか）</a></li><li><a href="#8-pdm">8. 未決事項（後任PdMの判断が必要）</a></li><li><a href="#9">9. リスクと対策</a></li><li><a href="#10">10. 引き継ぎメモ</a></li><li><a href="#11_1">11. 更新履歴</a></li></ol></div><h1 id="pdm">権限設定機能 仕様書（PdM引き継ぎ版）</h1>
 <p>2026-08-03 ／ ラクミー経営管理 ／ 対象: <code>suguru789987/rakmy-permission-mock</code> build <code>eedfcd3</code>（整合監査済み・<code>20260803_08</code>）</p>
 <p><strong>動作モック（公開URL・ログイン不要）</strong></p>
 <h3 id="httpssuguru789987githubiorakmy-permission-mock">👉 https://suguru789987.github.io/rakmy-permission-mock/</h3>
@@ -105,12 +105,12 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 </tr>
 <tr>
 <td><code>20260803_06</code></td>
-<td>受入条件表（31条件）</td>
+<td>受入条件表（<strong>45条件</strong>）</td>
 <td>後任PdM・QA</td>
 </tr>
 <tr>
 <td><code>20260803_07</code></td>
-<td>検証プラン（<strong>29件</strong>）。操作系と計算系を統合し1本に。<strong>上部の準備（S-01〜S-06）に初期設定を集約</strong>し、設定値は <code>20260803_10</code> のデータセットを参照する</td>
+<td>検証プラン（<strong>34ケース</strong>）。操作系と計算系を統合し1本に。<strong>上部の準備（S-01〜S-06）に初期設定を集約</strong>し、設定値は <code>20260803_10</code> のデータセットを参照する</td>
 <td>後任PdM・QA</td>
 </tr>
 <tr>
@@ -289,6 +289,7 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 </tbody>
 </table>
 <h3 id="32-3">3.2 権限レベル（3状態）</h3>
+<p><strong>ダッシュボードは閲覧固定で権限設定の対象外。</strong> ランディング画面のため「なし」に設定できない。全項目オフの権限でもログインでき、ダッシュボードに着地する（→ AC-13）。したがって「許可していない画面は開けない」（AC-11）の対象からも外れる。</p>
 <p><strong><code>なし ⊂ 閲覧 ⊂ 操作</code></strong> の順序権限。<strong>操作＝登録・編集・削除を一体で含む書き込み全般</strong>。</p>
 <p>機能の性質により取りうる段階が異なる。</p>
 <table>
@@ -390,8 +391,9 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 </tbody>
 </table>
 <p><strong>エリア長は既定テンプレートに含めない。</strong> 現時点で店長と権限差はなく、顧客の組織によって要否も内容も変わるため、<strong>店長をベースに顧客が作るカスタマイズ例</strong>として扱う。上位の役割という位置づけでもない。差別化が要る場合は権限編集で画面を絞る／広げる、または担当店舗数で行う。</p>
-<p>既定テンプレートは <strong>オーナー／本部管理／店長／従業員の4種</strong>（＋ゼロから作るプレーン）。</p>
+<p>既定テンプレートは <strong>オーナー／本部管理／店長／従業員の4種</strong>（＋ゼロから作る「まっさら（なし）」）。</p>
 <h3 id="35-112026-08-03">3.5 1人1ロール（2026-08-03 決定・暫定）</h3>
+<p><strong>副作用：会社画面と店舗画面の両方を扱う職務は、1つの権限で表現できない（2026-08-05 判明）。</strong> 区分は会社／店舗のどちらか一方しか選べず、1人が持てる権限は1つのため。たとえば経理は「お支払い（会社画面）」と「費用設定・予算設定（店舗画面）」の両方を見るが、<strong>「経理（会社）」と「経理（店舗）」の2つを作って人を分ける運用</strong>になる。エンジニアからの指摘で判明した。→ AC-34（次段階）・AC-22（SC-01a／SC-01b に分割）</p>
 <p>1人が同時に持てる権限は<strong>1つ</strong>。付け替えると前の権限は自動的に外れる。</p>
 <p><strong>採用理由</strong> — 「この人は結局何が見られるのか」が権限名だけで確定する。合算方式では権限名を見ても実際の可視範囲が分からず、点検が困難になる。</p>
 <p><strong>副作用</strong> — 兼務（店長 兼 本部経理など）は「店長＋経理」という権限を新設して表現する。兼務の組み合わせだけ権限が増える。</p>
@@ -582,6 +584,8 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 </tbody>
 </table>
 <p><strong>ステップ順は「識別 → 中身 → 確定」で固定。</strong> 区分を先に決めるのは、区分が③に出る画面リストを絞るため（会社なら店舗専用6画面が出ない）。逆順にすると設定後に区分変更でやり直しになる。</p>
+<p><strong>権限名は一意（2026-08-13 決定）</strong> — 既存と同じ権限名では保存できず「別名で保存してください」を出す。同名が並ぶと割当時にどちらを選ぶか判別できないため。→ AC-38</p>
+<p><strong>区分は保存後に変更できない（2026-08-13 決定）</strong> — 編集モードでは区分を非活性にする。区分を変えると③の画面リストが入れ替わり、既存の設定値が意味を失う（何が残り何が消えたか追えない）。別区分が必要なら「既存権限をコピー」で設定を引き継いで新規作成する。→ AC-39</p>
 <p><strong>ベース候補</strong></p>
 <table>
 <thead>
@@ -601,7 +605,7 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 </tr>
 <tr>
 <td>ゼロから</td>
-<td>プレーンテンプレート（全機能なし）</td>
+<td><strong>まっさら（なし）</strong>（全機能なし）</td>
 </tr>
 </tbody>
 </table>
@@ -616,6 +620,7 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 <li>ヘッダーの会社名プルダウンで<strong>会社／店舗スコープを切替</strong>。行（ロール）と列（画面）が同時に追従する</li>
 <li>オーナーは一覧から除外。専用操作は右上「👑 オーナー操作」に集約</li>
 </ul>
+<p><strong>権限の削除（2026-08-13 決定）</strong> — 権限一覧の各行から削除できる。<strong>割当ユーザーが1名以上いる権限は削除できず、保持者名を挙げた警告を出す。</strong> 消した瞬間にその人が未割当になり、ログインしても何も見えなくなる（業務停止）ため。先に割当を外すか別の権限に付け替えてから削除する。オーナー（全権固定）には削除の導線を出さない。削除時は指標一覧側の該当列も同時に落とす。→ AC-35</p>
 <h3 id="54">5.4 ユーザー割当・割当編集・一括割当</h3>
 <p><strong>割当の入口は3つ（意図的に共存）</strong></p>
 <table>
@@ -764,7 +769,7 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 <tr>
 <td>F-04</td>
 <td>新規作成（割当編集起点）</td>
-<td>割当編集 → 権限編集①ベース（<strong>プレーン既定</strong>）→ ②→③ → 保存 → 割当編集</td>
+<td>割当編集 → 権限編集①ベース（<strong>「まっさら（なし）」既定</strong>）→ ②→③ → 保存 → 割当編集</td>
 <td>割当編集</td>
 <td>← 割当編集へ ＋ ← 権限一覧へ</td>
 </tr>
@@ -1000,7 +1005,7 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 <tbody>
 <tr>
 <td>F-04</td>
-<td>割当編集から新規作成すると、ベースが「プレーンテンプレート」で開く</td>
+<td>割当編集から新規作成すると、ベースが「まっさら（なし）」で開く</td>
 </tr>
 <tr>
 <td>F-05</td>
@@ -1087,9 +1092,14 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 <h3 id="c">C. 区分とデータ範囲は独立した別軸</h3>
 <p><strong>却下案</strong> — 「店舗ロール＝自店舗のみ」と固定する。</p>
 <p><strong>理由</strong> — 「従業員だが複数店舗に所属」「店舗ロールだが全社データを見る」といった実運用がある。ロール定義の区分・範囲は<strong>既定値（テンプレ）にすぎず</strong>、実効スコープは割当で束縛する。</p>
+<p><strong>「全店」は動的（2026-08-13 決定）</strong> — 店舗が追加されたとき、「全店」を選んでいる人の対象に<strong>自動で含まれる</strong>。スナップショット案（選んだ時点の店舗を保持）は、新店舗が見えず業務が止まるため却下した。ただし<strong>誰の操作も無く閲覧範囲が広がる</strong>ため、ヘルプページに明示することを受入条件に含めている。特定店舗だけを見せたい場合は「全店」ではなく個別に選ぶ。→ AC-36</p>
+<p><strong>店舗の閉店・削除は不活性化（2026-08-13 決定）</strong> — 物理削除せず、担当店舗の紐付けは保持する。物理削除すると担当店舗が0件になり、「店舗ロールは1件以上必須」（AC-19）と矛盾する状態が生まれるため。→ AC-37</p>
 <h3 id="d">D. 操作＝登録・編集・削除を一体（削除を分けない）</h3>
 <p><strong>却下案</strong> — 4状態（なし／閲覧／操作／全て（削除））＋操作詳細トグル。実際に実装したが撤去した。</p>
 <p><strong>理由</strong> — 状態が増えるほど設定コストが跳ね上がる割に、「登録はできるが削除はできない」の実用ケースが乏しかった。破壊的な削除は実行時の確認ダイアログで担保する方が実効的。</p>
+<h3 id="d-fail-closed">D'. 画面カテゴリを追加したときの既定は「なし」（fail-closed）</h3>
+<p><strong>却下案</strong> — 追加した画面を既存の権限でも見えるようにする（利便性優先）。</p>
+<p><strong>理由</strong> — 画面が増えるたびに全員の閲覧範囲が黙って広がる。顧客は増えたことに気づけない。<strong>既定は必ず安全側（なし）</strong>とし、必要なら顧客が明示的に許可する。動作テストでは検出できないため、コード上の既定値をエンジニアと確認する。→ AC-12・T-24</p>
 <h3 id="e">E. 機密ランクを画面に出さない</h3>
 <p><strong>却下案</strong> — 指標に🔓🔸🔒バッジを表示する。実装したが撤去した。</p>
 <p><strong>理由</strong> — バッジを出すと顧客が指標を選ぶたびにランクの妥当性を判断させることになる。ランクは初期値の自動決定にのみ使い、画面はシンプルなON/OFFスイッチにする。</p>
@@ -1263,4 +1273,65 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 <td>未</td>
 </tr>
 </tbody>
-</table></main></div></body></html>
+</table>
+<hr />
+<h2 id="11_1">11. 更新履歴</h2>
+<p>本書は 2026-08-04 にいったん提出したが、その後の決定を反映して更新している。
+<strong>受入条件表（<code>20260803_06</code>）・検証プラン（<code>20260803_07</code>）が最新の判定基準</strong>で、本書はその背景を説明するもの。判断の時系列は <code>PDM_JUDGE.md</code> に記録している。</p>
+<table>
+<thead>
+<tr>
+<th>日付</th>
+<th>反映した内容</th>
+<th>関連</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-08-05</td>
+<td>1人1ロールの副作用（会社と店舗をまたぐ職務は権限を2つ作る）。エンジニア指摘で判明</td>
+<td>§3.5 ／ AC-22 AC-34</td>
+</tr>
+<tr>
+<td>2026-08-06</td>
+<td>ダッシュボードは閲覧固定＝権限設定の対象外</td>
+<td>§3.2 ／ AC-11 AC-13</td>
+</tr>
+<tr>
+<td>2026-08-06</td>
+<td>雛形の呼称を実画面に合わせて「まっさら（なし）」に統一（旧「プレーン」）</td>
+<td>§5.2 ／ AC-08 AC-09</td>
+</tr>
+<tr>
+<td>2026-08-13</td>
+<td>画面カテゴリ追加時の既定は「なし」（fail-closed）</td>
+<td>§7-D' ／ AC-12</td>
+</tr>
+<tr>
+<td>2026-08-13</td>
+<td>権限の削除は割当を外してから（割当があるうちは警告してブロック）</td>
+<td>§5.3 ／ AC-35</td>
+</tr>
+<tr>
+<td>2026-08-13</td>
+<td>「全店」は動的。店舗が増えたら自動で対象に含まれる</td>
+<td>§7-C ／ AC-36</td>
+</tr>
+<tr>
+<td>2026-08-13</td>
+<td>店舗の閉店・削除は不活性化。担当店舗の紐付けは保持</td>
+<td>§7-C ／ AC-37</td>
+</tr>
+<tr>
+<td>2026-08-13</td>
+<td>権限名は一意。重複は「別名で保存してください」</td>
+<td>§5.2 ／ AC-38</td>
+</tr>
+<tr>
+<td>2026-08-13</td>
+<td>区分は保存後に変更できない。別区分はコピーして新規作成</td>
+<td>§5.2 ／ AC-39</td>
+</tr>
+</tbody>
+</table>
+<p><strong>未確定</strong> — 権限テンプレートを再度適用したときの挙動（同名の権限が二重に作られるか）。初回のみ表示される画面のため優先度は低い。</p></main></div></body></html>
