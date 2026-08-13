@@ -92,8 +92,8 @@ print("\n■ 4. 件数の整合")
 perm={x["権限名"] for x in D8}
 chk("件数",f"権限7件（実データ{len(perm)}）",len(perm)==7)
 chk("件数",f"検証ユーザー8名（実データ{len(D7)}）",len(D7)==8)
-chk("件数",f"受入条件40件（{len(AC)}）",len(AC)==40)
-chk("件数",f"検証31ケース（{len(TP)}）",len(TP)==31)
+chk("件数",f"受入条件45件（{len(AC)}）",len(AC)==45)
+chk("件数",f"検証34ケース（{len(TP)}）",len(TP)==34)
 blob=" ".join(" ".join(x.values()) for x in AC+TP)
 stale=[m for m in re.findall(r"[^ 　]{0,10}[56]権限[^ 　]{0,10}",blob)]
 chk("件数","古い権限件数（5・6権限）が残っていない",not stale,str(stale))
