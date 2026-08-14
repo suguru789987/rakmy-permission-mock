@@ -1394,7 +1394,7 @@ const ROLE_TEMPLATES=[
   {id:'blank',   name:'まっさら（なし）', group:'その他',     tier:'shop',    scope:'self',  preset:'blank',   rep:'tmp',     summary:'全機能なしから付与'},
 ];
 let _rmBasePerm=null, _rmBaseSrc=null;   // 作成に使うベース権限（クローン元）と複製元roleKey
-let _nrMode='new', _nrEditIdx=-1;        // 新規作成／既存編集の兼用
+let _nrMode='new', _nrEditIdx=-1, _editOrigName='';        // 新規作成／既存編集の兼用
 let _rmBaseVal='', _rmBaseOpts=[], _rmBaseOpen=false;   // ハードプルダウンの選択値・候補・開閉
 // 候補をデモモードで出し分け：新規導入デモは既存コピーを出さない（既存＝雛形そのものなため）／運用デモは出す
 function buildBaseOpts(){ const o=[]; ROLE_TEMPLATES.filter(t=>t.id!=='blank').forEach(t=>o.push({val:'tpl:'+t.id,name:t.name+'（雛形）',grp:'ベーステンプレートから'}));
@@ -1411,6 +1411,7 @@ function rmBasePreviewRole(){ const t=_rmBaseVal; if(t.startsWith('role:')){ con
 function createRole(preselect, origin){
   _editBackTo = origin||'list'; if(origin==='assignedit') _editBackUi=_assignUi; renderNrBack();
   _nrMode='new'; _nrEditIdx=-1;
+  document.querySelectorAll('#rmTier button').forEach(b=>{ b.disabled=false; b.style.opacity=''; b.style.cursor=''; b.title=''; });   // 新規は区分を選べる
   document.getElementById('nrTitle').textContent='権限を新規作成';
   document.getElementById('rmCreateBtn').textContent='作成';
   document.getElementById('nrBaseStep').style.display='';
@@ -1432,9 +1433,17 @@ function editRoleHere(ri, origin){ const r=ROLES[ri]; if(r.system){ toast('オ�
   document.getElementById('stepnoBasic').textContent='①'; document.getElementById('stepnoContent').textContent='②';   // 編集＝①ベース非表示なので①基本②内容
   _tpdExp={};
   _rmBasePerm={...r.perm}; _rmBaseSrc=null;
-  rmTier=r.tier; document.querySelectorAll('#rmTier button').forEach(b=>b.classList.toggle('on',b.dataset.t===r.tier));
+  rmTier=r.tier;
+  // AC-39 区分は保存後に変更できない：編集時は選択済みだけを残し、他は押せなくする
+  document.querySelectorAll('#rmTier button').forEach(b=>{
+    const on = b.dataset.t===r.tier;
+    b.classList.toggle('on',on);
+    b.disabled = !on; b.style.opacity = on?'':'0.35'; b.style.cursor = on?'':'not-allowed';
+    b.title = on?'':'区分は保存後に変更できません。別区分が必要な場合は「既存権限をコピー」で新規作成してください';
+  });
   _rmBaseTier=r.tier; _rmBaseScope=r.scopeType; rmSetScope(r.scopeType);
   document.getElementById('rmName').value=r.name;
+  _editOrigName=r.name;   // AC-40 名前を変えて保存したときに上書きか新規かを聞くため
   document.getElementById('rmNote').textContent='';
   show('newrole'); rmRefreshPanel(); rmValidate(); rmCheckIntegrity(); renderAssignPreview();
 }
@@ -1491,9 +1500,14 @@ function saveRoleData(){
   const nm=document.getElementById('rmName').value.trim();
   if(!nm){ document.getElementById('rmName').focus(); document.getElementById('rmName').style.borderColor='#cc3333'; toast('権限名を入力してください'); return null; }
   const tier=rmTier, scope=tier, shops=undefined;   // 実店舗はユーザー割当で紐付け（型のみ）
-  if(_nrMode==='edit' && _nrEditIdx>=0){   // 既存編集：上書き保存
+  if(_nrMode==='edit' && _nrEditIdx>=0 && !_saveAsNew){   // 既存編集：上書き保存
     const r=ROLES[_nrEditIdx]; r.name=nm; r.tier=tier; r.scope=scope; r.scopeType=rmScope; r.shops=shops; r.perm={..._rmBasePerm};
     toast(`「${nm}」の権限を保存しました`); return r.key;
+  }
+  if(nameTaken(nm, _saveAsNew?-1:_nrEditIdx)){   // AC-38 権限名は一意
+    showAlert(`「${nm}」はすでに使われています。別名で保存してください。`,'権限名が重複しています',
+      ()=>{ const e=document.getElementById('rmName'); e.focus(); e.style.borderColor='#cc3333'; });
+    return null;
   }
   _roleSeq++; const key='role'+_roleSeq;
   _allCat().forEach(it=>it.roles[key] = _rmBaseSrc ? !!it.roles[_rmBaseSrc] : false);   // カタログ：複製はコピー元を引継ぎ
@@ -1726,7 +1740,27 @@ let _hiRole=null;   // 役割サマリでハイライトするロールkey
 let _editBackTo='list', _editBackUi=-1;
 function nrGo(dest){ if(dest==='assignedit' && _editBackUi>=0) openAssign(_editBackUi); else show(dest||'list'); }
 function nrBack(){ nrGo(_editBackTo); }
-function submitRoleAndBack(){ const key=saveRoleData(); if(key===null) return; if(_editBackTo==='summary') _hiRole=key; nrGo(_editBackTo); }
+let _saveAsNew=false;
+function nameTaken(nm, exceptIdx){ return ROLES.some((r,i)=>i!==exceptIdx && r.name===nm); }
+function roleHolderCount(idx){ const rk=ROLES[idx] && ROLES[idx].key; return rk?USERS.filter(u=>(u.roleKeys||[]).includes(rk)).length:0; }
+// AC-40 既存権限の名前を変えて保存するとき、上書きか新規かを選ばせる
+function submitRoleAndBack(){
+  const nm=(document.getElementById('rmName').value||'').trim();
+  const isEdit = (_nrMode==='edit' && _nrEditIdx>=0);
+  if(isEdit && nm && nm!==_editOrigName){
+    const n=roleHolderCount(_nrEditIdx);
+    showConfirm(
+      `権限名を「${_editOrigName}」から「${nm}」に変更しました。\n\n`
+      +`・上書き … この権限の名前が変わります。${n}名が そのまま「${nm}」を持ちます。「${_editOrigName}」は残りません。\n`
+      +`・新しい権限として保存 … 「${_editOrigName}」はそのまま残り、「${nm}」が新しく追加されます。${n}名の割当は「${_editOrigName}」のままです。`,
+      ()=>{ _saveAsNew=false; _doSubmitRole(); },
+      {title:'上書きしますか、新しい権限にしますか', okLabel:`上書きする（${n}名に反映）`,
+       extraLabel:'新しい権限として保存', onExtra:()=>{ _saveAsNew=true; _doSubmitRole(); }});
+    return;
+  }
+  _saveAsNew=false; _doSubmitRole();
+}
+function _doSubmitRole(){ const key=saveRoleData(); _saveAsNew=false; if(key===null) return; if(_editBackTo==='summary') _hiRole=key; nrGo(_editBackTo); }
 // タイトルバーの戻るボタン群：来た元＋「権限一覧へ」の2ボタン（listから来た時は1つ）
 function renderNrBack(){ const el=document.getElementById('nrBackBtns'); if(!el) return;
   const btn=(t,fn)=>`<button class="btn ghost" style="margin-left:8px;" onclick="${fn}">${t}</button>`;

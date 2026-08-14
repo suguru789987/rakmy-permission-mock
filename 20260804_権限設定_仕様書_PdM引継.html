@@ -22,8 +22,7 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 .toc b{display:block;margin-bottom:6px;color:var(--acc)} .toc ol{margin:0;padding-left:20px;font-size:13.5px}
 .toc a{text-decoration:none} .toc a:hover{text-decoration:underline}
 @media print{body{background:#fff}main{box-shadow:none;padding:0}header.top{background:#fff;color:#000;border-bottom:2px solid #000}}
-</style></head><body>
-<header class="top"><h1>権限設定機能 仕様書（PdM引き継ぎ版）</h1><div class="meta">2026-08-04 ／ ラクミー経営管理 ／ 動作モック <a href="https://suguru789987.github.io/rakmy-permission-mock/">https://suguru789987.github.io/rakmy-permission-mock/</a></div></header>
+</style></head><body><header class="top"><h1>権限設定機能 仕様書（PdM引き継ぎ版）</h1><div class="meta">2026-08-04 ／ ラクミー経営管理 ／ 動作モック <a href="https://suguru789987.github.io/rakmy-permission-mock/">https://suguru789987.github.io/rakmy-permission-mock/</a></div></header>
 <div class="wrap"><main><div class="toc"><b>目次</b><ol><li><a href="#_1">概要</a></li><li><a href="#0">0. この文書の使い方</a></li><li><a href="#1">1. 背景と課題</a></li><li><a href="#2">2. スコープと用語</a></li><li><a href="#3">3. 権限モデル</a></li><li><a href="#4">4. 段階導入</a></li><li><a href="#5">5. 画面仕様</a></li><li><a href="#6">6. データモデル（本番実装）</a></li><li><a href="#7">7. 設計判断の記録（なぜそう決めたか）</a></li><li><a href="#8-pdm">8. 未決事項（後任PdMの判断が必要）</a></li><li><a href="#9">9. リスクと対策</a></li><li><a href="#10">10. 引き継ぎメモ</a></li><li><a href="#11_1">11. 更新履歴</a></li></ol></div><h1 id="pdm">権限設定機能 仕様書（PdM引き継ぎ版）</h1>
 <p>2026-08-03 ／ ラクミー経営管理 ／ 対象: <code>suguru789987/rakmy-permission-mock</code> build <code>eedfcd3</code>（整合監査済み・<code>20260803_08</code>）</p>
 <p><strong>動作モック（公開URL・ログイン不要）</strong></p>
@@ -584,6 +583,28 @@ strong{color:#0f3d4a} a{color:#1a6f8b}
 </tbody>
 </table>
 <p><strong>ステップ順は「識別 → 中身 → 確定」で固定。</strong> 区分を先に決めるのは、区分が③に出る画面リストを絞るため（会社なら店舗専用6画面が出ない）。逆順にすると設定後に区分変更でやり直しになる。</p>
+<p><strong>名前を変えて保存するときは、上書きか新規かを選ばせる（2026-08-14 決定）</strong></p>
+<table>
+<thead>
+<tr>
+<th>選択</th>
+<th>挙動</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>上書きする</td>
+<td>同じ権限の名前が変わる（識別子は不変）。<strong>その権限を持つ全員がそのまま新しい名前の権限を持つ</strong>。元の名前は残らない</td>
+</tr>
+<tr>
+<td>新しい権限として保存</td>
+<td>元の権限をそのまま残し、新しい権限を1件追加する。既存の割当は元の権限のまま</td>
+</tr>
+</tbody>
+</table>
+<p><strong>却下案</strong> — 黙って上書きする（当初の実装）。「エリア長」を直して「西エリア長」にしたい顧客は、元のエリア長も残したい場合がある。黙って上書きすると、<strong>派生を作ったつもりが元を失う</strong>。名前を変えたときだけ聞く形にし、画面設定だけを直した場合は従来どおり上書きする。→ AC-40</p>
+<p>なお<strong>名前が既存と重複する場合は、どちらを選んでも保存できない</strong>（→ AC-38）。</p>
+<p><strong>編集時はベース選択を出さない。</strong> 土台を選び直すとそれまでの設定が丸ごと上書きされ、どこを自分で直したのか分からなくなるため。土台から作り直したい場合は新規作成する。</p>
 <p><strong>権限名は一意（2026-08-13 決定）</strong> — 既存と同じ権限名では保存できず「別名で保存してください」を出す。同名が並ぶと割当時にどちらを選ぶか判別できないため。→ AC-38</p>
 <p><strong>区分は保存後に変更できない（2026-08-13 決定）</strong> — 編集モードでは区分を非活性にする。区分を変えると③の画面リストが入れ替わり、既存の設定値が意味を失う（何が残り何が消えたか追えない）。別区分が必要なら「既存権限をコピー」で設定を引き継いで新規作成する。→ AC-39</p>
 <p><strong>ベース候補</strong></p>
