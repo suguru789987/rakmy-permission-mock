@@ -548,7 +548,7 @@
     </div>
     <div class="panel">
       <div id="nrBaseStep">
-        <div class="nr-step">① ベースを選ぶ<small>ベーステンプレート ／ 既存権限をコピー ／ まっさら（ゼロから）</small></div>
+        <div class="nr-step">① ベースを選ぶ<small>スタンダードテンプレ ／ カスタマイズテンプレ ／ 新規作成</small></div>
         <div class="hdd" id="rmBaseWrap" style="max-width:600px;display:block;">
           <button class="hdd-btn" id="rmBaseBtn" onclick="event.stopPropagation();toggleBaseDD()"><span id="rmBaseBtnLabel">—</span><span class="hdd-ar">▼</span></button>
           <div class="hdd-panel hide" id="rmBasePanel"></div>
@@ -1402,15 +1402,16 @@ function buildBaseOpts(){
   const o=[];
   const stdNames=new Set(ROLE_TEMPLATES.map(t=>t.name));
   ROLE_TEMPLATES.filter(t=>t.id!=='blank').forEach(t=>o.push({val:'tpl:'+t.id,name:t.name,grp:'スタンダードテンプレ'}));
-  if(demoMode!=='new')
-    ROLES.filter(r=>!r.system && !stdNames.has(r.name))   // 顧客が作った権限だけを出す（既定テンプレと同名のものは上に出ている）
-         .forEach(r=>o.push({val:'role:'+ROLES.indexOf(r),name:r.name,grp:'カスタマイズテンプレ'}));
+  const custom=ROLES.filter(r=>!r.system && !stdNames.has(r.name));   // 顧客が作った権限（既定テンプレと同名のものは上に出ている）
+  if(custom.length) custom.forEach(r=>o.push({val:'role:'+ROLES.indexOf(r),name:r.name,grp:'カスタマイズテンプレ'}));
+  else o.push({val:'', name:'（まだありません。作成した権限がここに並びます）', grp:'カスタマイズテンプレ', disabled:true});
   o.push({val:'tpl:blank',name:'新規作成',grp:'新規作成'});
   return o; }
 function rmBaseLabel(){ const o=_rmBaseOpts.find(x=>x.val===_rmBaseVal); return o?o.name:'—'; }
 function renderBaseDD(){ document.getElementById('rmBaseBtnLabel').textContent=rmBaseLabel();
   const p=document.getElementById('rmBasePanel'); p.classList.toggle('hide',!_rmBaseOpen); if(!_rmBaseOpen){ p.innerHTML=''; return; }
-  let h='',last=''; _rmBaseOpts.forEach(o=>{ if(o.grp!==last){ h+=`<div class="hdd-grp">${o.grp}</div>`; last=o.grp; } h+=`<div class="hdd-opt ${o.val===_rmBaseVal?'on':''}" onclick="event.stopPropagation();selectBase('${o.val}')">${o.name}</div>`; });
+  let h='',last=''; _rmBaseOpts.forEach(o=>{ if(o.grp!==last){ h+=`<div class="hdd-grp">${o.grp}</div>`; last=o.grp; } if(o.disabled){ h+=`<div class="hdd-opt" style="color:#9aa0a6;cursor:default;font-size:12px;" onclick="event.stopPropagation();">${o.name}</div>`; }
+    else h+=`<div class="hdd-opt ${o.val===_rmBaseVal?'on':''}" onclick="event.stopPropagation();selectBase('${o.val}')">${o.name}</div>`; });
   p.innerHTML=h; }
 function toggleBaseDD(){ _rmBaseOpen=!_rmBaseOpen; renderBaseDD(); }
 function selectBase(v){ _rmBaseVal=v; _rmBaseOpen=false; renderBaseDD(); rmSetBase(); }
@@ -1446,7 +1447,7 @@ function editRoleHere(ri, origin){ const r=ROLES[ri]; if(r.system){ toast('オ�
     const on = b.dataset.t===r.tier;
     b.classList.toggle('on',on);
     b.disabled = !on; b.style.opacity = on?'':'0.35'; b.style.cursor = on?'':'not-allowed';
-    b.title = on?'':'区分は保存後に変更できません。別区分が必要な場合は「既存権限をコピー」で新規作成してください';
+    b.title = on?'':'区分は保存後に変更できません。別区分が必要な場合は「カスタマイズテンプレ」から新規作成してください';
   });
   _rmBaseTier=r.tier; _rmBaseScope=r.scopeType; rmSetScope(r.scopeType);
   document.getElementById('rmName').value=r.name;
@@ -1482,7 +1483,7 @@ function permSummaryHTML(pr){
 }
 // 作成モーダルで選択中ベースの画面ごと詳細を表示（テンプレート画面の機能を統合）
 function openBaseDetail(){ const pr=rmBasePreviewRole(); const v=_rmBaseVal;
-  const nm = v.startsWith('role:') ? ROLES[+v.slice(5)].name+'（複製元）' : ((ROLE_TEMPLATES.find(x=>x.id===v.slice(4))||{}).name||'')+'（雛形）';
+  const nm = v.startsWith('role:') ? ROLES[+v.slice(5)].name+'（カスタマイズテンプレ）' : ((ROLE_TEMPLATES.find(x=>x.id===v.slice(4))||{}).name||'')+'（スタンダードテンプレ）';
   openTplDetailPr(pr, nm+'｜画面ごとの権限'); }
 // 権限編集③はスコープ（店舗）を扱わない＝掌握店舗数/店舗名の"情報表示"は出さない（店舗の実態は役割サマリ/ユーザー割当で確認）。
 // ここに残すのは「次アクションへのCTA」と「ガバナンス上の警告（店舗未設定の保持者）」のみ。
