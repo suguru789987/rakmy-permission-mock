@@ -4,7 +4,7 @@
 
 ## 0. 原則
 - **UIで設定 → DBに保存 → 各操作で判定 → スコープで範囲限定 → ログ記録**、を一貫させる。
-- **権限はロールに、ユーザーにはロールを割当**（権限→ロール→ユーザー・複数ロールは和集合）。
+- **権限はロールに、ユーザーにはロールを割当**（権限→ロール→ユーザー）。**1人1ロール**＝合算は発生しない（2026-08-03 決定・暫定 → 仕様書 §3.5・§8-1）。合算方式へ戻す可能性があるため、実装は和集合を取れる形を保つ。
 - **fail-closed**：判定不能・未設定は「拒否」。緩める方向のみ明示設定で。
 - **スコープはクエリレベルで強制**（コントローラ毎の手当てに頼らない＝漏れ防止）。
 - 本番 `rakmy`/`rakmy_server` 本体テーブルは非破壊。新規は別テーブルで付加し、既存ロール(master/manager/shop_manager)から移行。
@@ -14,9 +14,10 @@
 ```
 roles                      -- ロール定義（経理/店長/エリア長/カスタム…）
   id, key, name,
-  tier            enum(shop, company),
+  tier            enum(shop, company),   -- 作成後は変更不可（→ AC-39）
   is_system       bool,           -- オーナー等の固定ロール
   created_by, created_at, updated_at
+  unique(name)                    -- 権限名は一意（→ AC-38）
 
 role_permissions           -- ロール×機能の権限（モックの「機能レベル」＝3状態）
   id, role_id, feature_key,        -- feature_key = カテゴリ.機能の安定キー
@@ -32,7 +33,7 @@ user_roles                 -- ユーザー(管理者)へのロール割当＋ス
   scope_type      enum(self, stores, all),   -- self=自店舗 / stores=指定店舗群 / all=全社
   store_ids       bigint[],                  -- scope_type=stores の対象店舗
   assigned_by, assigned_at,
-  unique(user_id, role_id)
+  unique(user_id)                 -- 1人1ロール（→ AC-14）。DB制約かアプリ層かは §9 参照
 
 metrics                    -- 指標メタ（§12-8 のデータ化。486〜737種）
   id, key, name,
@@ -50,8 +51,8 @@ audit_logs                 -- 監査
   target_role_id, target_user_id, detail jsonb, created_at
 ```
 
-- **enforcement判定はキャッシュ可能な「実効権限」へ集約**：`effective_permissions(user)` = 全 user_roles の role_permissions を feature_key で**和集合（max level / OR ops）**。
-- **スコープも和集合**：`effective_store_ids(user)` = 各 user_roles の scope を合算（後述）。
+- **enforcement判定はキャッシュ可能な「実効権限」へ集約**：`effective_permissions(user)` = そのユーザーの role の role_permissions。**1人1ロールのため合算は発生しない**（→ AC-14・§7-H）。合算方式へ戻す場合に備え、実装は「和集合を取れる形」を保つ（max level / OR ops）。
+- **スコープ**：`effective_store_ids(user)` = その user_role の scope から解決する。**`scope_type=all`（全店）は動的**＝店舗マスタの有効な店舗を都度引く。選択時点のスナップショットを `store_ids` に焼き込まない（→ AC-36）。
 
 ## 2. 権限判定（Pundit ポリシー）
 各コントローラ/アクション（＝画面・API・操作）の前で判定。
@@ -120,11 +121,29 @@ end
 4. **指標カタログ＋越境防御**をサーバ側で強制（指標メタ整備が前提）。
 5. 監査・ロックアウト・publish・移行。
 
+## 8-2. 作成・変更・削除の制約（2026-08-13〜14 決定）
+
+| # | 制約 | 実装箇所 | 満たさないと |
+|---|---|---|---|
+| AC-35 | **割当ユーザーが1名以上いる role は削除できない。** 削除APIの事前チェックで弾き、保持者を返す | roles#destroy の before_action | 削除した瞬間に user_roles が消え、その人が未割当＝何も見えない（業務停止） |
+| AC-36 | **`scope_type=all` は動的に解決する。** 店舗が増えたら自動で対象に含める | `effective_store_ids` | スナップショットだと新店舗が見えず業務が止まる |
+| AC-37 | **店舗は論理削除（不活性化）。** 物理削除せず、`user_roles.store_ids` の紐付けは保持する | stores の `active` フラグ／店舗解決 | 担当店舗が0件になり「店舗ロールは1件以上必須」（AC-19）と矛盾する状態が生まれる |
+| AC-38 | **権限名は一意。** 重複時は保存させず「別名で保存してください」を返す | roles の unique(name)／保存時バリデーション | 同名が並び、割当時にどちらを選ぶか判別できない |
+| AC-39 | **`tier`（区分）は作成後に変更不可。** 更新APIで tier を受け付けない | roles#update | 区分を変えると設定対象の feature_key が入れ替わり、既存の role_permissions が意味を失う |
+| AC-40 | **権限名を変えて保存するときは、上書きか新規かをクライアントに選ばせる。** 上書き＝同じ role_id を更新／新規＝role を複製して新しい id で作成 | roles#update と roles#create の呼び分け | 派生を作ったつもりが元の権限を失い、その権限を持つ全員に影響する |
+
+**新規作成のベース候補は3階層**（→ AC-08）。スタンダードテンプレ（システム定義の雛形）／カスタマイズテンプレ（`is_system=false` の既存 role）／新規作成（全 feature_key を level 0）。カスタマイズテンプレは**スタンダードと同名の role を除外**して返す。
+
+**画面カテゴリを追加したときの既定は level 0（なし）**（→ AC-12）。マイグレーションで既存の全 role に対して明示的に 0 を入れるか、`role_permissions` に行が無い＝0 と解決する。**いずれにせよ既存 role の許可が増えないこと**をコード上で保証する。
+
 ## 9. 未決・要確認
 - feature_key の**安定キー体系**（UIのカテゴリ/機能と1:1で永続化）。画面追加時の付与既定＝なし。
 - scope の**多階層**（エリア→店舗の包含、将来のマルチテナント親子）。
 - 削除の担保（UIは3状態＝操作に削除を含み実行時確認）。バックエンドで delete を監査用に別記録するか・その保持先（jsonb/別テーブル）は要件次第。権限判定は level ベース。
 - 指標メタ（sensitivity/scope/category）の**整備主体と運用**（誰がいつ付与・AI分類の承認フロー）。
+- **1人1ロールを DB制約（unique(user_id)）で縛るか、アプリ層のみで縛るか**。合算方式へ戻す可能性があるため、**アプリ層のみを推奨**（→ 仕様書 §8-1・§6）。
+- **区分を跨いだベース利用時の残余データ**。店舗ベースから会社区分の権限を作ると、店舗専用 feature_key の値が role_permissions に残る。設定画面には出ないため実害は無いが、保存時に落とすか持ったままにするかは要件次第。
+- **権限テンプレートの再適用**時の挙動（同名の role が二重に作られるか）。初回のみ表示の画面のため優先度は低い。
 
 ---
 ※本書は論理設計。実本番の実テーブル/列名・DBダンプは含めない（ガバナンス）。指標↔実列の確定マッピングは private リポを参照。
